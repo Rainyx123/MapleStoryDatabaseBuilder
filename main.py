@@ -3,6 +3,7 @@ import pandas as pd
 import os
 import re
 import json
+import time 
 import gspread
 from gspread_dataframe import set_with_dataframe
 from google.oauth2.service_account import Credentials
@@ -206,6 +207,8 @@ def main():
         
         set_with_dataframe(ws, data['df_r'], row=1, col=11, include_column_header=True)
         print(f"已更新 {sn} 的資料。")
+
+        time.sleep(12) 
 
 if __name__ == "__main__":
     main()
