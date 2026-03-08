@@ -7,6 +7,7 @@ import re
 import gspread
 from google.oauth2.service_account import Credentials
 from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime, timezone, timedelta
 
 # =================================================================
 # 1. 設定區
@@ -195,6 +196,9 @@ def main():
     gc = gspread.authorize(creds)
     sh = gc.open_by_key(SHEET_ID)
 
+    overview_headers = []
+    overview_rows = []
+
     for data in results:
         sn = data['name']
         try:
@@ -230,13 +234,44 @@ def main():
         curr_row += (len(data['df_v']) + 2)
         matrix[curr_row][3] = "【六轉 HEXA 進度】"
         embed_df(data['df_h'], curr_row + 1, 3)
-
         embed_df(data['df_r'], 0, 10, has_header=True)
 
         ws.clear()
         ws.update('A1', matrix)
         print(f"✨ 已快速更新 {sn}")
         time.sleep(2)
+
+        # 萃取總覽頁所需資料 (僅取前18列固定屬性，避開長度不一的極限屬性)
+        basic_list = data['df_l'].values.tolist()
+        fixed_basic = basic_list[:18]
+        if not overview_headers:
+            overview_headers = [row[0] for row in fixed_basic if row[0] != ""]
+        row_data = [row[1] for row in fixed_basic if row[0] != ""]
+        overview_rows.append(row_data)
+
+    # 處理總覽頁與時間戳記
+    try:
+        ws_overview = sh.worksheet("總覽")
+    except gspread.exceptions.WorksheetNotFound:
+        ws_overview = sh.add_worksheet(title="總覽", rows="30", cols="30")
+
+    tz = timezone(timedelta(hours=8))
+    update_time = datetime.now(tz).strftime("%Y-%m-%d %H:%M:%S")
+    
+    overview_matrix = [["" for _ in range(len(overview_headers))] for _ in range(len(overview_rows) + 3)]
+    overview_matrix[0][0] = "最後更新時間"
+    overview_matrix[0][1] = update_time
+    
+    for i, h in enumerate(overview_headers):
+        overview_matrix[1][i] = h
+        
+    for r_idx, row in enumerate(overview_rows):
+        for c_idx, val in enumerate(row):
+            overview_matrix[r_idx + 2][c_idx] = val
+
+    ws_overview.clear()
+    ws_overview.update('A1', overview_matrix)
+    print("✨ 已更新總覽頁")
 
 if __name__ == "__main__":
     main()
