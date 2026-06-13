@@ -1,5 +1,7 @@
 {
+  "framework": null,
   "installCommand": "npm install",
+  "buildCommand": "echo 'no build step'",
   "functions": {
     "api/**/*.js": {
       "memory": 256,
