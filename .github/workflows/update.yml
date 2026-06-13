@@ -22,11 +22,11 @@ jobs:
           python-version: '3.10'
 
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        run: pip install -r crawler/requirements.txt
 
       - name: Run Python script
         env:
           NEXON_API_KEY:  ${{ secrets.NEXON_API_KEY }}
           SUPABASE_URL:   ${{ secrets.SUPABASE_URL }}
           SUPABASE_KEY:   ${{ secrets.SUPABASE_KEY }}
-        run: python main.py
+        run: python crawler/main.py
