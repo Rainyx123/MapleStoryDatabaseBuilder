@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🍁 楓之谷角色資料庫</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ===== 頂部導覽列 ===== -->
+  <header id="header">
+    <div id="logo">🍁 楓之谷DB</div>
+    <div id="tab-bar">
+      <!-- 角色分頁由 JS 動態產生 -->
+    </div>
+    <div id="header-actions">
+      <button id="btn-query" title="即時查詢任意角色">🔍</button>
+      <button id="btn-settings" title="顯示設定">⚙️</button>
+    </div>
+  </header>
+
+  <!-- ===== 主要內容區 ===== -->
+  <main id="main">
+
+    <!-- 讀取中 -->
+    <div id="loading">
+      <div class="spinner"></div>
+      <p>讀取角色資料中...</p>
+    </div>
+
+    <!-- 主內容（資料載入後顯示） -->
+    <div id="content" class="hidden">
+
+      <!-- 左側面板：角色圖 + 屬性 -->
+      <aside id="panel-left">
+
+        <div id="char-header">
+          <img id="char-image" src="" alt="角色圖片">
+          <div id="char-meta">
+            <div id="char-name"></div>
+            <div id="char-class"></div>
+            <div id="char-level"></div>
+          </div>
+        </div>
+
+        <!-- 核心屬性 -->
+        <section class="data-section" id="section-stats">
+          <div class="section-header" onclick="toggleSection(this)">
+            <span>核心屬性</span><span class="toggle-icon">▼</span>
+          </div>
+          <div class="section-body" id="stats-grid"></div>
+        </section>
+
+        <!-- 極限屬性 -->
+        <section class="data-section" id="section-hyper">
+          <div class="section-header" onclick="toggleSection(this)">
+            <span>極限屬性</span><span class="toggle-icon">▼</span>
+          </div>
+          <div class="section-body" id="hyper-list"></div>
+        </section>
+
+      </aside>
+
+      <!-- 右側面板：裝備 + 其他 -->
+      <div id="panel-right">
+
+        <!-- 裝備 -->
+        <section class="data-section" id="section-equip">
+          <div class="section-header" onclick="toggleSection(this)">
+            <span>裝備</span><span class="toggle-icon">▼</span>
+          </div>
+          <div class="section-body" id="equip-list"></div>
+        </section>
+
+        <!-- V矩陣 + HEXA 並排 -->
+        <div id="panel-matrix">
+          <section class="data-section" id="section-v">
+            <div class="section-header" onclick="toggleSection(this)">
+              <span>五轉 V-Matrix</span><span class="toggle-icon">▼</span>
+            </div>
+            <div class="section-body" id="v-grid"></div>
+          </section>
+
+          <section class="data-section" id="section-hexa">
+            <div class="section-header" onclick="toggleSection(this)">
+              <span>六轉 HEXA</span><span class="toggle-icon">▼</span>
+            </div>
+            <div class="section-body" id="hexa-grid"></div>
+          </section>
+        </div>
+
+        <!-- 連結技能 + 內潛 並排 -->
+        <div id="panel-bottom">
+          <section class="data-section" id="section-link">
+            <div class="section-header" onclick="toggleSection(this)">
+              <span>連結技能</span><span class="toggle-icon">▼</span>
+            </div>
+            <div class="section-body" id="link-grid"></div>
+          </section>
+
+          <section class="data-section" id="section-ability">
+            <div class="section-header" onclick="toggleSection(this)">
+              <span>內潛</span><span class="toggle-icon">▼</span>
+            </div>
+            <div class="section-body" id="ability-list"></div>
+          </section>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- 錯誤狀態 -->
+    <div id="error" class="hidden">
+      <p id="error-msg"></p>
+      <button id="btn-retry">重新讀取</button>
+    </div>
+
+  </main>
+
+  <!-- ===== 設定 Modal ===== -->
+  <div id="modal-settings" class="modal hidden">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h2>顯示設定</h2>
+        <button onclick="closeModal('modal-settings')">✕</button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-hint">勾選要在頁面上顯示的區塊</p>
+        <label><input type="checkbox" data-section="section-stats" checked>核心屬性</label>
+        <label><input type="checkbox" data-section="section-hyper" checked>極限屬性</label>
+        <label><input type="checkbox" data-section="section-equip" checked>裝備</label>
+        <label><input type="checkbox" data-section="section-v" checked>五轉 V-Matrix</label>
+        <label><input type="checkbox" data-section="section-hexa" checked>六轉 HEXA</label>
+        <label><input type="checkbox" data-section="section-link" checked>連結技能</label>
+        <label><input type="checkbox" data-section="section-ability" checked>內潛</label>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 即時查詢 Modal ===== -->
+  <div id="modal-query" class="modal hidden">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h2>即時查詢角色</h2>
+        <button onclick="closeModal('modal-query')">✕</button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-hint">輸入任意台服角色名稱，即時從 Nexon API 拉取最新資料</p>
+        <input type="text" id="query-input" placeholder="角色名稱...">
+        <button id="btn-query-submit">查詢</button>
+        <div id="query-status"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
