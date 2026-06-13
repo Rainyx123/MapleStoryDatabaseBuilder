@@ -1,5 +1,2 @@
 requests
-pandas
-gspread
-gspread-dataframe
-google-auth
+supabase
