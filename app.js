@@ -3,7 +3,7 @@
 // ================================================================
 
 // ★★★ 請將這裡換成你的 Vercel 網址 ★★★
-const API_BASE = 'https://maple-story-database-builder-kr2rguogt-rainy-s-projects2.vercel.app/';
+const API_BASE = 'https://maple-story-database-builder.vercel.app/';
 
 // ---- 全域狀態 ----
 let characters  = [];    // 所有角色資料（從 API 載入）
