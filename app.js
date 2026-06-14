@@ -245,44 +245,6 @@ function renderHyperStats(hyper_stats) {
 }
 
 // ================================================================
-// 裝備
-// ================================================================
-const GRADE_COLOR = {
-  '傳說': 'var(--legendary)', '唯一': 'var(--unique)',
-  '稀有': 'var(--epic)',       '罕見': 'var(--rare)',
-};
-
-function renderEquipment(equipment) {
-  const list = document.getElementById('equip-list');
-  if (!equipment.length) { list.innerHTML = '<div class="empty">無裝備資料</div>'; return; }
-  list.innerHTML = equipment.map(eq => {
-    const pColor = GRADE_COLOR[eq.potential_grade]  || 'var(--none)';
-    const aColor = GRADE_COLOR[eq.additional_grade] || 'var(--none)';
-    const stars  = eq.starforce > 0
-      ? ` <span style="color:var(--legendary)">★${eq.starforce}</span>` : '';
-    const pBadge = eq.potential_grade && eq.potential_grade !== '無'
-      ? `<span class="grade-badge" style="background:${pColor}">${eq.potential_grade}</span>` : '';
-    const aBadge = eq.additional_grade && eq.additional_grade !== '無'
-      ? `<span class="grade-badge" style="background:${aColor}">${eq.additional_grade}</span>` : '';
-    const pText  = (eq.potential  || []).join(' / ');
-    const aText  = (eq.additional || []).join(' / ');
-    const addTxt = (eq.add_option || []).join(', ');
-    const hasDetails = pBadge || aBadge || addTxt;
-    return `<div class="equip-card" style="border-left-color:${pColor}">
-      <div class="equip-top">
-        <span class="equip-slot">${eq.slot}</span>
-        <span class="equip-name">${eq.name}${stars}</span>
-      </div>
-      ${hasDetails ? `<div class="equip-details">
-        ${pBadge ? `<div class="equip-pot-line">${pBadge}<span>${pText}</span></div>` : ''}
-        ${aBadge ? `<div class="equip-pot-line">${aBadge}<span>${aText}</span></div>` : ''}
-        ${addTxt ? `<div class="equip-add-line">⭐ ${addTxt}</div>` : ''}
-      </div>` : ''}
-    </div>`;
-  }).join('');
-}
-
-// ================================================================
 // V矩陣 & HEXA
 // ================================================================
 function renderVMatrix(v_cores) {
