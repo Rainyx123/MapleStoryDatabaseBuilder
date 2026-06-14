@@ -149,14 +149,15 @@ def process_character(char_name):
         # 合併 grade 5 和 grade 6 技能，建立名稱→圖標對照
         skill_icon_map = {}
         for grade_key in ('sk5', 'sk6'):
-            for sk in (raw.get(grade_key) or {}).get('character_skill', []):
+            skills_data = (raw.get(grade_key) or {}).get('character_skill') or []
+            for sk in skills_data:
                 if sk.get('skill_name') and sk.get('skill_icon'):
                     skill_icon_map[sk['skill_name']] = sk['skill_icon']
 
         # ── Step 4: 解析各區塊 ────────────────────────────────
 
         # --- 基本屬性 ---
-        final_stats = (raw.get('s') or {}).get('final_stat', [])
+        final_stats = (raw.get('s') or {}).get('final_stat') or []
         def gs(name):
             return next((x['stat_value'] for x in final_stats if x['stat_name'] == name), '0')
 
@@ -188,7 +189,7 @@ def process_character(char_name):
         i_raw = raw.get('i') or {}
         rings = []
         sf = 0
-        active_items = i_raw.get('item_equipment', [])
+        active_items = i_raw.get('item_equipment') or []
         for item in active_items:
             sf += int(item.get('starforce', 0) or 0)
             raw_name = item.get('item_name', '')
@@ -202,11 +203,11 @@ def process_character(char_name):
         equipment = {
             "active_preset": i_raw.get('preset_no', 0),
             "preset_0": parse_equip_list(active_items),
-            "preset_1": parse_equip_list(i_raw.get('item_equipment_preset_1', [])),
-            "preset_2": parse_equip_list(i_raw.get('item_equipment_preset_2', [])),
-            "preset_3": parse_equip_list(i_raw.get('item_equipment_preset_3', [])),
-            "dragon":   parse_equip_list(i_raw.get('dragon_equipment', [])),
-            "mechanic": parse_equip_list(i_raw.get('mechanic_equipment', [])),
+            "preset_1": parse_equip_list(i_raw.get('item_equipment_preset_1') or []),
+            "preset_2": parse_equip_list(i_raw.get('item_equipment_preset_2') or []),
+            "preset_3": parse_equip_list(i_raw.get('item_equipment_preset_3') or []),
+            "dragon":   parse_equip_list(i_raw.get('dragon_equipment') or []),
+            "mechanic": parse_equip_list(i_raw.get('mechanic_equipment') or []),
         }
 
         # --- 現金道具 ---
@@ -219,13 +220,13 @@ def process_character(char_name):
                     "name": x.get('cash_item_name',''),
                     "icon": x.get('cash_item_icon',''),
                     "label": x.get('cash_item_label',''),
-                    "options": x.get('cash_item_option',[])
+                    "options": x.get('cash_item_option') or []
                 }
-                for x in c_raw.get('cash_item_equipment_base', [])
+                for x in (c_raw.get('cash_item_equipment_base') or [])
             ],
-            "preset_1": [{"slot": x.get('cash_item_equipment_slot',''), "name": x.get('cash_item_name',''), "icon": x.get('cash_item_icon','')} for x in c_raw.get('cash_item_equipment_preset_1', [])],
-            "preset_2": [{"slot": x.get('cash_item_equipment_slot',''), "name": x.get('cash_item_name',''), "icon": x.get('cash_item_icon','')} for x in c_raw.get('cash_item_equipment_preset_2', [])],
-            "preset_3": [{"slot": x.get('cash_item_equipment_slot',''), "name": x.get('cash_item_name',''), "icon": x.get('cash_item_icon','')} for x in c_raw.get('cash_item_equipment_preset_3', [])],
+            "preset_1": [{"slot": x.get('cash_item_equipment_slot',''), "name": x.get('cash_item_name',''), "icon": x.get('cash_item_icon','')} for x in (c_raw.get('cash_item_equipment_preset_1') or [])],
+            "preset_2": [{"slot": x.get('cash_item_equipment_slot',''), "name": x.get('cash_item_name',''), "icon": x.get('cash_item_icon','')} for x in (c_raw.get('cash_item_equipment_preset_2') or [])],
+            "preset_3": [{"slot": x.get('cash_item_equipment_slot',''), "name": x.get('cash_item_name',''), "icon": x.get('cash_item_icon','')} for x in (c_raw.get('cash_item_equipment_preset_3') or [])],
         }
 
         # --- 符文（ARC/AUT）---
@@ -243,17 +244,17 @@ def process_character(char_name):
                 "luk":            x.get('symbol_luk','0'),
                 "hp":             x.get('symbol_hp','0'),
             }
-            for x in (raw.get('sy') or {}).get('symbol', [])
+            for x in ((raw.get('sy') or {}).get('symbol') or [])
         ]
 
         # --- 美容（髮型/臉型/膚色）---
         be_raw = raw.get('be') or {}
         beauty = {
-            "hair":      (be_raw.get('character_hair') or {}).get('hair_name', ''),
+            "hair":       (be_raw.get('character_hair') or {}).get('hair_name', ''),
             "hair_color": (be_raw.get('character_hair') or {}).get('base_color', ''),
-            "face":      (be_raw.get('character_face') or {}).get('face_name', ''),
+            "face":       (be_raw.get('character_face') or {}).get('face_name', ''),
             "face_color": (be_raw.get('character_face') or {}).get('base_color', ''),
-            "skin":      (be_raw.get('character_skin') or {}).get('skin_name', ''),
+            "skin":       (be_raw.get('character_skin') or {}).get('skin_name', ''),
         }
 
         # --- 機器人 ---
@@ -267,7 +268,7 @@ def process_character(char_name):
             "face":        (an_raw.get('android_face') or {}).get('face_name', ''),
             "cash_items":  [
                 {"slot": x.get('cash_item_equipment_slot',''), "name": x.get('cash_item_name',''), "icon": x.get('cash_item_icon','')}
-                for x in an_raw.get('android_cash_item_equipment', [])
+                for x in (an_raw.get('android_cash_item_equipment') or [])
             ]
         }
 
@@ -281,17 +282,17 @@ def process_character(char_name):
             equip = pe_raw.get(f'pet_{i}_equipment') or {}
             auto  = pe_raw.get(f'pet_{i}_auto_skill') or {}
             pets.append({
-                "name":        name,
-                "nickname":    pe_raw.get(f'pet_{i}_nickname', ''),
-                "icon":        pe_raw.get(f'pet_{i}_icon', ''),
+                "name":            name,
+                "nickname":        pe_raw.get(f'pet_{i}_nickname', ''),
+                "icon":            pe_raw.get(f'pet_{i}_icon', ''),
                 "appearance_icon": pe_raw.get(f'pet_{i}_appearance_icon', ''),
-                "type":        pe_raw.get(f'pet_{i}_pet_type', ''),
-                "skills":      pe_raw.get(f'pet_{i}_skill', []),
-                "date_expire": pe_raw.get(f'pet_{i}_date_expire', ''),
+                "type":            pe_raw.get(f'pet_{i}_pet_type', ''),
+                "skills":          pe_raw.get(f'pet_{i}_skill') or [],
+                "date_expire":     pe_raw.get(f'pet_{i}_date_expire', ''),
                 "equipment": {
                     "name": equip.get('item_name',''),
                     "icon": equip.get('item_icon',''),
-                    "options": equip.get('item_option',[]),
+                    "options": equip.get('item_option') or [],
                     "scroll_upgrade": equip.get('scroll_upgrade', 0),
                 },
                 "auto_skill": {
@@ -304,10 +305,10 @@ def process_character(char_name):
 
         # --- 連結技能（含圖標）---
         l_raw = raw.get('l') or {}
-        link_skills_raw = l_raw.get('character_link_skill', [])
+        link_skills_raw = l_raw.get('character_link_skill') or []
         if not link_skills_raw:
             preset_no = l_raw.get('use_preset_no', '1')
-            link_skills_raw = l_raw.get(f'character_link_skill_preset_{preset_no}', [])
+            link_skills_raw = l_raw.get(f'character_link_skill_preset_{preset_no}') or []
         link_skills = [
             {
                 "name":  s.get('skill_name','—'),
@@ -320,7 +321,7 @@ def process_character(char_name):
 
         # --- V 矩陣（含技能圖標）---
         v_cores = []
-        for c in (raw.get('v') or {}).get('character_v_core_equipment', []):
+        for c in ((raw.get('v') or {}).get('character_v_core_equipment') or []):
             if not c.get('v_core_name'):
                 continue
             skills = []
@@ -349,7 +350,7 @@ def process_character(char_name):
                 "icon":  skill_icon_map.get(c.get('hexa_core_name',''), ''),
                 "linked_skills": [ls.get('hexa_skill_id','') for ls in (c.get('linked_skill') or [])]
             }
-            for c in (raw.get('h6') or {}).get('character_hexa_core_equipment', [])
+            for c in ((raw.get('h6') or {}).get('character_hexa_core_equipment') or [])
             if c.get('hexa_core_name')
         ]
 
@@ -372,7 +373,7 @@ def process_character(char_name):
         a_raw = raw.get('a') or {}
         inner_ability = {
             "grade":     a_raw.get('ability_grade','無'),
-            "abilities": [ab.get('ability_value','') for ab in a_raw.get('ability_info',[])],
+            "abilities": [ab.get('ability_value','') for ab in (a_raw.get('ability_info') or [])],
             "popularity": a_raw.get('remain_fame', 0),  # 名聲在這裡！
         }
 
@@ -381,7 +382,7 @@ def process_character(char_name):
         p_no = h_raw.get('use_preset_no','1')
         hyper_stats = [
             {"type": hs['stat_type'], "level": int(hs.get('stat_level', 0)), "increase": hs.get('stat_increase','')}
-            for hs in h_raw.get(f'hyper_stat_preset_{p_no}', [])
+            for hs in (h_raw.get(f'hyper_stat_preset_{p_no}') or [])
             if int(hs.get('stat_level', 0)) > 0
         ]
 
@@ -398,8 +399,8 @@ def process_character(char_name):
         # --- 戰地攻擊隊 ---
         ur_raw = raw.get('ur') or {}
         union_raider = {
-            "raider_stats":   ur_raw.get('union_raider_stat', []),
-            "occupied_stats": ur_raw.get('union_occupied_stat', []),
+            "raider_stats":   ur_raw.get('union_raider_stat') or [],
+            "occupied_stats": ur_raw.get('union_occupied_stat') or [],
             "inner_stats":    [
                 {"id": x.get('stat_field_id',''), "effect": x.get('stat_field_effect','')}
                 for x in (ur_raw.get('union_inner_stat') or [])
