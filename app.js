@@ -368,35 +368,6 @@ function renderSymbols(symbols) {
   ).join('');
 }
 
-// 聯盟神器
-function renderUnionArtifact(artifact) {
-  const el = document.getElementById('union-artifact-grid');
-  if (!el) return;
-  if (!artifact) { el.innerHTML = '<div class="empty">無資料</div>'; return; }
-  el.innerHTML = `<div class="info-block">
-    <p>等級: ${artifact.level || 0}</p>
-    <p>點數: ${artifact.points || 0}</p>
-  </div>`;
-}
-
-// 聯盟冠軍
-function renderUnionChampion(champions) {
-  const el = document.getElementById('union-champion-grid');
-  if (!el) return;
-
-  // 【重要偵錯】觀察 Console 裡印出來的到底是陣列、物件還是 null
-  console.log("偵錯 - 聯盟冠軍資料結構:", champions);
-
-  // 防禦性檢查：確認它是不是陣列
-  if (!champions || !Array.isArray(champions)) {
-    el.innerHTML = '<div class="empty">無資料或格式異常</div>';
-    return;
-  }
-
-  // 只有確定是陣列才會執行 map
-  el.innerHTML = champions.map(c => `<div class="chip">${c.name || '未知'}</div>`).join('');
-}
-
 // 戰地聯盟 (總等級/等級)
 function renderUnion(union) {
   const el = document.getElementById('union-grid');
@@ -406,23 +377,6 @@ function renderUnion(union) {
     <p>等級: ${union.level || 0}</p>
     <p>階級: ${union.grade || '無'}</p>
   </div>`;
-}
-
-// 戰地攻擊隊 (角色列表)
-function renderUnionRaider(raiders) {
-  const el = document.getElementById('union-raider-grid');
-  if (!el) return;
-
-  // 【除錯關鍵】請看 Console 輸出的這個東西是什麼
-  console.log("偵錯 - 戰地攻擊隊資料:", raiders);
-
-  // 防禦性檢查：確認它是不是陣列
-  if (!raiders || !Array.isArray(raiders)) {
-    el.innerHTML = '<div class="empty">資料格式異常</div>';
-    return;
-  }
-
-  el.innerHTML = raiders.map(r => `<div class="chip">${r.name || '未知'}</div>`).join('');
 }
 
 // 寵物
@@ -466,18 +420,73 @@ function renderBeauty(beauty) {
   </div>`;
 }
 
-// 現金道具
-function renderCashItems(items) {
-  const el = document.getElementById('cash-grid');
+// ================================================================
+// 修正後的渲染函式 (對應 Supabase 資料結構)
+// ================================================================
+
+// 1. 聯盟冠軍
+function renderUnionChampion(data) {
+  const el = document.getElementById('union-champion-grid');
   if (!el) return;
-  // 檢查是否為陣列
-  if (!Array.isArray(items)) {
-    console.warn("renderCashItems: 資料非陣列", items);
-    el.innerHTML = '<div class="empty">無資料或格式異常</div>';
+  // data 結構為 {champions: Array, total_badge: Array}
+  if (!data || !Array.isArray(data.champions)) {
+    el.innerHTML = '<div class="empty">無資料</div>';
     return;
   }
-  if (items.length === 0) { el.innerHTML = '<div class="empty">無資料</div>'; return; }
-  el.innerHTML = items.map(i => `<div class="chip">${i.name || '未知'}</div>`).join('');
+  el.innerHTML = `
+    <div class="info-block"><strong>總效果:</strong> ${data.total_badge ? data.total_badge.join(', ') : '無'}</div>
+    <div class="champions-list">
+      ${data.champions.map(c => `<div class="chip">${c.name} (${c.class}) - ${c.grade}</div>`).join('')}
+    </div>`;
+}
+
+// 2. 戰地攻擊隊
+function renderUnionRaider(data) {
+  const el = document.getElementById('union-raider-grid');
+  if (!el) return;
+  // data 結構包含 inner_stats, raider_stats, occupied_stats
+  // 我們先渲染佔領效果 (occupied_stats)
+  if (!data || !Array.isArray(data.occupied_stats)) {
+    el.innerHTML = '<div class="empty">無資料</div>';
+    return;
+  }
+  el.innerHTML = `
+    <div class="raider-section">
+      <p><strong>佔領效果:</strong></p>
+      ${data.occupied_stats.map(s => `<div class="chip-long">${s}</div>`).join('')}
+    </div>`;
+}
+
+// 3. 現金道具
+function renderCashItems(data) {
+  const el = document.getElementById('cash-grid');
+  if (!el) return;
+  
+  // 找出目前作用中的套裝 (active_preset)
+  const activeIdx = data.active_preset !== undefined ? data.active_preset : 1;
+  const items = data[`preset_${activeIdx}`];
+  
+  if (!items || !Array.isArray(items) || items.length === 0) {
+    el.innerHTML = '<div class="empty">目前無穿戴現金道具</div>';
+    return;
+  }
+  el.innerHTML = items.map(i => `<div class="chip">${i.name}</div>`).join('');
+}
+
+// 4. 聯盟神器
+function renderUnionArtifact(data) {
+  const el = document.getElementById('union-artifact-grid');
+  if (!el) return;
+  // data 結構包含 effects: Array, crystals: Array
+  if (!data || !Array.isArray(data.effects)) {
+    el.innerHTML = '<div class="empty">無資料</div>';
+    return;
+  }
+  el.innerHTML = `
+    <div class="artifact-section">
+      <p><strong>神器效果:</strong></p>
+      ${data.effects.map(e => `<div class="chip-long">${e.name} (Lv.${e.level})</div>`).join('')}
+    </div>`;
 }
 // ================================================================
 // 區塊折疊
