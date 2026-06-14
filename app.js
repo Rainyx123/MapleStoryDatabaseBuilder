@@ -34,11 +34,39 @@ async function init() {
     buildTabs();
     renderCharacter(characters[0]);
     showState('content');
+
+    // 【這裡一定要補上這行】
+    // 確保 DOM 渲染出來後，馬上對所有的 .section-card 進行綁定
+    initCollapsible();
+
+    
   } catch (err) {
     showState('error', err.message);
   }
+  
 }
+// 將函式移到外面，這樣比較乾淨且易於維護
+function initCollapsible() {
+    const states = loadStorage('section-states') || {};
+    
+    document.querySelectorAll('.section-card').forEach(card => {
+        const id = card.id;
+        const body = card.querySelector('.section-body');
+        
+        // 恢復上次狀態
+        if (states[id] === false) {
+            body.classList.add('collapsed');
+        }
 
+        // 綁定點擊開關
+        card.querySelector('.section-header').onclick = () => {
+            body.classList.toggle('collapsed');
+            const currentStates = loadStorage('section-states') || {};
+            currentStates[id] = !body.classList.contains('collapsed');
+            saveStorage('section-states', currentStates);
+        };
+    });
+}
 // ================================================================
 // 分頁
 // ================================================================
