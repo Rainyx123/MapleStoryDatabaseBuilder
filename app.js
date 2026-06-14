@@ -153,18 +153,16 @@ function renderHyperStats(hyper_stats) {
 // ================================================================
 function renderEquipment(data) {
   const list = document.getElementById('equip-list');
-  if (!list) return; // 安全檢查
+  if (!list) return;
 
-  // 1. 統一資料源：不管傳進來什麼，最後都變成陣列
+  // 統一資料源
   const equips = Array.isArray(data) ? data : (data?.preset_0 ?? []);
 
-  // 2. 空資料判斷
   if (equips.length === 0) {
     list.innerHTML = '<div class="empty">無裝備資料</div>';
     return;
   }
 
-  // 3. 使用 map + 現代語法縮短邏輯
   list.innerHTML = equips.map(eq => {
     if (!eq) return '';
 
@@ -172,21 +170,54 @@ function renderEquipment(data) {
     const aColor = GRADE_COLOR[eq?.additional_grade] ?? 'var(--none)';
     const star = eq?.starforce > 0 ? `<span style="color:var(--legendary)">★${eq.starforce}</span>` : '';
     
-    // 縮減徽章渲染 (如果沒有等級，直接不顯示 badge)
     const pBadge = eq?.potential_grade && eq.potential_grade !== '無' ? `<span class="grade-badge" style="background:${pColor}">${eq.potential_grade}</span>` : '';
     const aBadge = eq?.additional_grade && eq.additional_grade !== '無' ? `<span class="grade-badge" style="background:${aColor}">${eq.additional_grade}</span>` : '';
 
+    // 圖示邏輯：如果有 icon 網址則顯示，否則不佔空間
+    const iconHtml = eq?.icon ? `<img src="${eq.icon}" style="width:40px; height:40px; margin-right:10px; border-radius:4px;" onerror="this.style.display='none'">` : '';
+
     return `
       <div class="equip-card" style="border-left-color:${pColor}">
-        <div class="equip-top">
-          <span class="equip-slot">${eq?.slot ?? '未知'}</span>
-          <span class="equip-name">${eq?.name ?? '空'}${star}</span>
+        <div class="equip-top" style="display:flex; align-items:center;">
+          ${iconHtml}
+          <div>
+            <div class="equip-slot" style="font-size:0.8em; color:var(--text-2);">${eq?.slot ?? '未知'}</div>
+            <div class="equip-name">${eq?.name ?? '空'}${star}</div>
+          </div>
         </div>
         ${(pBadge || aBadge) ? `
           <div class="equip-details">
             ${pBadge ? `<div class="equip-pot-line">${pBadge} <span>${eq?.potential?.join(' / ') ?? ''}</span></div>` : ''}
             ${aBadge ? `<div class="equip-pot-line">${aBadge} <span>${eq?.additional?.join(' / ') ?? ''}</span></div>` : ''}
           </div>` : ''}
+      </div>`;
+  }).join('');
+}
+
+// ================================================================
+// 現金道具
+// ================================================================
+function renderCashItems(data) {
+  const el = document.getElementById('cash-grid');
+  if (!el) return;
+  
+  // 找出目前作用中的套裝 (Active Preset)
+  const activeIdx = data?.active_preset ?? 1;
+  const items = data?.[`preset_${activeIdx}`] ?? [];
+  
+  if (!Array.isArray(items) || items.length === 0) {
+    el.innerHTML = '<div class="empty">目前無穿戴現金道具</div>';
+    return;
+  }
+
+  el.innerHTML = items.map(i => {
+    // 圖示邏輯：處理圖片顯示與破圖隱藏
+    const iconHtml = i?.icon ? `<img src="${i.icon}" style="width:40px; height:40px; border-radius:4px;" onerror="this.style.display='none'">` : '';
+    
+    return `
+      <div class="item-row" style="display:flex; align-items:center; gap:10px; margin-bottom:8px; padding:5px; background:var(--bg-2); border-radius:4px;">
+        ${iconHtml}
+        <span style="font-weight:bold;">${i?.name ?? '未知道具'}</span>
       </div>`;
   }).join('');
 }
@@ -391,21 +422,6 @@ function renderUnionRaider(data) {
     </div>`;
 }
 
-// 3. 現金道具
-function renderCashItems(data) {
-  const el = document.getElementById('cash-grid');
-  if (!el) return;
-  
-  // 找出目前作用中的套裝 (active_preset)
-  const activeIdx = data.active_preset !== undefined ? data.active_preset : 1;
-  const items = data[`preset_${activeIdx}`];
-  
-  if (!items || !Array.isArray(items) || items.length === 0) {
-    el.innerHTML = '<div class="empty">目前無穿戴現金道具</div>';
-    return;
-  }
-  el.innerHTML = items.map(i => `<div class="chip">${i.name}</div>`).join('');
-}
 // ================================================================
 // 升級版渲染函式 (含 Icon 與防呆)
 // ================================================================
