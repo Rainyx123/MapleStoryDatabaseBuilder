@@ -1,19 +1,19 @@
 // ================================================================
-// 楓之谷角色資料庫 — 前端主程式
+// 楓之谷角色資料庫 — 前端主程式  v2
 // ================================================================
 
 // ★★★ 請將這裡換成你的 Vercel 網址 ★★★
 const API_BASE = 'https://maple-story-database-builder.vercel.app';
 
 // ---- 全域狀態 ----
-let characters  = [];    // 所有角色資料（從 API 載入）
-let currentIdx  = 0;     // 目前顯示的角色索引
+let characters = [];
+let currentIdx = 0;
 
 // ================================================================
 // 初始化
 // ================================================================
 async function init() {
-  loadSettingsFromStorage();
+  applyAppearanceSettings();
   setupEventListeners();
 
   try {
@@ -40,7 +40,7 @@ function buildTabs() {
   bar.innerHTML = '';
   characters.forEach((char, i) => {
     const btn = document.createElement('button');
-    btn.className = 'tab-btn' + (i === 0 ? ' active' : '');
+    btn.className = 'tab-btn' + (i === currentIdx ? ' active' : '');
     btn.textContent = char.name;
     btn.onclick = () => switchTab(i);
     bar.appendChild(btn);
@@ -53,18 +53,17 @@ function switchTab(idx) {
     btn.classList.toggle('active', i === idx);
   });
   renderCharacter(characters[idx]);
-  // 回到頁面頂部（手機版）
+  // 捲回頂部
   document.getElementById('panel-left')?.scrollTo(0, 0);
   document.getElementById('panel-right')?.scrollTo(0, 0);
 }
 
 // ================================================================
-// 主渲染函式
+// 主渲染
 // ================================================================
 function renderCharacter(data) {
   if (!data) return;
 
-  // 角色基本資訊
   const img = document.getElementById('char-image');
   if (data.image_url) {
     img.src = data.image_url;
@@ -78,13 +77,12 @@ function renderCharacter(data) {
   setText('char-class', data.class || '—');
   setText('char-level', data.level ? `Lv. ${data.level}` : '—');
 
-  // 各區塊
   renderStats(data);
-  renderHyperStats(data.hyper_stats || []);
-  renderEquipment(data.equipment   || []);
-  renderVMatrix(data.v_cores        || []);
-  renderHEXA(data.hexa_cores        || []);
-  renderLinkSkills(data.link_skills || []);
+  renderHyperStats(data.hyper_stats  || []);
+  renderEquipment(data.equipment     || []);
+  renderVMatrix(data.v_cores         || []);
+  renderHEXA(data.hexa_cores         || []);
+  renderLinkSkills(data.link_skills  || []);
   renderInnerAbility(data.inner_ability || {});
 }
 
@@ -102,9 +100,9 @@ const STAT_CONFIG = [
   { key: 'authentic',       label: 'AUT',      suffix: '' },
   { key: 'max_damage',      label: '最高屬攻', suffix: '' },
   { key: 'min_damage',      label: '最低屬攻', suffix: '' },
-  { key: '_starforce',      label: '總星力',   suffix: '★', special: true },
-  { key: '_union',          label: '聯盟等級', suffix: '',   special: true },
-  { key: '_rings',          label: '塔戒',     suffix: '',   special: true },
+  { key: '_starforce',      label: '總星力',   suffix: '★' },
+  { key: '_union',          label: '聯盟等級', suffix: '' },
+  { key: '_rings',          label: '塔戒',     suffix: '' },
 ];
 
 function formatNum(val) {
@@ -112,7 +110,7 @@ function formatNum(val) {
   const n = parseFloat(val);
   if (isNaN(n)) return String(val) || '—';
   if (n >= 100000000) return (n / 100000000).toFixed(2) + '億';
-  if (n >= 10000000)  return (n / 10000).toFixed(0) + '萬';
+  if (n >= 10000000)  return Math.floor(n / 10000) + '萬';
   if (n >= 10000)     return n.toLocaleString('zh-TW');
   return n % 1 === 0 ? String(n) : n.toFixed(1);
 }
@@ -120,7 +118,6 @@ function formatNum(val) {
 function renderStats(data) {
   const grid = document.getElementById('stats-grid');
   grid.innerHTML = '';
-
   STAT_CONFIG.forEach(cfg => {
     let display;
     if (cfg.key === '_starforce') {
@@ -128,13 +125,11 @@ function renderStats(data) {
     } else if (cfg.key === '_union') {
       display = data.union_level ? String(data.union_level) : '—';
     } else if (cfg.key === '_rings') {
-      display = (data.rings?.length) ? data.rings.join(' ') : '無';
+      display = data.rings?.length ? data.rings.join(' ') : '無';
     } else {
-      const raw = data.stats?.[cfg.key];
-      const f   = formatNum(raw);
-      display   = f === '—' ? '—' : `${f}${cfg.suffix}`;
+      const f = formatNum(data.stats?.[cfg.key]);
+      display = f === '—' ? '—' : `${f}${cfg.suffix}`;
     }
-
     const div = document.createElement('div');
     div.className = 'stat-item' + (cfg.big ? ' is-big' : '');
     div.innerHTML = `<span class="stat-label">${cfg.label}</span>`
@@ -148,15 +143,9 @@ function renderStats(data) {
 // ================================================================
 function renderHyperStats(hyper_stats) {
   const el = document.getElementById('hyper-list');
-  if (!hyper_stats.length) {
-    el.innerHTML = '<div class="empty">無資料</div>';
-    return;
-  }
+  if (!hyper_stats.length) { el.innerHTML = '<div class="empty">無資料</div>'; return; }
   el.innerHTML = hyper_stats.map(hs =>
-    `<div class="hyper-item">
-       <span>${hs.type}</span>
-       <span class="hyper-lv">Lv.${hs.level}</span>
-     </div>`
+    `<div class="hyper-item"><span>${hs.type}</span><span class="hyper-lv">Lv.${hs.level}</span></div>`
   ).join('');
 }
 
@@ -164,35 +153,26 @@ function renderHyperStats(hyper_stats) {
 // 裝備
 // ================================================================
 const GRADE_COLOR = {
-  '傳說': 'var(--legendary)',
-  '唯一': 'var(--unique)',
-  '稀有': 'var(--epic)',
-  '罕見': 'var(--rare)',
+  '傳說': 'var(--legendary)', '唯一': 'var(--unique)',
+  '稀有': 'var(--epic)',       '罕見': 'var(--rare)',
 };
 
 function renderEquipment(equipment) {
   const list = document.getElementById('equip-list');
-  if (!equipment.length) {
-    list.innerHTML = '<div class="empty">無裝備資料</div>';
-    return;
-  }
-
+  if (!equipment.length) { list.innerHTML = '<div class="empty">無裝備資料</div>'; return; }
   list.innerHTML = equipment.map(eq => {
     const pColor = GRADE_COLOR[eq.potential_grade]  || 'var(--none)';
     const aColor = GRADE_COLOR[eq.additional_grade] || 'var(--none)';
-    const stars  = eq.starforce > 0 ? ` <span style="color:var(--legendary)">★${eq.starforce}</span>` : '';
-
+    const stars  = eq.starforce > 0
+      ? ` <span style="color:var(--legendary)">★${eq.starforce}</span>` : '';
     const pBadge = eq.potential_grade && eq.potential_grade !== '無'
       ? `<span class="grade-badge" style="background:${pColor}">${eq.potential_grade}</span>` : '';
     const aBadge = eq.additional_grade && eq.additional_grade !== '無'
       ? `<span class="grade-badge" style="background:${aColor}">${eq.additional_grade}</span>` : '';
-
-    const pText  = (eq.potential  || []).join(' / ') || '';
-    const aText  = (eq.additional || []).join(' / ') || '';
-    const addTxt = (eq.add_option || []).join(', ')  || '';
-
+    const pText  = (eq.potential  || []).join(' / ');
+    const aText  = (eq.additional || []).join(' / ');
+    const addTxt = (eq.add_option || []).join(', ');
     const hasDetails = pBadge || aBadge || addTxt;
-
     return `<div class="equip-card" style="border-left-color:${pColor}">
       <div class="equip-top">
         <span class="equip-slot">${eq.slot}</span>
@@ -208,20 +188,20 @@ function renderEquipment(equipment) {
 }
 
 // ================================================================
-// V矩陣 & HEXA矩陣
+// V矩陣 & HEXA
 // ================================================================
 function renderVMatrix(v_cores) {
-  const grid = document.getElementById('v-grid');
-  if (!v_cores.length) { grid.innerHTML = '<div class="empty">無資料</div>'; return; }
-  grid.innerHTML = v_cores.map(c =>
+  const el = document.getElementById('v-grid');
+  if (!v_cores.length) { el.innerHTML = '<div class="empty">無資料</div>'; return; }
+  el.innerHTML = v_cores.map(c =>
     `<div class="core-chip"><span>${c.name}</span><span class="core-lv">Lv.${c.level}</span></div>`
   ).join('');
 }
 
 function renderHEXA(hexa_cores) {
-  const grid = document.getElementById('hexa-grid');
-  if (!hexa_cores.length) { grid.innerHTML = '<div class="empty">無資料</div>'; return; }
-  grid.innerHTML = hexa_cores.map(c =>
+  const el = document.getElementById('hexa-grid');
+  if (!hexa_cores.length) { el.innerHTML = '<div class="empty">無資料</div>'; return; }
+  el.innerHTML = hexa_cores.map(c =>
     `<div class="core-chip hexa"><span>${c.name}</span><span class="core-lv">Lv.${c.level}</span></div>`
   ).join('');
 }
@@ -230,54 +210,21 @@ function renderHEXA(hexa_cores) {
 // 連結技能
 // ================================================================
 function renderLinkSkills(link_skills) {
-  const grid = document.getElementById('link-grid');
+  const el = document.getElementById('link-grid');
   const valid = link_skills.filter(s => s && s !== '—');
-  if (!valid.length) { grid.innerHTML = '<div class="empty">無資料</div>'; return; }
-  grid.innerHTML = valid.map(s =>
-    `<span class="link-chip">${s}</span>`
-  ).join('');
+  if (!valid.length) { el.innerHTML = '<div class="empty">無資料</div>'; return; }
+  el.innerHTML = valid.map(s => `<span class="link-chip">${s}</span>`).join('');
 }
 
 // ================================================================
 // 內潛
 // ================================================================
 function renderInnerAbility(ability) {
-  const list = document.getElementById('ability-list');
-  if (!ability.abilities?.length) {
-    list.innerHTML = '<div class="empty">無資料</div>';
-    return;
-  }
-  const gradeColor = GRADE_COLOR[ability.grade] || 'var(--none)';
-  const badge = `<span class="grade-badge" style="background:${gradeColor}">${ability.grade}</span>`;
-
-  list.innerHTML = `<div class="ability-grade">${badge}</div>`
-    + ability.abilities.map(ab =>
-        `<div class="ability-line">${ab}</div>`
-      ).join('');
-}
-
-// ================================================================
-// 設定（顯示/隱藏區塊）
-// ================================================================
-function loadSettingsFromStorage() {
-  try {
-    const saved = JSON.parse(localStorage.getItem('ms-db-settings') || '{}');
-    document.querySelectorAll('[data-section]').forEach(cb => {
-      const id = cb.dataset.section;
-      if (saved[id] === false) {
-        cb.checked = false;
-        document.getElementById(id)?.classList.add('hidden');
-      }
-    });
-  } catch (e) { /* 舊設定無效時忽略 */ }
-}
-
-function saveSettings() {
-  const settings = {};
-  document.querySelectorAll('[data-section]').forEach(cb => {
-    settings[cb.dataset.section] = cb.checked;
-  });
-  localStorage.setItem('ms-db-settings', JSON.stringify(settings));
+  const el = document.getElementById('ability-list');
+  if (!ability.abilities?.length) { el.innerHTML = '<div class="empty">無資料</div>'; return; }
+  const gc = GRADE_COLOR[ability.grade] || 'var(--none)';
+  el.innerHTML = `<div class="ability-grade"><span class="grade-badge" style="background:${gc}">${ability.grade}</span></div>`
+    + ability.abilities.map(ab => `<div class="ability-line">${ab}</div>`).join('');
 }
 
 // ================================================================
@@ -290,13 +237,52 @@ function toggleSection(header) {
 }
 
 // ================================================================
+// 外觀設定（字體大小、面板寬度）
+// ================================================================
+const APPEARANCE_KEYS = ['fontSize', 'panelWidth'];
+
+// 所有可能的 body class（用來切換前先全部移除）
+const APPEARANCE_CLASSES = {
+  fontSize:   ['font-sm', 'font-lg'],
+  panelWidth: ['panel-narrow', 'panel-wide'],
+};
+
+function applyAppearanceSettings() {
+  const saved = loadStorage('appearance') || {};
+  APPEARANCE_KEYS.forEach(key => {
+    const val = saved[key] || '';
+    applyBodyClass(key, val);
+    // 把 active 狀態套回按鈕
+    document.querySelectorAll(`[data-setting="${key}"]`).forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.value === val);
+    });
+  });
+
+  // checkbox 區塊設定
+  const sections = loadStorage('sections') || {};
+  document.querySelectorAll('[data-section]').forEach(cb => {
+    const id  = cb.dataset.section;
+    const vis = sections[id] !== false;   // 預設顯示
+    cb.checked = vis;
+    document.getElementById(id)?.classList.toggle('hidden', !vis);
+  });
+}
+
+function applyBodyClass(key, value) {
+  // 移除該 key 的所有舊 class
+  (APPEARANCE_CLASSES[key] || []).forEach(c => document.body.classList.remove(c));
+  // 套用新的（空字串 = 預設，不加 class）
+  if (value) document.body.classList.add(value);
+}
+
+// ================================================================
 // 即時查詢
 // ================================================================
 async function doLiveQuery() {
-  const input   = document.getElementById('query-input');
-  const status  = document.getElementById('query-status');
-  const btn     = document.getElementById('btn-query-submit');
-  const name    = input.value.trim();
+  const input  = document.getElementById('query-input');
+  const status = document.getElementById('query-status');
+  const btn    = document.getElementById('btn-query-submit');
+  const name   = input.value.trim();
   if (!name) return;
 
   btn.disabled = true;
@@ -309,11 +295,9 @@ async function doLiveQuery() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ character_name: name })
     });
-
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
 
-    // 若角色已在清單中則更新，否則追加
     const existing = characters.findIndex(c => c.name === data.name);
     if (existing >= 0) {
       characters[existing] = data;
@@ -328,7 +312,6 @@ async function doLiveQuery() {
     status.textContent = `✓ 已載入 ${data.name} 的即時資料`;
     input.value = '';
     setTimeout(() => closeModal('modal-query'), 1200);
-
   } catch (err) {
     status.className = 'status-error';
     status.textContent = `❌ ${err.message}`;
@@ -349,15 +332,13 @@ function closeModal(id) {
 }
 
 // ================================================================
-// 狀態切換
+// 顯示狀態
 // ================================================================
 function showState(state, msg) {
   document.getElementById('loading').classList.toggle('hidden', state !== 'loading');
   document.getElementById('content').classList.toggle('hidden', state !== 'content');
   document.getElementById('error').classList.toggle('hidden',   state !== 'error');
-  if (state === 'error') {
-    document.getElementById('error-msg').textContent = msg || '發生未知錯誤';
-  }
+  if (state === 'error') setText('error-msg', msg || '發生未知錯誤');
 }
 
 // ================================================================
@@ -368,32 +349,66 @@ function setText(id, text) {
   if (el) el.textContent = text;
 }
 
+function loadStorage(key) {
+  try { return JSON.parse(localStorage.getItem(`ms-db-${key}`) || 'null'); }
+  catch { return null; }
+}
+
+function saveStorage(key, val) {
+  try { localStorage.setItem(`ms-db-${key}`, JSON.stringify(val)); }
+  catch { /* 無法寫入時靜默失敗 */ }
+}
+
 // ================================================================
 // 事件綁定
 // ================================================================
 function setupEventListeners() {
-  // 設定按鈕
+
+  // ---- 設定按鈕 ----
   document.getElementById('btn-settings').onclick = () => {
     document.getElementById('modal-settings').classList.remove('hidden');
   };
 
-  // 設定 checkbox 變更
-  document.querySelectorAll('[data-section]').forEach(cb => {
-    cb.addEventListener('change', e => {
-      document.getElementById(e.target.dataset.section)
-        ?.classList.toggle('hidden', !e.target.checked);
-      saveSettings();
+  // ---- 外觀切換按鈕（字體大小 / 面板寬度）----
+  document.querySelectorAll('.btn-opt[data-setting]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const key = btn.dataset.setting;
+      const val = btn.dataset.value;
+
+      // 更新 active 狀態
+      document.querySelectorAll(`[data-setting="${key}"]`).forEach(b => {
+        b.classList.toggle('active', b === btn);
+      });
+
+      // 套用 body class
+      applyBodyClass(key, val);
+
+      // 儲存
+      const saved = loadStorage('appearance') || {};
+      saved[key] = val;
+      saveStorage('appearance', saved);
     });
   });
 
-  // 點擊 Modal 外部關閉
+  // ---- 區塊顯示 checkbox ----
+  document.querySelectorAll('[data-section]').forEach(cb => {
+    cb.addEventListener('change', e => {
+      const id = e.target.dataset.section;
+      document.getElementById(id)?.classList.toggle('hidden', !e.target.checked);
+      const sections = loadStorage('sections') || {};
+      sections[id] = e.target.checked;
+      saveStorage('sections', sections);
+    });
+  });
+
+  // ---- 點擊 Modal 外部關閉 ----
   document.querySelectorAll('.modal').forEach(modal => {
     modal.addEventListener('click', e => {
       if (e.target === modal) closeModal(modal.id);
     });
   });
 
-  // 即時查詢按鈕
+  // ---- 即時查詢 ----
   document.getElementById('btn-query').onclick = () => {
     document.getElementById('modal-query').classList.remove('hidden');
     setTimeout(() => document.getElementById('query-input').focus(), 50);
@@ -403,7 +418,7 @@ function setupEventListeners() {
     if (e.key === 'Enter') doLiveQuery();
   });
 
-  // 重試按鈕
+  // ---- 重試 ----
   document.getElementById('btn-retry').onclick = init;
 }
 
