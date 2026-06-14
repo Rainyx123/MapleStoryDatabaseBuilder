@@ -325,24 +325,37 @@ function renderHEXA(hexa_cores) {
 }
 
 // ================================================================
-// 連結技能
+// 傳授技能 (防禦性渲染)
 // ================================================================
 function renderLinkSkills(link_skills) {
   const el = document.getElementById('link-grid');
+  if (!el) return;
 
-  // 防呆 1：確保傳入的是陣列
-  if (!Array.isArray(link_skills) || link_skills.length === 0) { 
-    el.innerHTML = '<div class="empty">無資料</div>'; 
-    return; 
+  // 防禦性檢查：確認是不是陣列
+  if (!Array.isArray(link_skills) || link_skills.length === 0) {
+    el.innerHTML = '<div class="empty">無資料</div>';
+    return;
   }
-  // 防呆 2：確保過濾對象是字串
-  const valid = link_skills.filter(s => typeof s === 'string' && s.trim() !== '' && s !== '—');
-  if (!valid.length) { 
-    el.innerHTML = '<div class="empty">無資料</div>'; 
-    return; 
-  }
-  
-  el.innerHTML = valid.map(s => `<span class="link-chip">${s}</span>`).join('');
+
+  // 使用 map 渲染出詳細資訊
+  el.innerHTML = link_skills.map(skill => {
+    // 處理 effect 內的換行符號 \n 轉成 HTML 的 <br>
+    const formattedEffect = skill.effect ? skill.effect.replace(/\\n/g, '<br>') : '';
+    
+    return `
+      <div class="skill-item" style="display: flex; align-items: flex-start; gap: 10px; margin-bottom: 10px; padding: 8px; border-bottom: 1px solid var(--border);">
+        <img src="${skill.icon || ''}" alt="${skill.name}" style="width: 40px; height: 40px; border-radius: 4px;">
+        <div class="skill-info">
+          <div class="skill-name" style="font-weight: bold;">
+            ${skill.name} <span class="skill-lv" style="color: var(--highlight);">Lv.${skill.level || 0}</span>
+          </div>
+          <div class="skill-effect" style="font-size: 0.9em; color: var(--text-2);">
+            ${formattedEffect}
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
 }
 // ================================================================
 // 內潛
