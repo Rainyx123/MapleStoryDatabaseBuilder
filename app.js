@@ -111,12 +111,25 @@ const GRADE_COLOR = {
   '稀有': 'var(--epic)',       '罕見': 'var(--rare)',
 };
 
-function renderEquipment(equipment) {
+function renderEquipment(equipmentData) {
   const list = document.getElementById('equip-list');
-  if (!equipment || equipment.length === 0) { list.innerHTML = '<div class="empty">無裝備資料</div>'; return; }
   
-  list.innerHTML = equipment.map(eq => {
-    // 防呆：確保 eq 存在
+  // 1. 取得真正的裝備陣列 (相容舊版直接是陣列，或是新版的物件結構)
+  let equipArray = [];
+  if (Array.isArray(equipmentData)) {
+    equipArray = equipmentData; // 舊版快照
+  } else if (equipmentData && equipmentData.preset_0) {
+    equipArray = equipmentData.preset_0; // 新版快照：先顯示第一套裝備
+  }
+
+  // 2. 防呆判斷
+  if (!equipArray || equipArray.length === 0) {
+    list.innerHTML = '<div class="empty">無裝備資料</div>'; 
+    return; 
+  }
+  
+  // 3. 執行原本的渲染邏輯
+  list.innerHTML = equipArray.map(eq => {
     if (!eq) return '';
 
     const pColor = GRADE_COLOR[eq?.potential_grade]  || 'var(--none)';
@@ -130,7 +143,6 @@ function renderEquipment(equipment) {
     const aBadge = eq?.additional_grade && eq.additional_grade !== '無'
       ? `<span class="grade-badge" style="background:${aColor}">${eq.additional_grade}</span>` : '';
       
-    // 防護陣列缺失
     const pText  = (eq?.potential  ?? []).join(' / ');
     const aText  = (eq?.additional ?? []).join(' / ');
     const addTxt = (eq?.add_option ?? []).join(', ');
