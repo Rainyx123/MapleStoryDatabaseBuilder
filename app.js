@@ -258,6 +258,11 @@ function formatNum(val) {
 
 function renderStats(data) {
   const grid = document.getElementById('stats-grid');
+  // 如果找不到元件，就不要執行寫入，避免報錯
+    if (!grid) {
+        console.warn('找不到 stat-grid，跳過渲染');
+        return;
+    }
   grid.innerHTML = '';
   STAT_CONFIG.forEach(cfg => {
     let display;
@@ -445,10 +450,22 @@ async function doLiveQuery() {
 // Modal 控制
 // ================================================================
 function closeModal(id) {
-  document.getElementById(id).classList.add('hidden');
+  // 先嘗試取得 modal 元素
+  const modal = document.getElementById(id);
+  
+  // 只有找到元素才執行隱藏
+  if (modal) {
+    modal.classList.add('hidden');
+  }
+
+  // 處理 query 相關的清除邏輯
   if (id === 'modal-query') {
-    document.getElementById('query-status').textContent = '';
-    document.getElementById('query-input').value = '';
+    const status = document.getElementById('query-status');
+    const input = document.getElementById('query-input');
+    
+    // 如果元素存在才清除，避免報錯
+    if (status) status.textContent = '';
+    if (input) input.value = '';
   }
 }
 
