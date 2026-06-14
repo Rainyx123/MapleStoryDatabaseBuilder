@@ -5,18 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>🍁 楓之谷角色資料庫</title>
   <link rel="stylesheet" href="style.css">
-
   <link rel="icon" href="data:image/x-icon;base64,AAABAAEAEBAAAAEAIABoBAAAFgAAACgAAAAQAAAAIAAAAAEAIAAAAAAAAAAAABMLAAATCwAAAAAAAAAAAAD///8A8PDwAPDw8AD///8A">
-  
   <style>
-    /* 摺疊樣式 (若 style.css 尚未更新可暫時放在這) */
     .container-stack { display: flex; flex-direction: column; gap: 12px; margin-top: 10px; }
     .section-card { background: var(--bg-1); border-radius: 8px; border: 1px solid var(--border); overflow: hidden; }
-    .section-header { 
-        padding: 10px 15px; cursor: pointer; display: flex; justify-content: space-between;
-        background: var(--bg-2); font-weight: bold; font-size: var(--fs-md); 
-        user-select: none;
-    }
+    .section-header { padding: 10px 15px; cursor: pointer; display: flex; justify-content: space-between; background: var(--bg-2); font-weight: bold; }
     .section-body { padding: 15px; }
     .section-body.collapsed { display: none; }
     .toggle-icon { transition: transform 0.2s; font-size: 12px; }
@@ -29,19 +22,15 @@
     <div id="logo">🍁 楓之谷DB</div>
     <div id="tab-bar"></div>
     <div id="header-actions">
-      <button id="btn-query" title="即時查詢任意角色">🔍</button>
+      <button id="btn-query" title="即時查詢">🔍</button>
       <button id="btn-settings" title="顯示設定">⚙️</button>
     </div>
   </header>
 
 <main id="main">
-    <div id="loading">
-      <div class="spinner"></div>
-      <p>讀取角色資料中...</p>
-    </div>
+    <div id="loading"><div class="spinner"></div><p>讀取角色資料中...</p></div>
 
     <div id="content" class="hidden container-stack">
-
       <section class="section-card" id="section-header">
         <div class="section-header"><span>角色資訊</span><span class="toggle-icon">▼</span></div>
         <div class="section-body">
@@ -56,58 +45,44 @@
         </div>
       </section>
 
-      <section class="section-card" id="section-stats">
-        <div class="section-header"><span>核心屬性與數值</span><span class="toggle-icon">▼</span></div>
-        <div class="section-body"><div id="stat-grid"></div></div>
-      </section>
-
-      <section class="section-card" id="section-hyper">
-        <div class="section-header"><span>極限屬性</span><span class="toggle-icon">▼</span></div>
-        <div class="section-body"><div id="hyper-list"></div></div>
-      </section>
-
-      <section class="section-card" id="section-equip">
-        <div class="section-header"><span>裝備</span><span class="toggle-icon">▼</span></div>
-        <div class="section-body"><div id="equip-list"></div></div>
-      </section>
-
-      <section class="section-card" id="section-v">
-        <div class="section-header"><span>五轉 V-Matrix</span><span class="toggle-icon">▼</span></div>
-        <div class="section-body"><div id="v-grid"></div></div>
-      </section>
-
-      <section class="section-card" id="section-hexa">
-        <div class="section-header"><span>六轉 HEXA</span><span class="toggle-icon">▼</span></div>
-        <div class="section-body"><div id="hexa-grid"></div></div>
-      </section>
-
-      <section class="section-card" id="section-link">
-        <div class="section-header"><span>傳授技能</span><span class="toggle-icon">▼</span></div>
-        <div class="section-body"><div id="link-grid"></div></div>
-      </section>
-
-      <section class="section-card" id="section-ability">
-        <div class="section-header"><span>內在潛能</span><span class="toggle-icon">▼</span></div>
-        <div class="section-body"><div id="ability-list"></div></div>
-      </section>
-
+      <section class="section-card" id="section-stats"><div class="section-header"><span>核心屬性</span><span class="toggle-icon">▼</span></div><div class="section-body"><div id="stat-grid"></div></div></section>
+      <section class="section-card" id="section-hyper"><div class="section-header"><span>極限屬性</span><span class="toggle-icon">▼</span></div><div class="section-body"><div id="hyper-list"></div></div></section>
+      <section class="section-card" id="section-equip"><div class="section-header"><span>裝備</span><span class="toggle-icon">▼</span></div><div class="section-body"><div id="equip-list"></div></div></section>
+      <section class="section-card" id="section-v"><div class="section-header"><span>五轉 V-Matrix</span><span class="toggle-icon">▼</span></div><div class="section-body"><div id="v-grid"></div></div></section>
+      <section class="section-card" id="section-hexa"><div class="section-header"><span>六轉 HEXA</span><span class="toggle-icon">▼</span></div><div class="section-body"><div id="hexa-grid"></div></div></section>
+      <section class="section-card" id="section-link"><div class="section-header"><span>傳授技能</span><span class="toggle-icon">▼</span></div><div class="section-body"><div id="link-grid"></div></div></section>
+      <section class="section-card" id="section-ability"><div class="section-header"><span>內在潛能</span><span class="toggle-icon">▼</span></div><div class="section-body"><div id="ability-list"></div></div></section>
     </div>
-  </main>
+</main>
 
   <div id="modal-settings" class="modal hidden">
     <div class="modal-box">
-      <div class="modal-header">
-        <h2>⚙️ 設定</h2>
-        <button onclick="closeModal('modal-settings')">✕</button>
-      </div>
+      <div class="modal-header"><h2>⚙️ 設定</h2><button onclick="closeModal('modal-settings')">✕</button></div>
       <div class="modal-body">
         <div class="settings-group-title">顯示區塊</div>
-        </div>
+        <label><input type="checkbox" data-section="section-stats" checked> 核心屬性</label>
+        <label><input type="checkbox" data-section="section-hyper" checked> 極限屬性</label>
+        <label><input type="checkbox" data-section="section-equip" checked> 裝備</label>
+        <label><input type="checkbox" data-section="section-v" checked> 五轉 V-Matrix</label>
+        <label><input type="checkbox" data-section="section-hexa" checked> 六轉 HEXA</label>
+        <label><input type="checkbox" data-section="section-link" checked> 傳授技能</label>
+        <label><input type="checkbox" data-section="section-ability" checked> 內在潛能</label>
+        <hr>
+        <label><input type="checkbox" id="toggle-peak"> 顯示 7 日最高戰力</label>
+      </div>
     </div>
   </div>
 
   <div id="modal-query" class="modal hidden">
+    <div class="modal-box">
+      <div class="modal-header"><h2>🔍 查詢</h2><button onclick="closeModal('modal-query')">✕</button></div>
+      <div class="modal-body">
+        <input type="text" id="query-input" placeholder="角色名稱...">
+        <button id="btn-query-submit">查詢</button>
+        <div id="query-status"></div>
+      </div>
     </div>
+  </div>
 
   <script src="app.js" defer></script>
 </body>
