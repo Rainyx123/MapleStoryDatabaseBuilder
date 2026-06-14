@@ -40,10 +40,10 @@
   --r-lg: 12px;
 
   /* 潛能等級顏色 */
-  --legendary: #ff8700;
-  --unique:    #bf00ff;
-  --epic:      #6400cc;
-  --rare:      #0080e0;
+  --legendary: #CCFF00;
+  --unique:    #FFCC00;
+  --epic:      #BB77FF;
+  --rare:      #66FFFF;
   --none:      #4e5058;
 }
 
