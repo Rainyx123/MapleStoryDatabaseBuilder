@@ -160,44 +160,48 @@ function processCharacter(charName, raw) {
 
 // ── 主要 Handler ─────────────────────────────────────
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
+  // 處理 CORS 預檢請求
   if (req.method === 'OPTIONS') return res.status(200).end();
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const charName = req.body?.character_name?.trim();
-  if (!charName) return res.status(400).json({ error: '請提供角色名稱' });
-
-  const API_KEY = process.env.NEXON_API_KEY;
+  const { character_name } = req.body;
+  if (!character_name) return res.status(400).json({ error: '請提供角色名稱' });
 
   try {
-    // 先取得 ocid
-    const idData = await fetchNexon(`/id?character_name=${encodeURIComponent(charName)}`, API_KEY);
-    if (!idData?.ocid) {
-      return res.status(404).json({ error: `找不到角色：${charName}，請確認名稱是否正確。` });
-    }
-    const ocid = idData.ocid;
+    const API_KEY = process.env.NEXON_API_KEY;
+    const headers = { 'x-nxopen-api-key': API_KEY, 'accept': 'application/json' };
+    const BASE_URL = 'https://open.api.nexon.com/maplestorytw/v1';
 
-    // 平行呼叫所有 API 端點（比逐一呼叫快約 5 倍）
-    const [b, s, i, a, h, u, v, h6, l] = await Promise.all([
-      fetchNexon(`/character/basic?ocid=${ocid}`, API_KEY),
-      fetchNexon(`/character/stat?ocid=${ocid}`, API_KEY),
-      fetchNexon(`/character/item-equipment?ocid=${ocid}`, API_KEY),
-      fetchNexon(`/character/ability?ocid=${ocid}`, API_KEY),
-      fetchNexon(`/character/hyper-stat?ocid=${ocid}`, API_KEY),
-      fetchNexon(`/user/union?ocid=${ocid}`, API_KEY),
-      fetchNexon(`/character/vmatrix?ocid=${ocid}`, API_KEY),
-      fetchNexon(`/character/hexamatrix?ocid=${ocid}`, API_KEY),
-      fetchNexon(`/character/link-skill?ocid=${ocid}`, API_KEY),
-    ]);
+    // 1. 取得 OCID (必須優先獨立執行)
+    const ocidRes = await fetch(`${BASE_URL}/id?character_name=${encodeURIComponent(character_name)}`, { headers });
+    const ocidData = await ocidRes.json();
+    const ocid = ocidData?.ocid;
+    if (!ocid) return res.status(404).json({ error: '找不到此角色 OCID' });
 
-    const result = processCharacter(charName, { b, s, i, a, h, u, v, h6, l });
-    return res.status(200).json(result);
+    // 2. 定義 UI 所需的所有端點，利用 Promise.allSettled 平行發送
+    const endpoints = [
+      { key: 'basic', url: `${BASE_URL}/character/basic?ocid=${ocid}` },
+      { key: 'stat', url: `${BASE_URL}/character/stat?ocid=${ocid}` },
+      { key: 'hyper_stats', url: `${BASE_URL}/character/hyper-stat?ocid=${ocid}` },
+      { key: 'ability', url: `${BASE_URL}/character/ability?ocid=${ocid}` },
+      { key: 'equipment', url: `${BASE_URL}/character/item-equipment?ocid=${ocid}` },
+      { key: 'link_skills', url: `${BASE_URL}/character/link-skill?ocid=${ocid}` },
+      { key: 'v_cores', url: `${BASE_URL}/character/vmatrix?ocid=${ocid}` },
+      { key: 'hexa_cores', url: `${BASE_URL}/character/hexamatrix?ocid=${ocid}` }
+    ];
 
-  } catch (err) {
-    console.error('[/api/query] Error:', err);
-    return res.status(500).json({ error: err.message });
+    const fetchPromises = endpoints.map(ep => fetch(ep.url, { headers }).then(r => r.json()));
+    const results = await Promise.allSettled(fetchPromises);
+
+    // 3. 組合資料回傳
+    const responseData = { ocid, name: character_name }; 
+    results.forEach((result, index) => {
+      // 容錯機制：只取成功的結果，失敗則回傳空物件避免前端當機
+      responseData[endpoints[index].key] = result.status === 'fulfilled' ? result.value : {};
+    });
+
+    return res.status(200).json(responseData);
+
+  } catch (error) {
+    return res.status(500).json({ error: '伺服器執行階段錯誤' });
   }
 }
