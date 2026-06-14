@@ -177,30 +177,38 @@ export default async function handler(req, res) {
     const ocid = ocidData?.ocid;
     if (!ocid) return res.status(404).json({ error: '找不到此角色 OCID' });
 
-    // 2. 定義 UI 所需的所有端點，利用 Promise.allSettled 平行發送
-    const endpoints = [
-      { key: 'basic', url: `${BASE_URL}/character/basic?ocid=${ocid}` },
-      { key: 'stat', url: `${BASE_URL}/character/stat?ocid=${ocid}` },
-      { key: 'hyper_stats', url: `${BASE_URL}/character/hyper-stat?ocid=${ocid}` },
-      { key: 'ability', url: `${BASE_URL}/character/ability?ocid=${ocid}` },
-      { key: 'equipment', url: `${BASE_URL}/character/item-equipment?ocid=${ocid}` },
-      { key: 'link_skills', url: `${BASE_URL}/character/link-skill?ocid=${ocid}` },
-      { key: 'v_cores', url: `${BASE_URL}/character/vmatrix?ocid=${ocid}` },
-      { key: 'hexa_cores', url: `${BASE_URL}/character/hexamatrix?ocid=${ocid}` }
-    ];
+   // 2. 建立端點字典
+    const endpointMap = {
+      basic: `${BASE_URL}/character/basic?ocid=${ocid}`,
+      stat: `${BASE_URL}/character/stat?ocid=${ocid}`,
+      equipment: `${BASE_URL}/character/item-equipment?ocid=${ocid}`,
+      v_cores: `${BASE_URL}/character/vmatrix?ocid=${ocid}`,
+      hexa_cores: `${BASE_URL}/character/hexamatrix?ocid=${ocid}`,
+      symbol: `${BASE_URL}/character/symbol-equipment?ocid=${ocid}`,
+      beauty: `${BASE_URL}/character/beauty-equipment?ocid=${ocid}`,
+      pet: `${BASE_URL}/character/pet-equipment?ocid=${ocid}`
+    };
 
+    // 根據傳入的 modules 決定要並發哪些請求
+    const targetKeys = [];
+    if (modules.includes('core')) {
+      targetKeys.push('basic', 'stat', 'equipment', 'v_cores', 'hexa_cores');
+    }
+    if (modules.includes('symbol')) targetKeys.push('symbol');
+    if (modules.includes('beauty')) targetKeys.push('beauty');
+    if (modules.includes('pet')) targetKeys.push('pet');
+
+    // 平行發送請求
     const fetchPromises = endpoints.map(ep => fetch(ep.url, { headers }).then(r => r.json()));
     const results = await Promise.allSettled(fetchPromises);
 
-    // 3. 組合資料回傳
-    const responseData = { ocid, name: character_name }; 
+    // 組裝回傳資料
+    const responseData = { ocid, name: character_name };
     results.forEach((result, index) => {
-      // 容錯機制：只取成功的結果，失敗則回傳空物件避免前端當機
-      responseData[endpoints[index].key] = result.status === 'fulfilled' ? result.value : {};
+      responseData[targetKeys[index]] = result.status === 'fulfilled' ? result.value : {};
     });
 
     return res.status(200).json(responseData);
-
   } catch (error) {
     return res.status(500).json({ error: '伺服器執行階段錯誤' });
   }
