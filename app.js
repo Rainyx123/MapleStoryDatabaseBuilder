@@ -437,9 +437,9 @@ function getCrystalIconPath(name) {
     '木妖': 'Artifact4.png',
     '石巨人': 'Artifact5.png',
     '巴洛古': 'Artifact6.png',
-    '殘暴炎魔': 'Artifact7.png'
-    '粉豆': 'Artifact8.png'
-    '拉圖斯': 'Artifact9.png'
+    '殘暴炎魔': 'Artifact7.png',
+    '粉豆': 'Artifact8.png',
+    '拉圖斯': 'Artifact9.png',
   };
 
   // 從名稱中取出關鍵字（例如：將 "水晶：菇菇寶貝" 變成 "菇菇寶貝"）
