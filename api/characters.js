@@ -38,6 +38,7 @@ export default async function handler(req, res) {
       .in('character_name', characters.map(c => c.name))
       .gte('snapshot_date', sinceStr)
       .order('combat_power', { ascending: false });
+      .order('snapshot_date', { ascending: false }); // 新增此行：確保優先取最新資料
 
     if (snapError) throw snapError;
 
