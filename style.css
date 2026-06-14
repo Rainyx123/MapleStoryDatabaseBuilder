@@ -1,8 +1,20 @@
 /* ================================================================
-   楓之谷角色資料庫 — Discord 風格深色主題
+   楓之谷角色資料庫 — Discord 風格深色主題  v2
    ================================================================ */
+
+/* ---- 使用者可調整的外觀變數（由 JS 透過 body class 覆寫）---- */
 :root {
-  /* 背景層次（由深到淺）*/
+  /* 字體大小 */
+  --fs-xs:   10px;
+  --fs-sm:   11px;
+  --fs-base: 13px;
+  --fs-md:   15px;
+  --fs-lg:   16px;
+
+  /* 左側面板寬度 */
+  --panel-left-w: 250px;
+
+  /* 背景層次 */
   --bg-0: #111214;
   --bg-1: #1e1f22;
   --bg-2: #2b2d31;
@@ -10,21 +22,19 @@
   --bg-4: #383a40;
   --bg-hover: #3c3f45;
 
-  /* 文字層次 */
+  /* 文字 */
   --text-1: #f2f3f5;
   --text-2: #dbdee1;
   --text-3: #b5bac1;
   --text-4: #80848e;
 
-  /* 楓之谷主題色（楓葉橘紅）*/
+  /* 楓之谷主題色 */
   --accent:       #e8552b;
   --accent-dark:  #b34020;
   --accent-light: #ff7a50;
 
-  /* 邊框 */
+  /* 邊框與圓角 */
   --border: #3f4148;
-
-  /* 圓角 */
   --r:    8px;
   --r-sm: 4px;
   --r-lg: 12px;
@@ -37,12 +47,27 @@
   --none:      #4e5058;
 }
 
-/* ---- Reset ---- */
+/* ---- 字體大小覆寫 ---- */
+body.font-sm {
+  --fs-xs: 9px; --fs-sm: 10px; --fs-base: 11px; --fs-md: 13px; --fs-lg: 14px;
+}
+body.font-lg {
+  --fs-xs: 12px; --fs-sm: 13px; --fs-base: 15px; --fs-md: 17px; --fs-lg: 18px;
+}
+
+/* ---- 左側面板寬度覆寫 ---- */
+body.panel-narrow { --panel-left-w: 200px; }
+body.panel-wide   { --panel-left-w: 320px; }
+
+/* ================================================================
+   Reset
+   ================================================================ */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { height: 100%; }
 
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans TC', sans-serif;
+  font-size: var(--fs-base);
   background: var(--bg-1);
   color: var(--text-2);
   display: flex;
@@ -67,7 +92,7 @@ body {
 }
 
 #logo {
-  font-size: 15px;
+  font-size: var(--fs-md);
   font-weight: 700;
   color: var(--text-1);
   white-space: nowrap;
@@ -77,6 +102,7 @@ body {
 
 #tab-bar {
   flex: 1;
+  min-width: 0;                   /* ← 防止 flex 不縮小 */
   display: flex;
   gap: 2px;
   overflow-x: auto;
@@ -89,7 +115,7 @@ body {
   background: none;
   border: none;
   color: var(--text-4);
-  font-size: 13px;
+  font-size: var(--fs-sm);
   font-weight: 500;
   padding: 6px 14px;
   border-radius: var(--r-sm);
@@ -120,16 +146,17 @@ body {
 #header-actions button:hover { background: var(--bg-hover); color: var(--text-1); }
 
 /* ================================================================
-   Main Layout
+   Main Layout  ← 關鍵修正：min-height: 0 讓 flex 子元素可以縮小捲動
    ================================================================ */
 #main {
   flex: 1;
-  overflow: hidden;
+  min-height: 0;          /* ← 修正 */
   display: flex;
 }
 
 #content {
   flex: 1;
+  min-height: 0;          /* ← 修正 */
   display: flex;
   gap: 10px;
   padding: 10px;
@@ -140,14 +167,16 @@ body {
    Left Panel
    ================================================================ */
 #panel-left {
-  width: 250px;
+  width: var(--panel-left-w);
   flex-shrink: 0;
+  min-height: 0;          /* ← 修正 */
   display: flex;
   flex-direction: column;
   gap: 8px;
   overflow-y: auto;
   scrollbar-width: thin;
   scrollbar-color: var(--bg-4) transparent;
+  transition: width 0.2s;
 }
 
 #char-header {
@@ -160,6 +189,7 @@ body {
   align-items: center;
   gap: 10px;
   text-align: center;
+  flex-shrink: 0;
 }
 
 #char-image {
@@ -169,18 +199,19 @@ body {
   image-rendering: pixelated;
 }
 
-#char-name  { font-size: 16px; font-weight: 700; color: var(--text-1); }
-#char-class { font-size: 13px; color: var(--accent-light); margin-top: 2px; }
-#char-level { font-size: 12px; color: var(--text-4); margin-top: 1px; }
+#char-name  { font-size: var(--fs-md); font-weight: 700; color: var(--text-1); }
+#char-class { font-size: var(--fs-base); color: var(--accent-light); margin-top: 2px; }
+#char-level { font-size: var(--fs-sm); color: var(--text-4); margin-top: 1px; }
 
 /* ================================================================
-   Data Section (共用)
+   Data Section（共用）
    ================================================================ */
 .data-section {
   background: var(--bg-2);
   border: 1px solid var(--border);
   border-radius: var(--r-lg);
   overflow: hidden;
+  flex-shrink: 0;         /* 讓每個區塊保持完整高度，不被擠壓 */
 }
 
 .section-header {
@@ -188,7 +219,7 @@ body {
   align-items: center;
   justify-content: space-between;
   padding: 9px 14px;
-  font-size: 11px;
+  font-size: var(--fs-xs);
   font-weight: 700;
   color: var(--text-4);
   text-transform: uppercase;
@@ -204,23 +235,19 @@ body {
 .section-body { padding: 6px 12px 12px; }
 .section-body.hidden { display: none; }
 
-.empty { color: var(--text-4); font-size: 13px; padding: 4px 0; }
+.empty { color: var(--text-4); font-size: var(--fs-sm); padding: 4px 0; }
 
 /* ================================================================
    Stats
    ================================================================ */
-#stats-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-}
+#stats-grid { display: flex; flex-direction: column; }
 
 .stat-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 5px 0;
-  font-size: 13px;
+  font-size: var(--fs-base);
   border-bottom: 1px solid var(--border);
 }
 .stat-item:last-child { border-bottom: none; }
@@ -229,7 +256,7 @@ body {
 .stat-value { color: var(--text-1); font-weight: 500; font-variant-numeric: tabular-nums; }
 
 .stat-item.is-big .stat-value {
-  font-size: 15px;
+  font-size: var(--fs-md);
   font-weight: 700;
   color: var(--accent-light);
 }
@@ -243,34 +270,31 @@ body {
 .hyper-item {
   display: flex;
   justify-content: space-between;
-  font-size: 12px;
+  font-size: var(--fs-sm);
   color: var(--text-3);
   padding: 3px 0;
 }
-.hyper-lv { color: var(--text-4); font-size: 11px; }
+.hyper-lv { color: var(--text-4); font-size: var(--fs-xs); }
 
 /* ================================================================
    Right Panel
    ================================================================ */
 #panel-right {
   flex: 1;
+  min-height: 0;          /* ← 修正 */
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 8px;
   overflow-y: auto;
   scrollbar-width: thin;
   scrollbar-color: var(--bg-4) transparent;
-  min-width: 0;
 }
 
 /* ================================================================
    Equipment
    ================================================================ */
-#equip-list {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
+#equip-list { display: flex; flex-direction: column; gap: 5px; }
 
 .equip-card {
   background: var(--bg-3);
@@ -289,7 +313,7 @@ body {
 }
 
 .equip-slot {
-  font-size: 10px;
+  font-size: var(--fs-xs);
   font-weight: 600;
   color: var(--text-4);
   background: var(--bg-4);
@@ -300,7 +324,7 @@ body {
 }
 
 .equip-name {
-  font-size: 13px;
+  font-size: var(--fs-base);
   font-weight: 500;
   color: var(--text-1);
   white-space: nowrap;
@@ -308,25 +332,20 @@ body {
   text-overflow: ellipsis;
 }
 
-.equip-details {
-  margin-top: 5px;
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
+.equip-details { margin-top: 5px; display: flex; flex-direction: column; gap: 3px; }
 
 .equip-pot-line, .equip-add-line {
   display: flex;
   align-items: flex-start;
   gap: 6px;
-  font-size: 11px;
+  font-size: var(--fs-sm);
   color: var(--text-3);
   flex-wrap: wrap;
 }
 .equip-add-line { color: var(--text-4); }
 
 .grade-badge {
-  font-size: 10px;
+  font-size: var(--fs-xs);
   font-weight: 700;
   color: #fff;
   padding: 1px 5px;
@@ -337,64 +356,52 @@ body {
 }
 
 /* ================================================================
-   Matrix Row (V + HEXA 並排)
+   Matrix Row（V + HEXA 並排）
    ================================================================ */
-#panel-matrix {
-  display: flex;
-  gap: 8px;
-}
+#panel-matrix { display: flex; gap: 8px; }
 #panel-matrix .data-section { flex: 1; min-width: 0; }
 
-#v-grid, #hexa-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
-}
+#v-grid, #hexa-grid { display: flex; flex-wrap: wrap; gap: 5px; }
 
 .core-chip {
   background: var(--bg-3);
   border: 1px solid var(--border);
   border-radius: var(--r-sm);
   padding: 4px 10px;
-  font-size: 12px;
+  font-size: var(--fs-sm);
   color: var(--text-2);
   display: flex;
   align-items: center;
   gap: 6px;
 }
-.core-chip.hexa {
-  border-color: rgba(0, 176, 244, 0.5);
-  color: #62d4f7;
-}
-.core-lv { color: var(--text-4); font-size: 11px; }
+.core-chip.hexa { border-color: rgba(0,176,244,0.5); color: #62d4f7; }
+.core-lv { color: var(--text-4); font-size: var(--fs-xs); }
 
 /* ================================================================
-   Bottom Row (連結技能 + 內潛 並排)
+   Bottom Row（連結技能 + 內潛 並排）
    ================================================================ */
-#panel-bottom {
-  display: flex;
-  gap: 8px;
-}
+#panel-bottom { display: flex; gap: 8px; }
 #panel-bottom .data-section { flex: 1; min-width: 0; }
 
-#link-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
-}
+#link-grid { display: flex; flex-wrap: wrap; gap: 5px; }
 
 .link-chip {
   background: var(--bg-3);
   border: 1px solid var(--border);
   border-radius: 20px;
   padding: 4px 10px;
-  font-size: 12px;
+  font-size: var(--fs-sm);
   color: var(--text-3);
 }
 
 #ability-list { display: flex; flex-direction: column; gap: 4px; }
 .ability-grade { margin-bottom: 4px; }
-.ability-line { font-size: 13px; color: var(--text-2); padding: 2px 0; border-bottom: 1px solid var(--border); }
+.ability-line {
+  font-size: var(--fs-base);
+  color: var(--text-2);
+  padding: 2px 0;
+  border-bottom: 1px solid var(--border);
+}
 .ability-line:last-child { border-bottom: none; }
 
 /* ================================================================
@@ -408,7 +415,7 @@ body {
   justify-content: center;
   gap: 16px;
   color: var(--text-4);
-  font-size: 14px;
+  font-size: var(--fs-base);
 }
 
 .spinner {
@@ -428,7 +435,7 @@ body {
   justify-content: center;
   gap: 14px;
   color: var(--text-3);
-  font-size: 14px;
+  font-size: var(--fs-base);
   text-align: center;
   padding: 24px;
 }
@@ -438,7 +445,7 @@ body {
   padding: 9px 24px;
   border-radius: var(--r);
   cursor: pointer;
-  font-size: 14px; font-weight: 600;
+  font-size: var(--fs-base); font-weight: 600;
 }
 #btn-retry:hover { background: var(--accent-dark); }
 
@@ -447,7 +454,7 @@ body {
    ================================================================ */
 .modal {
   position: fixed; inset: 0;
-  background: rgba(0, 0, 0, 0.75);
+  background: rgba(0,0,0,0.75);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -458,12 +465,16 @@ body {
   background: var(--bg-2);
   border: 1px solid var(--border);
   border-radius: var(--r-lg);
-  width: 380px;
+  width: 400px;
   max-width: calc(100vw - 32px);
-  overflow: hidden;
+  max-height: 90vh;
+  overflow-y: auto;
   animation: modal-in 0.15s ease;
 }
-@keyframes modal-in { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+@keyframes modal-in {
+  from { opacity: 0; transform: scale(0.96); }
+  to   { opacity: 1; transform: scale(1); }
+}
 
 .modal-header {
   display: flex;
@@ -471,13 +482,15 @@ body {
   justify-content: space-between;
   padding: 16px 20px;
   border-bottom: 1px solid var(--border);
+  position: sticky; top: 0;
+  background: var(--bg-2);
+  z-index: 1;
 }
-.modal-header h2 { font-size: 16px; font-weight: 700; color: var(--text-1); }
+.modal-header h2 { font-size: var(--fs-lg); font-weight: 700; color: var(--text-1); }
 .modal-header button {
   background: none; border: none;
   color: var(--text-4); font-size: 18px;
-  cursor: pointer; line-height: 1;
-  padding: 2px;
+  cursor: pointer; line-height: 1; padding: 2px;
   border-radius: var(--r-sm);
   transition: color 0.1s;
 }
@@ -487,37 +500,65 @@ body {
   padding: 16px 20px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 16px;
 }
 
-.modal-hint {
-  font-size: 13px;
+/* 設定區塊標題 */
+.settings-group-title {
+  font-size: var(--fs-xs);
+  font-weight: 700;
   color: var(--text-4);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: -8px;
 }
 
+/* 按鈕群組（字體大小、面板寬度）*/
+.btn-group {
+  display: flex;
+  gap: 4px;
+}
+.btn-opt {
+  flex: 1;
+  background: var(--bg-3);
+  border: 1px solid var(--border);
+  color: var(--text-3);
+  font-size: var(--fs-sm);
+  padding: 7px 0;
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  transition: all 0.12s;
+  text-align: center;
+}
+.btn-opt:hover  { background: var(--bg-hover); color: var(--text-2); }
+.btn-opt.active { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+
+/* Checkbox 設定列 */
 .modal-body label {
   display: flex;
   align-items: center;
   gap: 10px;
-  font-size: 14px;
+  font-size: var(--fs-base);
   color: var(--text-2);
   cursor: pointer;
-  padding: 4px 0;
+  padding: 3px 0;
 }
 .modal-body label:hover { color: var(--text-1); }
-
 .modal-body input[type="checkbox"] {
   width: 16px; height: 16px;
   accent-color: var(--accent);
   cursor: pointer;
 }
 
+/* 即時查詢 */
+.modal-hint { font-size: var(--fs-sm); color: var(--text-4); }
+
 .modal-body input[type="text"] {
   background: var(--bg-3);
   border: 1px solid var(--border);
   border-radius: var(--r);
   color: var(--text-1);
-  font-size: 14px;
+  font-size: var(--fs-base);
   padding: 10px 12px;
   width: 100%;
   outline: none;
@@ -532,16 +573,13 @@ body {
   padding: 10px;
   border-radius: var(--r);
   cursor: pointer;
-  font-size: 14px; font-weight: 600;
+  font-size: var(--fs-base); font-weight: 600;
   transition: background 0.12s;
 }
 #btn-query-submit:hover { background: var(--accent-dark); }
 #btn-query-submit:disabled { opacity: 0.5; cursor: not-allowed; }
 
-#query-status {
-  font-size: 13px;
-  min-height: 20px;
-}
+#query-status { font-size: var(--fs-sm); min-height: 20px; }
 .status-loading { color: var(--text-4); }
 .status-error   { color: #ed4245; }
 .status-ok      { color: #23a55a; }
@@ -555,35 +593,12 @@ body {
    RWD — 手機版
    ================================================================ */
 @media (max-width: 760px) {
-  body { overflow: auto; }
-
-  #main { overflow: visible; }
-
-  #content {
-    flex-direction: column;
-    overflow: visible;
-    height: auto;
-  }
-
-  #panel-left {
-    width: 100%;
-    overflow: visible;
-  }
-
-  #char-header {
-    flex-direction: row;
-    align-items: center;
-    text-align: left;
-  }
-
+  body { overflow: auto; height: auto; }
+  #main { min-height: auto; overflow: visible; }
+  #content { flex-direction: column; overflow: visible; height: auto; }
+  #panel-left { width: 100%; min-height: auto; overflow: visible; }
+  #panel-right { min-height: auto; overflow: visible; }
+  #char-header { flex-direction: row; align-items: center; text-align: left; }
   #char-image { width: 80px; height: 80px; }
-
-  #panel-matrix, #panel-bottom {
-    flex-direction: column;
-  }
-
-  #panel-right {
-    overflow: visible;
-    height: auto;
-  }
+  #panel-matrix, #panel-bottom { flex-direction: column; }
 }
