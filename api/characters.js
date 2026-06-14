@@ -1,16 +1,15 @@
 // =====================================================
 // GET /api/characters
-// 從 Supabase 讀取所有啟用角色的 7 天內最高戰力快照
+// 從 Supabase 讀取所有啟用角色的 7 天內最高戰力快照，並過濾多餘負載
 // =====================================================
 import { createClient } from '@supabase/supabase-js';
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
-  process.env.SUPABASE_ANON_KEY   // 唯讀的公開金鑰，只能讀不能寫
+  process.env.SUPABASE_ANON_KEY
 );
 
 export default async function handler(req, res) {
-  // CORS：允許 GitHub Pages 跨網域呼叫這個 API
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
 
@@ -31,7 +30,7 @@ export default async function handler(req, res) {
     // 2. 計算 7 天前的日期
     const since = new Date();
     since.setDate(since.getDate() - 7);
-    const sinceStr = since.toISOString().split('T')[0];   // 格式：YYYY-MM-DD
+    const sinceStr = since.toISOString().split('T')[0];
 
     // 3. 抓取這些角色在 7 天內的所有快照，按戰力高到低排序
     const { data: snapshots, error: snapError } = await supabase
@@ -43,18 +42,37 @@ export default async function handler(req, res) {
 
     if (snapError) throw snapError;
 
-    // 4. 每個角色只保留最高戰力那筆（因為已按戰力降序，第一筆就是最高）
+    // 4. 每個角色只保留最高戰力那筆，並執行「資料瘦身」
     const best = {};
     for (const row of (snapshots || [])) {
       if (!best[row.character_name]) {
-        best[row.character_name] = row.data;
+        const fullData = row.data || {};
+        
+        // 重新組裝 JSON，只保留初次渲染必須的欄位
+        // 刻意排除 beauty (美容), pet (寵物), symbol (符文) 等會造成前端負載過重的巨型節點
+        best[row.character_name] = {
+          name: fullData.name,
+          class: fullData.class,
+          level: fullData.level,
+          image_url: fullData.image_url,
+          stats: fullData.stats,
+          hyper_stats: fullData.hyper_stats,
+          equipment: fullData.equipment,
+          v_cores: fullData.v_cores,
+          hexa_cores: fullData.hexa_cores,
+          link_skills: fullData.link_skills,
+          inner_ability: fullData.inner_ability,
+          starforce_total: fullData.starforce_total,
+          union_level: fullData.union_level,
+          rings: fullData.rings
+        };
       }
     }
 
     // 5. 依 display_order 排列後回傳
     const result = characters
       .map(c => best[c.name])
-      .filter(Boolean);   // 過濾掉 7 天內沒有快照的角色
+      .filter(Boolean);
 
     return res.status(200).json(result);
 
