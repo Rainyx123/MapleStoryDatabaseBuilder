@@ -431,15 +431,15 @@ function getCrystalIconPath(name) {
   // 假設你的圖檔都放在 images/crystals/ 資料夾下
   const basePath = 'images/crystals/';
   const mapping = {
-    '菇菇寶貝': 'mushroom.png',
-    '綠水靈': 'slime.png',
-    '刺菇菇': 'thorny_mushroom.png',
-    '木妖': 'stump.png',
-    '石巨人': 'stone_golem.png',
-    '巴洛古': 'balrog.png',
-    '殘暴炎魔': 'zakum.png'
-    '粉豆': 'pinkbean.png'
-    '拉圖斯': 'papulatus.png'
+    '菇菇寶貝': 'Artifact1.png',
+    '綠水靈': 'Artifact2.png',
+    '刺菇菇': 'Artifact3.png',
+    '木妖': 'Artifact4.png',
+    '石巨人': 'Artifact5.png',
+    '巴洛古': 'Artifact6.png',
+    '殘暴炎魔': 'Artifact7.png'
+    '粉豆': 'Artifact8.png'
+    '拉圖斯': 'Artifact9.png'
   };
 
   // 從名稱中取出關鍵字（例如：將 "水晶：菇菇寶貝" 變成 "菇菇寶貝"）
