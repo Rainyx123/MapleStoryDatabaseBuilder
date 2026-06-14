@@ -120,6 +120,15 @@ function renderCharacter(data) {
   renderHEXA(data?.hexa_cores         ?? []);
   renderLinkSkills(data?.link_skills  ?? []);
   renderInnerAbility(data?.inner_ability ?? {});
+  if (data.symbols) renderSymbols(data.symbols);
+  if (data.union_artifact) renderUnionArtifact(data.union_artifact);
+  if (data.union_champion) renderUnionChampion(data.union_champion);
+  if (data.union) renderUnion(data.union);
+  if (data.union_raider) renderUnionRaider(data.union_raider);
+  if (data.pets) renderPets(data.pets);
+  if (data.android) renderAndroid(data.android);
+  if (data.beauty) renderBeauty(data.beauty);
+  if (data.cash_items) renderCashItems(data.cash_items);
 }
 
 // ================================================================
@@ -345,7 +354,92 @@ function renderInnerAbility(ability) {
   el.innerHTML = `<div class="ability-grade"><span class="grade-badge" style="background:${gc}">${ability.grade}</span></div>`
     + ability.abilities.map(ab => `<div class="ability-line">${ab}</div>`).join('');
 }
+// ================================================================
+// 系統、聯盟、外觀渲染區
+// ================================================================
 
+// 符文 (ARC/AUT)
+function renderSymbols(symbols) {
+  const el = document.getElementById('symbol-grid');
+  if (!el) return;
+  if (!symbols || symbols.length === 0) { el.innerHTML = '<div class="empty">無資料</div>'; return; }
+  el.innerHTML = symbols.map(s => 
+    `<div class="symbol-chip"><span>${s.name}</span><span class="lv">Lv.${s.level}</span></div>`
+  ).join('');
+}
+
+// 聯盟神器
+function renderUnionArtifact(artifact) {
+  const el = document.getElementById('union-artifact-grid');
+  if (!el) return;
+  if (!artifact) { el.innerHTML = '<div class="empty">無資料</div>'; return; }
+  el.innerHTML = `<div class="info-block">
+    <p>等級: ${artifact.level || 0}</p>
+    <p>點數: ${artifact.points || 0}</p>
+  </div>`;
+}
+
+// 聯盟冠軍
+function renderUnionChampion(champions) {
+  const el = document.getElementById('union-champion-grid');
+  if (!el) return;
+  if (!champions || champions.length === 0) { el.innerHTML = '<div class="empty">無資料</div>'; return; }
+  el.innerHTML = champions.map(c => `<div class="chip">${c.name}</div>`).join('');
+}
+
+// 戰地聯盟 (總等級/等級)
+function renderUnion(union) {
+  const el = document.getElementById('union-grid');
+  if (!el) return;
+  if (!union) { el.innerHTML = '<div class="empty">無資料</div>'; return; }
+  el.innerHTML = `<div class="info-block">
+    <p>等級: ${union.level || 0}</p>
+    <p>階級: ${union.grade || '無'}</p>
+  </div>`;
+}
+
+// 戰地攻擊隊 (角色列表)
+function renderUnionRaider(raiders) {
+  const el = document.getElementById('union-raider-grid');
+  if (!el) return;
+  if (!raiders || raiders.length === 0) { el.innerHTML = '<div class="empty">無資料</div>'; return; }
+  el.innerHTML = raiders.map(r => `<div class="chip">${r.name}</div>`).join('');
+}
+
+// 寵物
+function renderPets(pets) {
+  const el = document.getElementById('pets-grid');
+  if (!el) return;
+  if (!pets || pets.length === 0) { el.innerHTML = '<div class="empty">無資料</div>'; return; }
+  el.innerHTML = pets.map(p => `<div class="chip">${p.name}</div>`).join('');
+}
+
+// 機器人
+function renderAndroid(android) {
+  const el = document.getElementById('android-grid');
+  if (!el) return;
+  if (!android) { el.innerHTML = '<div class="empty">無資料</div>'; return; }
+  el.innerHTML = `<div class="chip">${android.name || '無'}</div>`;
+}
+
+// 美容美髮
+function renderBeauty(beauty) {
+  const el = document.getElementById('beauty-grid');
+  if (!el) return;
+  if (!beauty) { el.innerHTML = '<div class="empty">無資料</div>'; return; }
+  el.innerHTML = `<div class="info-block">
+    <p>髮型: ${beauty.hair || '無'}</p>
+    <p>臉型: ${beauty.face || '無'}</p>
+  </div>`;
+}
+
+// 現金道具
+function renderCashItems(items) {
+  const el = document.getElementById('cash-grid');
+  if (!el) return;
+  if (!items || items.length === 0) { el.innerHTML = '<div class="empty">無資料</div>'; return; }
+  el.innerHTML = items.map(i => `<div class="chip">${i.name}</div>`).join('');
+}
 // ================================================================
 // 區塊折疊
 // ================================================================
