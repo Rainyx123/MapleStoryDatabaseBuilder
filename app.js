@@ -412,23 +412,42 @@ function renderUnion(union) {
 function renderUnionRaider(raiders) {
   const el = document.getElementById('union-raider-grid');
   if (!el) return;
-  if (!raiders || raiders.length === 0) { el.innerHTML = '<div class="empty">無資料</div>'; return; }
-  el.innerHTML = raiders.map(r => `<div class="chip">${r.name}</div>`).join('');
+
+  // 【除錯關鍵】請看 Console 輸出的這個東西是什麼
+  console.log("偵錯 - 戰地攻擊隊資料:", raiders);
+
+  // 防禦性檢查：確認它是不是陣列
+  if (!raiders || !Array.isArray(raiders)) {
+    el.innerHTML = '<div class="empty">資料格式異常</div>';
+    return;
+  }
+
+  el.innerHTML = raiders.map(r => `<div class="chip">${r.name || '未知'}</div>`).join('');
 }
 
 // 寵物
 function renderPets(pets) {
   const el = document.getElementById('pets-grid');
   if (!el) return;
-  if (!pets || pets.length === 0) { el.innerHTML = '<div class="empty">無資料</div>'; return; }
-  el.innerHTML = pets.map(p => `<div class="chip">${p.name}</div>`).join('');
+  // 檢查是否為陣列，防止 map is not a function
+  if (!Array.isArray(pets)) {
+    console.warn("renderPets: 資料非陣列", pets);
+    el.innerHTML = '<div class="empty">無資料或格式異常</div>';
+    return;
+  }
+  if (pets.length === 0) { el.innerHTML = '<div class="empty">無資料</div>'; return; }
+  el.innerHTML = pets.map(p => `<div class="chip">${p.name || '未知'}</div>`).join('');
 }
 
 // 機器人
 function renderAndroid(android) {
   const el = document.getElementById('android-grid');
   if (!el) return;
-  if (!android) { el.innerHTML = '<div class="empty">無資料</div>'; return; }
+  // 檢查是否為物件且存在
+  if (!android || typeof android !== 'object') {
+    el.innerHTML = '<div class="empty">無資料</div>';
+    return;
+  }
   el.innerHTML = `<div class="chip">${android.name || '無'}</div>`;
 }
 
@@ -436,7 +455,11 @@ function renderAndroid(android) {
 function renderBeauty(beauty) {
   const el = document.getElementById('beauty-grid');
   if (!el) return;
-  if (!beauty) { el.innerHTML = '<div class="empty">無資料</div>'; return; }
+  // 檢查是否為物件
+  if (!beauty || typeof beauty !== 'object') {
+    el.innerHTML = '<div class="empty">無資料</div>';
+    return;
+  }
   el.innerHTML = `<div class="info-block">
     <p>髮型: ${beauty.hair || '無'}</p>
     <p>臉型: ${beauty.face || '無'}</p>
@@ -447,8 +470,14 @@ function renderBeauty(beauty) {
 function renderCashItems(items) {
   const el = document.getElementById('cash-grid');
   if (!el) return;
-  if (!items || items.length === 0) { el.innerHTML = '<div class="empty">無資料</div>'; return; }
-  el.innerHTML = items.map(i => `<div class="chip">${i.name}</div>`).join('');
+  // 檢查是否為陣列
+  if (!Array.isArray(items)) {
+    console.warn("renderCashItems: 資料非陣列", items);
+    el.innerHTML = '<div class="empty">無資料或格式異常</div>';
+    return;
+  }
+  if (items.length === 0) { el.innerHTML = '<div class="empty">無資料</div>'; return; }
+  el.innerHTML = items.map(i => `<div class="chip">${i.name || '未知'}</div>`).join('');
 }
 // ================================================================
 // 區塊折疊
