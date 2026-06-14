@@ -481,36 +481,37 @@ function saveStorage(key, val) {
 }
 
 // ================================================================
-// 事件綁定
+// 事件綁定 (完整整合版)
 // ================================================================
 function setupEventListeners() {
 
-  // ---- 設定按鈕 ----
-  document.getElementById('btn-settings').onclick = () => {
-    document.getElementById('modal-settings').classList.remove('hidden');
-  };
+  // ---- 設定按鈕 (開啟設定 Modal) ----
+  const btnSettings = document.getElementById('btn-settings');
+  if (btnSettings) {
+    btnSettings.onclick = () => {
+      const modal = document.getElementById('modal-settings');
+      if (modal) modal.classList.remove('hidden');
+    };
+  }
 
-  // ---- 外觀切換按鈕（字體大小 / 面板寬度）----
+  // ---- 外觀切換按鈕 (字體 / 寬度) ----
   document.querySelectorAll('.btn-opt[data-setting]').forEach(btn => {
     btn.addEventListener('click', () => {
       const key = btn.dataset.setting;
       const val = btn.dataset.value;
-
-      // 更新 active 狀態
+      
       document.querySelectorAll(`[data-setting="${key}"]`).forEach(b => {
         b.classList.toggle('active', b === btn);
       });
-
-      // 套用 body class
       applyBodyClass(key, val);
-
-      // 儲存
+      
       const saved = loadStorage('appearance') || {};
       saved[key] = val;
       saveStorage('appearance', saved);
     });
   });
-// ---- [新增] 7日最高戰力切換 ----
+
+  // ---- [新增] 7日最高戰力切換 ----
   const togglePeak = document.getElementById('toggle-peak');
   if (togglePeak) {
     togglePeak.addEventListener('change', async (e) => {
@@ -520,7 +521,6 @@ function setupEventListeners() {
       if (isChecked) {
         if (!peakCache[charName]) {
           try {
-            // 發送請求到我們剛剛建立的 api/peak
             const res = await fetch(`${API_BASE}/api/peak?character_name=${encodeURIComponent(charName)}`);
             if (!res.ok) throw new Error('API 請求失敗');
             const data = await res.json();
@@ -528,7 +528,7 @@ function setupEventListeners() {
           } catch (err) {
             console.error(err);
             alert('無法載入最高戰力資料');
-            e.target.checked = false; // 失敗則退回未勾選狀態
+            e.target.checked = false;
             return;
           }
         }
@@ -538,27 +538,23 @@ function setupEventListeners() {
       }
     });
   }
- // ---- 區塊顯示 checkbox (整合延遲加載) ----
+
+  // ---- 區塊顯示 Checkbox (記憶顯示/隱藏) ----
   document.querySelectorAll('[data-section]').forEach(cb => {
     cb.addEventListener('change', async (e) => {
       const sectionId = e.target.dataset.section;
       const isChecked = e.target.checked;
       const sectionEl = document.getElementById(sectionId);
 
-      // 1. 切換畫面顯示/隱藏
       if (sectionEl) sectionEl.classList.toggle('hidden', !isChecked);
 
-      // 2. 記憶使用者設定
       const sections = loadStorage('sections') || {};
       sections[sectionId] = isChecked;
       saveStorage('sections', sections);
 
-      // 3. 延遲加載攔截：判斷是否為需要即時拉取的模組
       const moduleName = MODULE_MAP[sectionId];
       if (isChecked && moduleName) {
         const char = characters[currentIdx];
-        
-        // 記憶體快取檢查：若 char[moduleName] 已存在，代表本次網頁瀏覽已抓過，不發送 API
         if (!char[moduleName]) {
           await fetchLazyModule(char.name, moduleName, sectionId);
         }
@@ -574,17 +570,35 @@ function setupEventListeners() {
   });
 
   // ---- 即時查詢 ----
-  document.getElementById('btn-query').onclick = () => {
-    document.getElementById('modal-query').classList.remove('hidden');
-    setTimeout(() => document.getElementById('query-input').focus(), 50);
-  };
-  document.getElementById('btn-query-submit').onclick = doLiveQuery;
-  document.getElementById('query-input').addEventListener('keydown', e => {
-    if (e.key === 'Enter') doLiveQuery();
-  });
+  const btnQuery = document.getElementById('btn-query');
+  if (btnQuery) {
+    btnQuery.onclick = () => {
+      const modal = document.getElementById('modal-query');
+      if (modal) {
+        modal.classList.remove('hidden');
+        const input = document.getElementById('query-input');
+        if (input) setTimeout(() => input.focus(), 50);
+      }
+    };
+  }
 
-  // ---- 重試 ----
-  document.getElementById('btn-retry').onclick = init;
+  const btnQuerySubmit = document.getElementById('btn-query-submit');
+  if (btnQuerySubmit) {
+    btnQuerySubmit.onclick = doLiveQuery;
+  }
+
+  const queryInput = document.getElementById('query-input');
+  if (queryInput) {
+    queryInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter') doLiveQuery();
+    });
+  }
+
+  // ---- 重試按鈕 ----
+  const btnRetry = document.getElementById('btn-retry');
+  if (btnRetry) {
+    btnRetry.onclick = init;
+  }
 }
 
 // ================================================================
