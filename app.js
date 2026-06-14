@@ -14,6 +14,7 @@ const MODULE_MAP = {
 let characters = [];
 let currentIdx = 0;
 let isQuerying = false; // 新增：防止重複查詢與競態條件的鎖定標記
+let peakCache = {}; // 在全域變數區新增快取物件偵測是否顯示7日內最高戰力
 
 // ================================================================
 // 初始化
@@ -481,7 +482,34 @@ function setupEventListeners() {
       saveStorage('appearance', saved);
     });
   });
+// ---- [新增] 7日最高戰力切換 ----
+  const togglePeak = document.getElementById('toggle-peak');
+  if (togglePeak) {
+    togglePeak.addEventListener('change', async (e) => {
+      const isChecked = e.target.checked;
+      const charName = characters[currentIdx].name;
 
+      if (isChecked) {
+        if (!peakCache[charName]) {
+          try {
+            // 發送請求到我們剛剛建立的 api/peak
+            const res = await fetch(`${API_BASE}/api/peak?character_name=${encodeURIComponent(charName)}`);
+            if (!res.ok) throw new Error('API 請求失敗');
+            const data = await res.json();
+            peakCache[charName] = data; 
+          } catch (err) {
+            console.error(err);
+            alert('無法載入最高戰力資料');
+            e.target.checked = false; // 失敗則退回未勾選狀態
+            return;
+          }
+        }
+        renderCharacter(peakCache[charName]);
+      } else {
+        renderCharacter(characters[currentIdx]);
+      }
+    });
+  }
  // ---- 區塊顯示 checkbox (整合延遲加載) ----
   document.querySelectorAll('[data-section]').forEach(cb => {
     cb.addEventListener('change', async (e) => {
