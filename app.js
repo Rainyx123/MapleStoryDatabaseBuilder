@@ -257,7 +257,7 @@ function formatNum(val) {
 }
 
 function renderStats(data) {
-  const grid = document.getElementById('stats-grid');
+  const grid = document.getElementById('stat-grid');
   // 如果找不到元件，就不要執行寫入，避免報錯
     if (!grid) {
         console.warn('找不到 stat-grid，跳過渲染');
