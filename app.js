@@ -4,6 +4,11 @@
 
 // ★★★ 請將這裡換成你的 Vercel 網址 ★★★
 const API_BASE = 'https://maple-story-database-builder.vercel.app';
+const MODULE_MAP = {
+  'section-symbol': 'symbol',
+  'section-beauty': 'beauty',
+  'section-pet': 'pet'
+};
 
 // ---- 全域狀態 ----
 let characters = [];
@@ -465,14 +470,31 @@ function setupEventListeners() {
     });
   });
 
-  // ---- 區塊顯示 checkbox ----
+ // ---- 區塊顯示 checkbox (整合延遲加載) ----
   document.querySelectorAll('[data-section]').forEach(cb => {
-    cb.addEventListener('change', e => {
-      const id = e.target.dataset.section;
-      document.getElementById(id)?.classList.toggle('hidden', !e.target.checked);
+    cb.addEventListener('change', async (e) => {
+      const sectionId = e.target.dataset.section;
+      const isChecked = e.target.checked;
+      const sectionEl = document.getElementById(sectionId);
+
+      // 1. 切換畫面顯示/隱藏
+      if (sectionEl) sectionEl.classList.toggle('hidden', !isChecked);
+
+      // 2. 記憶使用者設定
       const sections = loadStorage('sections') || {};
-      sections[id] = e.target.checked;
+      sections[sectionId] = isChecked;
       saveStorage('sections', sections);
+
+      // 3. 延遲加載攔截：判斷是否為需要即時拉取的模組
+      const moduleName = MODULE_MAP[sectionId];
+      if (isChecked && moduleName) {
+        const char = characters[currentIdx];
+        
+        // 記憶體快取檢查：若 char[moduleName] 已存在，代表本次網頁瀏覽已抓過，不發送 API
+        if (!char[moduleName]) {
+          await fetchLazyModule(char.name, moduleName, sectionId);
+        }
+      }
     });
   });
 
@@ -495,6 +517,37 @@ function setupEventListeners() {
 
   // ---- 重試 ----
   document.getElementById('btn-retry').onclick = init;
+}
+
+// ================================================================
+// 延遲加載模組 (Lazy Loading)
+// ================================================================
+async function fetchLazyModule(charName, moduleName, sectionId) {
+  const sectionEl = document.getElementById(sectionId);
+  // 可選：在此處對 sectionEl 插入 loading 動畫
+  
+  try {
+    const res = await fetch(`${API_BASE}/api/query`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ character_name: charName, modules: [moduleName] })
+    });
+    
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+
+    // 1. 寫入記憶體快取，確保下次點擊不會再發 API
+    characters[currentIdx][moduleName] = data[moduleName] || {};
+
+    // 2. 觸發對應的渲染函式 (未來開發 UI 時需補齊這些函式)
+    if (moduleName === 'symbol') renderSymbol(characters[currentIdx].symbol);
+    else if (moduleName === 'beauty') renderBeauty(characters[currentIdx].beauty);
+    else if (moduleName === 'pet') renderPet(characters[currentIdx].pet);
+
+  } catch (err) {
+    console.error(`無法載入模組 [${moduleName}]:`, err);
+    // 可選：在此處對 sectionEl 插入錯誤提示
+  }
 }
 
 // ================================================================
