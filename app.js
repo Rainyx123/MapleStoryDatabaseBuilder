@@ -8,6 +8,7 @@ const API_BASE = 'https://maple-story-database-builder.vercel.app';
 // ---- 全域狀態 ----
 let characters = [];
 let currentIdx = 0;
+let isQuerying = false; // 新增：防止重複查詢與競態條件的鎖定標記
 
 // ================================================================
 // 初始化
@@ -305,11 +306,21 @@ function renderHEXA(hexa_cores) {
 // ================================================================
 function renderLinkSkills(link_skills) {
   const el = document.getElementById('link-grid');
-  const valid = link_skills.filter(s => s && s !== '—');
-  if (!valid.length) { el.innerHTML = '<div class="empty">無資料</div>'; return; }
+
+  // 防呆 1：確保傳入的是陣列
+  if (!Array.isArray(link_skills) || link_skills.length === 0) { 
+    el.innerHTML = '<div class="empty">無資料</div>'; 
+    return; 
+  }
+  // 防呆 2：確保過濾對象是字串
+  const valid = link_skills.filter(s => typeof s === 'string' && s.trim() !== '' && s !== '—');
+  if (!valid.length) { 
+    el.innerHTML = '<div class="empty">無資料</div>'; 
+    return; 
+  }
+  
   el.innerHTML = valid.map(s => `<span class="link-chip">${s}</span>`).join('');
 }
-
 // ================================================================
 // 內潛
 // ================================================================
@@ -373,13 +384,18 @@ function applyBodyClass(key, value) {
 // 即時查詢
 // ================================================================
 async function doLiveQuery() {
+  if (isQuerying) return; // 若正在查詢則阻擋後續點擊
+  
   const input  = document.getElementById('query-input');
   const status = document.getElementById('query-status');
   const btn    = document.getElementById('btn-query-submit');
   const name   = input.value.trim();
   if (!name) return;
 
+  // 鎖定 UI
+  isQuerying = true;
   btn.disabled = true;
+  document.querySelectorAll('.tab-btn').forEach(b => b.disabled = true);
   status.className = 'status-loading';
   status.textContent = '查詢中，請稍候...';
 
@@ -410,7 +426,10 @@ async function doLiveQuery() {
     status.className = 'status-error';
     status.textContent = `❌ ${err.message}`;
   } finally {
+    // 解除鎖定
+    isQuerying = false;
     btn.disabled = false;
+    document.querySelectorAll('.tab-btn').forEach(b => b.disabled = false);
   }
 }
 
