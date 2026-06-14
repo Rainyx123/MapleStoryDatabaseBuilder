@@ -9,6 +9,12 @@ const MODULE_MAP = {
   'section-beauty': 'beauty',
   'section-pet': 'pet'
 };
+const GRADE_COLOR = {
+  '傳說': 'var(--legendary)', 
+  '唯一': 'var(--unique)',
+  '稀有': 'var(--epic)',       
+  '罕見': 'var(--rare)'
+};
 
 // ---- 全域狀態 ----
 let characters = [];
