@@ -65,7 +65,7 @@ function renderCharacter(data) {
   if (!data) return;
 
   const img = document.getElementById('char-image');
-  if (data.image_url) {
+  if (data?.image_url) {
     img.src = data.image_url;
     img.style.display = '';
     img.onerror = () => { img.style.display = 'none'; };
@@ -73,17 +73,111 @@ function renderCharacter(data) {
     img.style.display = 'none';
   }
 
-  setText('char-name',  data.name  || '—');
-  setText('char-class', data.class || '—');
-  setText('char-level', data.level ? `Lv. ${data.level}` : '—');
+  setText('char-name',  data?.name  ?? '—');
+  setText('char-class', data?.class ?? '—');
+  setText('char-level', data?.level ? `Lv. ${data.level}` : '—');
 
   renderStats(data);
-  renderHyperStats(data.hyper_stats  || []);
-  renderEquipment(data.equipment     || []);
-  renderVMatrix(data.v_cores         || []);
-  renderHEXA(data.hexa_cores         || []);
-  renderLinkSkills(data.link_skills  || []);
-  renderInnerAbility(data.inner_ability || {});
+  renderHyperStats(data?.hyper_stats  ?? []);
+  renderEquipment(data?.equipment     ?? []);
+  renderVMatrix(data?.v_cores         ?? []);
+  renderHEXA(data?.hexa_cores         ?? []);
+  renderLinkSkills(data?.link_skills  ?? []);
+  renderInnerAbility(data?.inner_ability ?? {});
+}
+
+// ================================================================
+// 極限屬性
+// ================================================================
+function renderHyperStats(hyper_stats) {
+  const el = document.getElementById('hyper-list');
+  if (!hyper_stats || hyper_stats.length === 0) { el.innerHTML = '<div class="empty">無資料</div>'; return; }
+  el.innerHTML = hyper_stats.map(hs =>
+    `<div class="hyper-item"><span>${hs?.type ?? '未知'}</span><span class="hyper-lv">Lv.${hs?.level ?? 0}</span></div>`
+  ).join('');
+}
+
+// ================================================================
+// 裝備
+// ================================================================
+const GRADE_COLOR = {
+  '傳說': 'var(--legendary)', '唯一': 'var(--unique)',
+  '稀有': 'var(--epic)',       '罕見': 'var(--rare)',
+};
+
+function renderEquipment(equipment) {
+  const list = document.getElementById('equip-list');
+  if (!equipment || equipment.length === 0) { list.innerHTML = '<div class="empty">無裝備資料</div>'; return; }
+  
+  list.innerHTML = equipment.map(eq => {
+    // 防呆：確保 eq 存在
+    if (!eq) return '';
+
+    const pColor = GRADE_COLOR[eq?.potential_grade]  || 'var(--none)';
+    const aColor = GRADE_COLOR[eq?.additional_grade] || 'var(--none)';
+    const starforceVal = eq?.starforce ?? 0;
+    const stars  = starforceVal > 0
+      ? ` <span style="color:var(--legendary)">★${starforceVal}</span>` : '';
+      
+    const pBadge = eq?.potential_grade && eq.potential_grade !== '無'
+      ? `<span class="grade-badge" style="background:${pColor}">${eq.potential_grade}</span>` : '';
+    const aBadge = eq?.additional_grade && eq.additional_grade !== '無'
+      ? `<span class="grade-badge" style="background:${aColor}">${eq.additional_grade}</span>` : '';
+      
+    // 防護陣列缺失
+    const pText  = (eq?.potential  ?? []).join(' / ');
+    const aText  = (eq?.additional ?? []).join(' / ');
+    const addTxt = (eq?.add_option ?? []).join(', ');
+    
+    const hasDetails = pBadge || aBadge || addTxt;
+    const slotName = eq?.slot ?? '未知部位';
+    const equipName = eq?.name ?? '空';
+
+    return `<div class="equip-card" style="border-left-color:${pColor}">
+      <div class="equip-top">
+        <span class="equip-slot">${slotName}</span>
+        <span class="equip-name">${equipName}${stars}</span>
+      </div>
+      ${hasDetails ? `<div class="equip-details">
+        ${pBadge ? `<div class="equip-pot-line">${pBadge}<span>${pText}</span></div>` : ''}
+        ${aBadge ? `<div class="equip-pot-line">${aBadge}<span>${aText}</span></div>` : ''}
+        ${addTxt ? `<div class="equip-add-line">⭐ ${addTxt}</div>` : ''}
+      </div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+// ================================================================
+// V矩陣 & HEXA
+// ================================================================
+function renderVMatrix(v_cores) {
+  const el = document.getElementById('v-grid');
+  if (!v_cores || v_cores.length === 0) { el.innerHTML = '<div class="empty">無資料</div>'; return; }
+  el.innerHTML = v_cores.map(c =>
+    `<div class="core-chip"><span>${c?.name ?? '未知'}</span><span class="core-lv">Lv.${c?.level ?? 0}</span></div>`
+  ).join('');
+}
+
+function renderHEXA(hexa_cores) {
+  const el = document.getElementById('hexa-grid');
+  if (!hexa_cores || hexa_cores.length === 0) { el.innerHTML = '<div class="empty">無資料</div>'; return; }
+  el.innerHTML = hexa_cores.map(c =>
+    `<div class="core-chip hexa"><span>${c?.name ?? '未知'}</span><span class="core-lv">Lv.${c?.level ?? 0}</span></div>`
+  ).join('');
+}
+
+// ================================================================
+// 內潛
+// ================================================================
+function renderInnerAbility(ability) {
+  const el = document.getElementById('ability-list');
+  const abilitiesArr = ability?.abilities ?? [];
+  if (abilitiesArr.length === 0) { el.innerHTML = '<div class="empty">無資料</div>'; return; }
+  
+  const gradeStr = ability?.grade ?? '無';
+  const gc = GRADE_COLOR[gradeStr] || 'var(--none)';
+  el.innerHTML = `<div class="ability-grade"><span class="grade-badge" style="background:${gc}">${gradeStr}</span></div>`
+    + abilitiesArr.map(ab => `<div class="ability-line">${ab}</div>`).join('');
 }
 
 // ================================================================
