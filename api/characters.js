@@ -37,8 +37,8 @@ export default async function handler(req, res) {
       .select('character_name, combat_power, data')
       .in('character_name', characters.map(c => c.name))
       .gte('snapshot_date', sinceStr)
-      .order('combat_power', { ascending: false })
-      .order('snapshot_date', { ascending: false }); // 新增此行：確保優先取最新資料
+      .order('snapshot_date', { ascending: false })
+      .order('combat_power', { ascending: false }); // 新增此行：確保優先取最新資料
 
     if (snapError) throw snapError;
 
