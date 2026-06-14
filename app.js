@@ -428,7 +428,6 @@ function renderSymbols(symbols) {
 // ================================================================
 // 水晶名稱轉圖片檔名的對應表
 function getCrystalIconPath(name) {
-  // 假設你的圖檔都放在 images/crystals/ 資料夾下
   const basePath = 'images/crystals/';
   const mapping = {
     '菇菇寶貝': 'Artifact1.png',
@@ -466,8 +465,8 @@ function renderUnionArtifact(data) {
         <div class="crystal-card" style="border: 1px solid var(--border); padding:12px; margin-bottom:10px; border-radius:8px; background:var(--bg-1);">
           <div style="display:flex; align-items:center; gap:12px; margin-bottom:10px;">
              <img src="${getCrystalIconPath(c.name)}" 
-                  style="width:40px; height:40px; border-radius:4px; background:#222;" 
-                  onerror="this.src='images/crystals/default.png';">
+                  style="width:40px; height:40px; border-radius:4px;" 
+                  onerror="this.style.display='none';">
              <div>
                 <div style="font-weight:bold; color:var(--text-1);">${c.name}</div>
                 <div style="font-size:0.9em; color:var(--highlight);">等級: Lv.${c.level}</div>
