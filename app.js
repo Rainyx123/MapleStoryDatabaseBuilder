@@ -145,65 +145,45 @@ function renderHyperStats(hyper_stats) {
 // ================================================================
 // 裝備
 // ================================================================
-const GRADE_COLOR = {
-  '傳說': 'var(--legendary)', '唯一': 'var(--unique)',
-  '稀有': 'var(--epic)',       '罕見': 'var(--rare)',
-};
-
-function renderEquipment(equipmentData) {
+function renderEquipment(data) {
   const list = document.getElementById('equip-list');
-  
-  // 1. 取得真正的裝備陣列 (相容舊版直接是陣列，或是新版的物件結構)
-  let equipArray = [];
-  if (Array.isArray(equipmentData)) {
-    equipArray = equipmentData; // 舊版快照
-  } else if (equipmentData && equipmentData.preset_0) {
-    equipArray = equipmentData.preset_0; // 新版快照：先顯示第一套裝備
+  if (!list) return; // 安全檢查
+
+  // 1. 統一資料源：不管傳進來什麼，最後都變成陣列
+  const equips = Array.isArray(data) ? data : (data?.preset_0 ?? []);
+
+  // 2. 空資料判斷
+  if (equips.length === 0) {
+    list.innerHTML = '<div class="empty">無裝備資料</div>';
+    return;
   }
 
-  // 2. 防呆判斷
-  if (!equipArray || equipArray.length === 0) {
-    list.innerHTML = '<div class="empty">無裝備資料</div>'; 
-    return; 
-  }
-  
-  // 3. 執行原本的渲染邏輯
-  list.innerHTML = equipArray.map(eq => {
+  // 3. 使用 map + 現代語法縮短邏輯
+  list.innerHTML = equips.map(eq => {
     if (!eq) return '';
 
-    const pColor = GRADE_COLOR[eq?.potential_grade]  || 'var(--none)';
-    const aColor = GRADE_COLOR[eq?.additional_grade] || 'var(--none)';
-    const starforceVal = eq?.starforce ?? 0;
-    const stars  = starforceVal > 0
-      ? ` <span style="color:var(--legendary)">★${starforceVal}</span>` : '';
-      
-    const pBadge = eq?.potential_grade && eq.potential_grade !== '無'
-      ? `<span class="grade-badge" style="background:${pColor}">${eq.potential_grade}</span>` : '';
-    const aBadge = eq?.additional_grade && eq.additional_grade !== '無'
-      ? `<span class="grade-badge" style="background:${aColor}">${eq.additional_grade}</span>` : '';
-      
-    const pText  = (eq?.potential  ?? []).join(' / ');
-    const aText  = (eq?.additional ?? []).join(' / ');
-    const addTxt = (eq?.add_option ?? []).join(', ');
+    const pColor = GRADE_COLOR[eq?.potential_grade] ?? 'var(--none)';
+    const aColor = GRADE_COLOR[eq?.additional_grade] ?? 'var(--none)';
+    const star = eq?.starforce > 0 ? `<span style="color:var(--legendary)">★${eq.starforce}</span>` : '';
     
-    const hasDetails = pBadge || aBadge || addTxt;
-    const slotName = eq?.slot ?? '未知部位';
-    const equipName = eq?.name ?? '空';
+    // 縮減徽章渲染 (如果沒有等級，直接不顯示 badge)
+    const pBadge = eq?.potential_grade && eq.potential_grade !== '無' ? `<span class="grade-badge" style="background:${pColor}">${eq.potential_grade}</span>` : '';
+    const aBadge = eq?.additional_grade && eq.additional_grade !== '無' ? `<span class="grade-badge" style="background:${aColor}">${eq.additional_grade}</span>` : '';
 
-    return `<div class="equip-card" style="border-left-color:${pColor}">
-      <div class="equip-top">
-        <span class="equip-slot">${slotName}</span>
-        <span class="equip-name">${equipName}${stars}</span>
-      </div>
-      ${hasDetails ? `<div class="equip-details">
-        ${pBadge ? `<div class="equip-pot-line">${pBadge}<span>${pText}</span></div>` : ''}
-        ${aBadge ? `<div class="equip-pot-line">${aBadge}<span>${aText}</span></div>` : ''}
-        ${addTxt ? `<div class="equip-add-line">⭐ ${addTxt}</div>` : ''}
-      </div>` : ''}
-    </div>`;
+    return `
+      <div class="equip-card" style="border-left-color:${pColor}">
+        <div class="equip-top">
+          <span class="equip-slot">${eq?.slot ?? '未知'}</span>
+          <span class="equip-name">${eq?.name ?? '空'}${star}</span>
+        </div>
+        ${(pBadge || aBadge) ? `
+          <div class="equip-details">
+            ${pBadge ? `<div class="equip-pot-line">${pBadge} <span>${eq?.potential?.join(' / ') ?? ''}</span></div>` : ''}
+            ${aBadge ? `<div class="equip-pot-line">${aBadge} <span>${eq?.additional?.join(' / ') ?? ''}</span></div>` : ''}
+          </div>` : ''}
+      </div>`;
   }).join('');
 }
-
 // ================================================================
 // V矩陣 & HEXA
 // ================================================================
@@ -306,25 +286,6 @@ function renderHyperStats(hyper_stats) {
 }
 
 // ================================================================
-// V矩陣 & HEXA
-// ================================================================
-function renderVMatrix(v_cores) {
-  const el = document.getElementById('v-grid');
-  if (!v_cores.length) { el.innerHTML = '<div class="empty">無資料</div>'; return; }
-  el.innerHTML = v_cores.map(c =>
-    `<div class="core-chip"><span>${c.name}</span><span class="core-lv">Lv.${c.level}</span></div>`
-  ).join('');
-}
-
-function renderHEXA(hexa_cores) {
-  const el = document.getElementById('hexa-grid');
-  if (!hexa_cores.length) { el.innerHTML = '<div class="empty">無資料</div>'; return; }
-  el.innerHTML = hexa_cores.map(c =>
-    `<div class="core-chip hexa"><span>${c.name}</span><span class="core-lv">Lv.${c.level}</span></div>`
-  ).join('');
-}
-
-// ================================================================
 // 傳授技能 (防禦性渲染)
 // ================================================================
 function renderLinkSkills(link_skills) {
@@ -367,19 +328,6 @@ function renderInnerAbility(ability) {
   el.innerHTML = `<div class="ability-grade"><span class="grade-badge" style="background:${gc}">${ability.grade}</span></div>`
     + ability.abilities.map(ab => `<div class="ability-line">${ab}</div>`).join('');
 }
-// ================================================================
-// 系統、聯盟、外觀渲染區
-// ================================================================
-
-// 符文 (ARC/AUT)
-function renderSymbols(symbols) {
-  const el = document.getElementById('symbol-grid');
-  if (!el) return;
-  if (!symbols || symbols.length === 0) { el.innerHTML = '<div class="empty">無資料</div>'; return; }
-  el.innerHTML = symbols.map(s => 
-    `<div class="symbol-chip"><span>${s.name}</span><span class="lv">Lv.${s.level}</span></div>`
-  ).join('');
-}
 
 // 戰地聯盟 (總等級/等級)
 function renderUnion(union) {
@@ -392,19 +340,6 @@ function renderUnion(union) {
   </div>`;
 }
 
-// 寵物
-function renderPets(pets) {
-  const el = document.getElementById('pets-grid');
-  if (!el) return;
-  // 檢查是否為陣列，防止 map is not a function
-  if (!Array.isArray(pets)) {
-    console.warn("renderPets: 資料非陣列", pets);
-    el.innerHTML = '<div class="empty">無資料或格式異常</div>';
-    return;
-  }
-  if (pets.length === 0) { el.innerHTML = '<div class="empty">無資料</div>'; return; }
-  el.innerHTML = pets.map(p => `<div class="chip">${p.name || '未知'}</div>`).join('');
-}
 
 // 機器人
 function renderAndroid(android) {
@@ -433,27 +368,7 @@ function renderBeauty(beauty) {
   </div>`;
 }
 
-// ================================================================
-// 修正後的渲染函式 (對應 Supabase 資料結構)
-// ================================================================
-
-// 1. 聯盟冠軍
-function renderUnionChampion(data) {
-  const el = document.getElementById('union-champion-grid');
-  if (!el) return;
-  // data 結構為 {champions: Array, total_badge: Array}
-  if (!data || !Array.isArray(data.champions)) {
-    el.innerHTML = '<div class="empty">無資料</div>';
-    return;
-  }
-  el.innerHTML = `
-    <div class="info-block"><strong>總效果:</strong> ${data.total_badge ? data.total_badge.join(', ') : '無'}</div>
-    <div class="champions-list">
-      ${data.champions.map(c => `<div class="chip">${c.name} (${c.class}) - ${c.grade}</div>`).join('')}
-    </div>`;
-}
-
-// 2. 戰地攻擊隊
+// 戰地攻擊隊
 function renderUnionRaider(data) {
   const el = document.getElementById('union-raider-grid');
   if (!el) return;
@@ -485,21 +400,86 @@ function renderCashItems(data) {
   }
   el.innerHTML = items.map(i => `<div class="chip">${i.name}</div>`).join('');
 }
+// ================================================================
+// 升級版渲染函式 (含 Icon 與防呆)
+// ================================================================
 
-// 4. 聯盟神器
+// 1. 符文系統 (ARC/AUT)
+function renderSymbols(symbols) {
+  const el = document.getElementById('symbol-grid');
+  if (!el) return;
+  if (!Array.isArray(symbols)) { el.innerHTML = '<div class="empty">無資料</div>'; return; }
+  el.innerHTML = symbols.map(s => `
+    <div class="item-row" style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
+      <img src="${s.icon}" style="width:32px; height:32px;" onerror="this.style.display='none'">
+      <div><strong>${s.name}</strong> <span style="color:var(--highlight)">Lv.${s.level}</span></div>
+    </div>
+  `).join('');
+}
+
+// 2. 聯盟神器
 function renderUnionArtifact(data) {
   const el = document.getElementById('union-artifact-grid');
   if (!el) return;
-  // data 結構包含 effects: Array, crystals: Array
-  if (!data || !Array.isArray(data.effects)) {
-    el.innerHTML = '<div class="empty">無資料</div>';
-    return;
-  }
-  el.innerHTML = `
-    <div class="artifact-section">
-      <p><strong>神器效果:</strong></p>
-      ${data.effects.map(e => `<div class="chip-long">${e.name} (Lv.${e.level})</div>`).join('')}
-    </div>`;
+  if (!data || !Array.isArray(data.effects)) { el.innerHTML = '<div class="empty">無資料</div>'; return; }
+  el.innerHTML = data.effects.map(e => `
+    <div class="item-row" style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
+      <img src="${e.icon}" style="width:32px; height:32px;" onerror="this.style.display='none'">
+      <div><strong>${e.name}</strong> <span style="color:var(--highlight)">Lv.${e.level}</span></div>
+    </div>
+  `).join('');
+}
+
+// 3. 聯盟冠軍
+function renderUnionChampion(data) {
+  const el = document.getElementById('union-champion-grid');
+  if (!el) return;
+  if (!data || !Array.isArray(data.champions)) { el.innerHTML = '<div class="empty">無資料</div>'; return; }
+  el.innerHTML = data.champions.map(c => `
+    <div class="item-row" style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
+      <img src="${c.icon}" style="width:32px; height:32px;" onerror="this.style.display='none'">
+      <div><strong>${c.name}</strong> <span style="font-size:0.8em; color:#888;">${c.class} / ${c.grade}</span></div>
+    </div>
+  `).join('');
+}
+
+// 4. 五轉 V-Matrix (含 Icon)
+function renderVMatrix(v_cores) {
+  const el = document.getElementById('v-grid');
+  if (!el) return;
+  if (!Array.isArray(v_cores)) { el.innerHTML = '<div class="empty">無資料</div>'; return; }
+  el.innerHTML = v_cores.map(c => `
+    <div class="item-row" style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
+      <img src="${c.icon}" style="width:32px; height:32px;" onerror="this.style.display='none'">
+      <div><strong>${c.name}</strong> <span style="color:var(--highlight)">Lv.${c.level}</span></div>
+    </div>
+  `).join('');
+}
+
+// 5. 六轉 HEXA (含 Icon)
+function renderHEXA(hexa_cores) {
+  const el = document.getElementById('hexa-grid');
+  if (!el) return;
+  if (!Array.isArray(hexa_cores)) { el.innerHTML = '<div class="empty">無資料</div>'; return; }
+  el.innerHTML = hexa_cores.map(c => `
+    <div class="item-row" style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
+      <img src="${c.icon}" style="width:32px; height:32px;" onerror="this.style.display='none'">
+      <div><strong>${c.name}</strong> <span style="color:var(--highlight)">Lv.${c.level}</span></div>
+    </div>
+  `).join('');
+}
+
+// 7. 寵物 (含 Icon)
+function renderPets(pets) {
+  const el = document.getElementById('pets-grid');
+  if (!el) return;
+  if (!Array.isArray(pets)) { el.innerHTML = '<div class="empty">無資料</div>'; return; }
+  el.innerHTML = pets.map(p => `
+    <div class="item-row" style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
+      <img src="${p.icon}" style="width:40px; height:40px;" onerror="this.style.display='none'">
+      <div><strong>${p.name}</strong></div>
+    </div>
+  `).join('');
 }
 // ================================================================
 // 區塊折疊
