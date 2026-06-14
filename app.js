@@ -426,35 +426,57 @@ function renderSymbols(symbols) {
 // ================================================================
 // 聯盟神器 (Artifact) 渲染
 // ================================================================
+// 水晶名稱轉圖片檔名的對應表
+function getCrystalIconPath(name) {
+  // 假設你的圖檔都放在 images/crystals/ 資料夾下
+  const basePath = 'images/crystals/';
+  const mapping = {
+    '菇菇寶貝': 'mushroom.png',
+    '綠水靈': 'slime.png',
+    '刺菇菇': 'thorny_mushroom.png',
+    '木妖': 'stump.png',
+    '石巨人': 'stone_golem.png',
+    '巴洛古': 'balrog.png',
+    '殘暴炎魔': 'zakum.png'
+    '粉豆': 'pinkbean.png'
+    '拉圖斯': 'papulatus.png'
+  };
+
+  // 從名稱中取出關鍵字（例如：將 "水晶：菇菇寶貝" 變成 "菇菇寶貝"）
+  const key = name.split('：')[1]; 
+  const fileName = mapping[key] || 'default.png'; // 找不到則顯示預設圖片
+  return basePath + fileName;
+}
+// 聯盟神器本體
 function renderUnionArtifact(data) {
   const el = document.getElementById('union-artifact-grid');
   if (!el) return;
 
-  // data 結構為 { crystals: Array, remain_ap: Number }
   if (!data || !Array.isArray(data.crystals)) {
     el.innerHTML = '<div class="empty">無神器資料</div>';
     return;
   }
 
-  // 渲染剩餘 AP 與水晶列表
   el.innerHTML = `
-    <div class="artifact-summary" style="margin-bottom:10px; font-weight:bold; color:var(--highlight);">
-      剩餘 AP: ${data.remain_ap ?? 0}
+    <div class="artifact-header" style="margin-bottom:15px; padding:10px; background:var(--bg-2); border-radius:6px; font-weight:bold;">
+      剩餘 AP: <span style="color:var(--highlight)">${data.remain_ap ?? 0}</span>
     </div>
     <div class="crystal-list">
       ${data.crystals.map(c => `
-        <div class="crystal-card" style="border: 1px solid var(--border); padding:10px; margin-bottom:8px; border-radius:6px; background:var(--bg-2);">
-          <div style="display:flex; align-items:center; gap:10px; margin-bottom:5px;">
-             <div style="width:32px; height:32px; background:#444; display:flex; align-items:center; justify-content:center; border-radius:4px; font-size:12px;">💎</div>
+        <div class="crystal-card" style="border: 1px solid var(--border); padding:12px; margin-bottom:10px; border-radius:8px; background:var(--bg-1);">
+          <div style="display:flex; align-items:center; gap:12px; margin-bottom:10px;">
+             <img src="${getCrystalIconPath(c.name)}" 
+                  style="width:40px; height:40px; border-radius:4px; background:#222;" 
+                  onerror="this.src='images/crystals/default.png';">
              <div>
-                <strong style="color:var(--text-1);">${c.name}</strong> 
-                <span style="color:var(--highlight); margin-left:8px;">Lv.${c.level}</span>
+                <div style="font-weight:bold; color:var(--text-1);">${c.name}</div>
+                <div style="font-size:0.9em; color:var(--highlight);">等級: Lv.${c.level}</div>
              </div>
           </div>
-          <div style="font-size:0.85em; color:var(--text-2); padding-left:42px;">
-             • ${c.option1}<br>
-             • ${c.option2}<br>
-             • ${c.option3}
+          <div class="crystal-options" style="font-size:0.85em; color:var(--text-2); background:var(--bg-2); padding:8px; border-radius:4px;">
+             <div style="margin-bottom:4px;">• ${c.option1}</div>
+             <div style="margin-bottom:4px;">• ${c.option2}</div>
+             <div>• ${c.option3}</div>
           </div>
         </div>
       `).join('')}
