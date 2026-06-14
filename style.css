@@ -654,3 +654,12 @@ html, body {
         flex-direction: column;
     }
 }
+
+/* 垂直堆疊容器 */
+.flex-column-layout {
+    display: flex;
+    flex-direction: column; /* 垂直排列 */
+    gap: 12px;              /* 版塊間距 */
+    flex: 1;                /* 讓這兩欄自動平分左右寬度 */
+    min-width: 0;           /* 避免內容過長導致版面跑掉 */
+}
