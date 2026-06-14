@@ -97,6 +97,7 @@ function switchTab(idx) {
 // 主渲染
 // ================================================================
 function renderCharacter(data) {
+  console.log("正在渲染角色:", data); // 新增這行
   if (!data) return;
 
   const img = document.getElementById('char-image');
