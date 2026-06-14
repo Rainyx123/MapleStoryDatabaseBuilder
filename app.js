@@ -423,19 +423,43 @@ function renderSymbols(symbols) {
   `).join('');
 }
 
-// 2. 聯盟神器
+// ================================================================
+// 聯盟神器 (Artifact) 渲染
+// ================================================================
 function renderUnionArtifact(data) {
   const el = document.getElementById('union-artifact-grid');
   if (!el) return;
-  if (!data || !Array.isArray(data.effects)) { el.innerHTML = '<div class="empty">無資料</div>'; return; }
-  el.innerHTML = data.effects.map(e => `
-    <div class="item-row" style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
-      <img src="${e.icon}" style="width:32px; height:32px;" onerror="this.style.display='none'">
-      <div><strong>${e.name}</strong> <span style="color:var(--highlight)">Lv.${e.level}</span></div>
-    </div>
-  `).join('');
-}
 
+  // data 結構為 { crystals: Array, remain_ap: Number }
+  if (!data || !Array.isArray(data.crystals)) {
+    el.innerHTML = '<div class="empty">無神器資料</div>';
+    return;
+  }
+
+  // 渲染剩餘 AP 與水晶列表
+  el.innerHTML = `
+    <div class="artifact-summary" style="margin-bottom:10px; font-weight:bold; color:var(--highlight);">
+      剩餘 AP: ${data.remain_ap ?? 0}
+    </div>
+    <div class="crystal-list">
+      ${data.crystals.map(c => `
+        <div class="crystal-card" style="border: 1px solid var(--border); padding:10px; margin-bottom:8px; border-radius:6px; background:var(--bg-2);">
+          <div style="display:flex; align-items:center; gap:10px; margin-bottom:5px;">
+             <div style="width:32px; height:32px; background:#444; display:flex; align-items:center; justify-content:center; border-radius:4px; font-size:12px;">💎</div>
+             <div>
+                <strong style="color:var(--text-1);">${c.name}</strong> 
+                <span style="color:var(--highlight); margin-left:8px;">Lv.${c.level}</span>
+             </div>
+          </div>
+          <div style="font-size:0.85em; color:var(--text-2); padding-left:42px;">
+             • ${c.option1}<br>
+             • ${c.option2}<br>
+             • ${c.option3}
+          </div>
+        </div>
+      `).join('')}
+    </div>`;
+}
 // 3. 聯盟冠軍
 function renderUnionChampion(data) {
   const el = document.getElementById('union-champion-grid');
