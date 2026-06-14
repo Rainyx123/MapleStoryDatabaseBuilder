@@ -383,8 +383,18 @@ function renderUnionArtifact(artifact) {
 function renderUnionChampion(champions) {
   const el = document.getElementById('union-champion-grid');
   if (!el) return;
-  if (!champions || champions.length === 0) { el.innerHTML = '<div class="empty">無資料</div>'; return; }
-  el.innerHTML = champions.map(c => `<div class="chip">${c.name}</div>`).join('');
+
+  // 【重要偵錯】觀察 Console 裡印出來的到底是陣列、物件還是 null
+  console.log("偵錯 - 聯盟冠軍資料結構:", champions);
+
+  // 防禦性檢查：確認它是不是陣列
+  if (!champions || !Array.isArray(champions)) {
+    el.innerHTML = '<div class="empty">無資料或格式異常</div>';
+    return;
+  }
+
+  // 只有確定是陣列才會執行 map
+  el.innerHTML = champions.map(c => `<div class="chip">${c.name || '未知'}</div>`).join('');
 }
 
 // 戰地聯盟 (總等級/等級)
