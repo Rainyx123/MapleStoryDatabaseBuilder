@@ -455,11 +455,27 @@ function closeModal(id) {
 // ================================================================
 // 顯示狀態
 // ================================================================
-function showState(state, msg) {
-  document.getElementById('loading').classList.toggle('hidden', state !== 'loading');
-  document.getElementById('content').classList.toggle('hidden', state !== 'content');
-  document.getElementById('error').classList.toggle('hidden',   state !== 'error');
-  if (state === 'error') setText('error-msg', msg || '發生未知錯誤');
+function showState(state, message) {
+    const loading = document.getElementById('loading');
+    const content = document.getElementById('content');
+    
+    // 如果找不到這些區塊，直接跳出，避免崩潰
+    if (!loading || !content) {
+        console.error("Critical Error: 'loading' or 'content' div is missing in index.html!");
+        return;
+    }
+
+    if (state === 'loading') {
+        loading.classList.remove('hidden');
+        content.classList.add('hidden');
+    } else if (state === 'content') {
+        loading.classList.add('hidden');
+        content.classList.remove('hidden');
+    } else if (state === 'error') {
+        loading.classList.add('hidden');
+        content.classList.add('hidden');
+        // 如果你有 error 區塊，記得也要做同樣的防禦處理
+    }
 }
 
 // ================================================================
