@@ -602,3 +602,16 @@ body {
   #char-image { width: 80px; height: 80px; }
   #panel-matrix, #panel-bottom { flex-direction: column; }
 }
+
+/* --- 垂直堆疊改版專用 --- */
+.container-stack { display: flex; flex-direction: column; gap: 12px; margin-top: 10px; }
+.section-card { background: var(--bg-1); border-radius: 8px; border: 1px solid var(--border); overflow: hidden; }
+.section-header { 
+    padding: 10px 15px; cursor: pointer; display: flex; justify-content: space-between;
+    background: var(--bg-2); font-weight: bold; font-size: var(--fs-md); 
+    user-select: none;
+}
+.section-body { padding: 15px; }
+.section-body.collapsed { display: none; }
+.toggle-icon { transition: transform 0.2s; font-size: 12px; }
+.collapsed .toggle-icon { transform: rotate(-90deg); }
