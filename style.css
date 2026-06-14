@@ -633,3 +633,24 @@ html, body {
   height: auto !important;
   min-height: 50px; /* 給予最小高度，避免空白 */
 }
+
+/* 並排佈局容器 */
+.flex-row-layout {
+    display: flex;
+    flex-direction: row; /* 強制並排 */
+    gap: 12px;           /* 版塊間距 */
+    width: 100%;
+}
+
+/* 並排中的每一個子區塊設定 */
+.flex-row-layout > .section-card {
+    flex: 1;             /* 讓它們自動平分寬度 */
+    min-width: 0;        /* 這是關鍵，避免內容過長導致版面撐開 */
+}
+
+/* 手機版自動改回垂直排列 (為了響應式設計) */
+@media (max-width: 768px) {
+    .flex-row-layout {
+        flex-direction: column;
+    }
+}
