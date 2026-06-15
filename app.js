@@ -408,20 +408,16 @@ function renderBeauty(beauty) {
 }
 
 // 戰地攻擊隊
-function renderUnionRaider(data) {
+function renderUnionRaider(raiders) {
   const el = document.getElementById('union-raider-grid');
   if (!el) return;
-  // data 結構包含 inner_stats, raider_stats, occupied_stats
-  // 我們先渲染佔領效果 (occupied_stats)
-  if (!data || !Array.isArray(data.occupied_stats)) {
-    el.innerHTML = '<div class="empty">無資料</div>';
-    return;
-  }
-  el.innerHTML = `
-    <div class="raider-section">
-      <p><strong>佔領效果:</strong></p>
-      ${data.occupied_stats.map(s => `<div class="chip-long">${s}</div>`).join('')}
-    </div>`;
+  
+  el.innerHTML = raiders.map(r => `
+    <div class="grid-item" style="aspect-ratio: auto; flex-direction: row; justify-content: flex-start; padding: 8px;">
+       <div style="font-weight:bold; width: 50%;">${r.name}</div>
+       <div style="color:var(--highlight); text-align:right; width: 50%;">+${r.value}%</div>
+    </div>
+  `).join('');
 }
 
 // ================================================================
@@ -516,11 +512,14 @@ function renderUnionChampion(data) {
 function renderVMatrix(v_cores) {
   const el = document.getElementById('v-grid');
   if (!el) return;
-  if (!Array.isArray(v_cores)) { el.innerHTML = '<div class="empty">無資料</div>'; return; }
+
   el.innerHTML = v_cores.map(c => `
-    <div class="item-row" style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
-      <img src="${c.icon}" style="width:32px; height:32px;" onerror="this.style.display='none'">
-      <div><strong>${c.name}</strong> <span style="color:var(--highlight)">Lv.${c.level}</span></div>
+    <div class="grid-item">
+      <img src="${c.icon}" onerror="this.style.display='none'">
+      <div class="grid-item-text">
+         <strong>${c.name}</strong><br>
+         <span style="color:var(--highlight)">Lv.${c.level}</span>
+      </div>
     </div>
   `).join('');
 }
@@ -529,11 +528,14 @@ function renderVMatrix(v_cores) {
 function renderHEXA(hexa_cores) {
   const el = document.getElementById('hexa-grid');
   if (!el) return;
-  if (!Array.isArray(hexa_cores)) { el.innerHTML = '<div class="empty">無資料</div>'; return; }
+
   el.innerHTML = hexa_cores.map(c => `
-    <div class="item-row" style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
-      <img src="${c.icon}" style="width:32px; height:32px;" onerror="this.style.display='none'">
-      <div><strong>${c.name}</strong> <span style="color:var(--highlight)">Lv.${c.level}</span></div>
+    <div class="grid-item">
+      <img src="${c.icon}" onerror="this.style.display='none'">
+      <div class="grid-item-text">
+         <strong>${c.name}</strong><br>
+         <span style="color:var(--highlight)">Lv.${c.level}</span>
+      </div>
     </div>
   `).join('');
 }
