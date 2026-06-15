@@ -419,7 +419,7 @@ function renderUnionRaider(data) {
   const el = document.getElementById('union-raider-grid');
   if (!el) return;
 
-  // 1. 從偵錯結果確認，正確的路徑是 data.raider_stats
+  // 取得正確資料路徑 (根據你剛剛偵測到的結構)
   const raiders = data.raider_stats || [];
 
   if (!Array.isArray(raiders) || raiders.length === 0) {
@@ -427,14 +427,13 @@ function renderUnionRaider(data) {
     return;
   }
 
-  // 2. 渲染邏輯：因為 raiders 裡是字串，直接把 r 當作字串渲染即可
+  // 渲染為列表形式
   el.innerHTML = raiders.map(stat => `
-    <div class="grid-item" style="aspect-ratio: auto; justify-content: flex-start; padding: 8px;">
-       <div style="font-size: 0.85rem; color: var(--text-1);">${stat}</div>
+    <div class="raider-row">
+       ${stat}
     </div>
   `).join('');
 }
-
 // ================================================================
 // 升級版渲染函式 (含 Icon 與防呆)
 // ================================================================
