@@ -472,26 +472,25 @@ function renderUnionArtifact(data) {
     return;
   }
 
-  // 1. Header 放在外面 (不用進入 map)
-  const headerHtml = `
-    <div class="artifact-header" style="width:100%; margin-bottom:10px; font-weight:bold; text-align:center;">
-       剩餘 AP: <span style="color:var(--highlight)">${data.remain_ap ?? 0}</span>
-    </div>`;
-
-  // 2. 核心區塊：直接將 items 變成 grid-item
-  const contentHtml = data.crystals.map(c => `
+  // 1. 生成水晶清單 (Grid Items)
+  const crystalsHtml = data.crystals.map(c => `
     <div class="grid-item">
       <img src="${getCrystalIconPath(c.name)}" onerror="this.style.display='none'">
-      
       <div class="grid-item-text" style="font-weight:bold;">${c.name}<br>Lv.${c.level}</div>
-      
       <div class="grid-item-text" style="font-size:0.65rem; color:var(--text-2); margin-top:4px;">
         ${c.option1}<br>${c.option2}<br>${c.option3}
       </div>
     </div>
   `).join('');
 
-  el.innerHTML = headerHtml + contentHtml;
+  // 2. 生成剩餘 AP (Footer)，加上 grid-column: 1 / -1 讓它橫跨整行
+  const footerHtml = `
+    <div style="grid-column: 1 / -1; text-align: center; margin-top: 10px; padding: 10px; font-weight: bold; background: var(--bg-2); border-radius: 6px;">
+       剩餘 AP: <span style="color:var(--highlight)">${data.remain_ap ?? 0}</span>
+    </div>`;
+
+  // 3. 合併放入容器
+  el.innerHTML = crystalsHtml + footerHtml;
 }
 // 3. 聯盟冠軍
 function renderUnionChampion(data) {
