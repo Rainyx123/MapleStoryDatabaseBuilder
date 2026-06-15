@@ -69,7 +69,6 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans TC
 
 /* 欄位分配 */
 .grid-hexa, .grid-champion, .grid-pet, .grid-beauty, .grid-union { grid-template-columns: repeat(2, 1fr); }
-.grid-stats { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); }
 .grid-artifact, .grid-link { grid-template-columns: repeat(3, 1fr); }
 .grid-vmatrix, .grid-symbol { grid-template-columns: repeat(6, 1fr); }
 
@@ -78,6 +77,15 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans TC
 .grid-item img { max-width: 80%; max-height: 60%; object-fit: contain; }
 .grid-item-text { width: 100%; font-size: 0.7rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 4px; }
 .empty-slot { background: var(--bg-1); border: 1px dashed var(--border); opacity: 0.5; }
+/* 核心屬性 — 列表式排版 */
+.grid-stats          { display: flex; flex-direction: column; padding: 0; gap: 0; }
+.stat-divider        { height: 1px; background: var(--border); margin: 6px 0; }
+.stat-row            { display: grid; grid-template-columns: 1fr 1fr; }
+.stat-pair           { display: flex; justify-content: space-between; align-items: center;
+                       padding: 4px 12px; gap: 8px; border-bottom: 1px solid var(--bg-3); }
+.stat-pair-right     { border-left: 1px solid var(--bg-3); }
+.stat-name           { font-size: 11px; color: var(--text-3); white-space: nowrap; flex-shrink: 0; }
+.stat-val            { font-size: 12px; font-weight: 600; color: var(--text-1); text-align: right; }
 
 /* 強制正方形 (V矩陣 & 六轉) */
 .grid-vmatrix .grid-item, .grid-hexa .grid-item { aspect-ratio: 1 / 1; width: 100%; }
