@@ -352,7 +352,7 @@ function renderLinkSkills(link_skills) {
             <div style="font-weight: bold; font-size: 0.9rem;">${skill.name}</div><div style="font-size: 0.9rem; color: var(--highlight);">Lv.${skill.level || 0}</div>
           </div>
         </div>
-        <div style="font-size: 0.85rem; color: var(--text-2); margin-top: 6px; line-height: 1.2; max-width: 25ch; word-break: break-all">
+        <div style="font-size: 0.85rem; color: var(--text-2); margin-top: 6px; line-height: 1.2; max-width: 30ch; word-break: break-all">
           ${formattedEffect}
         </div>
       </div>
