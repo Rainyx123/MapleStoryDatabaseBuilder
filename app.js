@@ -325,6 +325,9 @@ function renderHyperStats(hyper_stats) {
 // ================================================================
 // 傳授技能 (防禦性渲染)
 // ================================================================
+// ================================================================
+// 傳授技能 (渲染)
+// ================================================================
 function renderLinkSkills(link_skills) {
   const el = document.getElementById('link-grid');
   if (!el) return;
@@ -334,39 +337,25 @@ function renderLinkSkills(link_skills) {
     return;
   }
 
-  // 1. 計算中間點 (Math.ceil 確保奇數時，上列多一筆)
-  const midpoint = Math.ceil(link_skills.length / 2);
-  
-  // 2. 切分陣列
-  const topRow = link_skills.slice(0, midpoint);
-  const bottomRow = link_skills.slice(midpoint);
-
-  // 3. 渲染函式 (封裝一下，減少重複代碼)
-  const renderItem = (skill) => {
-    const formattedEffect = skill.effect ? skill.effect.replace(/\\n/g) : '';
+  el.innerHTML = link_skills.map(skill => {
+    // 修正點：加上了 , '<br>'，告訴程式遇到 \n 要換行而不是變成 undefined
+    const formattedEffect = skill.effect ? skill.effect.replace(/\\n/g, '<br>') : '';
+    
     return `
       <div class="grid-item">
         <div style="display: flex; align-items: center; gap: 8px;">
-          <img src="${skill.icon || ''}" style="width: 40px; height: 40px; border-radius: 4px; flex-shrink: 0;">
+          <img src="${skill.icon || ''}" style="width: 40px; height: 40px; border-radius: 4px; flex-shrink: 0;" onerror="this.style.display='none'">
           <div style="overflow: hidden;">
-            <div style="font-weight: bold; font-size: 0.9rem;">
-            <span>${skill.name}</span>
-            <span>Lv.${skill.level || 0}</div></span>
+            <div style="font-weight: bold; font-size: 0.9rem;">${skill.name}</div>
+            <div style="font-size: 0.8rem; color: var(--highlight);">Lv.${skill.level || 0}</div>
           </div>
         </div>
-        <div style="font-size: 0.85rem; color: var(--text-2); margin-top: 6px; line-height: 1.2; max-width: 30ch; word-break: break-all">
+        <div style="font-size: 0.75rem; color: var(--text-2); margin-top: 6px; line-height: 1.2; word-break: break-all;">
           ${formattedEffect}
         </div>
       </div>
     `;
-  };
-
-  // 4. 將兩個陣列渲染出來
-  // 為了讓 CSS Grid 能夠控制寬度，我們將它們放進同一個 grid 中，
-  // 但我們可以用 CSS 強制換行，或者分兩個 container。
-  // 最簡單的作法：直接把這兩組拼在一起，HTML 不需要動，邏輯靠 JS 決定順序即可。
-  
-  el.innerHTML = topRow.map(renderItem).join('') + bottomRow.map(renderItem).join('');
+  }).join('');
 }
 // ================================================================
 // 內潛
