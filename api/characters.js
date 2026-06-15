@@ -42,11 +42,26 @@ export default async function handler(req, res) {
 
     if (snapError) throw snapError;
 
-    // 4. 每個角色只保留最高戰力那筆（直接回傳完整 data）
+   // 4. 每個角色只保留最高戰力那筆，並轉換資料格式
     const best = {};
     for (const row of (snapshots || [])) {
       if (!best[row.character_name]) {
-        best[row.character_name] = row.data;
+        // 安全地取得原始資料
+        const originalData = row.data || {};
+        const statsObj = originalData.stats || {};
+        
+        // 轉換：將 stats 物件轉為 final_stat 陣列
+        const finalStatArray = Object.entries(statsObj).map(([key, value]) => ({
+            stat_name: key,
+            stat_value: value
+        }));
+
+        // 組裝並回傳給前端
+        best[row.character_name] = {
+            ...originalData,           // 保留原始所有欄位
+            final_stat: finalStatArray, // 補上前端需要的陣列格式
+            remain_ap: originalData.remain_ap || 0 // 補上 remain_ap，若無則預設 0
+        };
       }
     }
 
