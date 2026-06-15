@@ -51,20 +51,24 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans TC
 .section-header { padding: 10px 15px; background: var(--bg-2); display: flex; justify-content: space-between; align-items: center; cursor: pointer; font-weight: bold; font-size: var(--fs-md); user-select: none; border-bottom: 1px solid transparent; }
 .section-card:not(.collapsed) .section-header { border-bottom-color: var(--border); }
 .section-body { padding: 12px; height: auto; min-height: 50px; }
-.section-body.collapsed { display: none; }
 .toggle-icon { font-size: 10px; transition: transform 0.2s; color: var(--text-4); }
 .collapsed .toggle-icon { transform: rotate(-90deg); }
 .empty { color: var(--text-4); font-size: var(--fs-sm); text-align: center; padding: 10px 0; }
 
-/* 當 section-body 被加上 collapsed 類別時，強制隱藏 */
+/* 1. 摺疊功能的關鍵：隱藏身體區塊 */
 .section-body.collapsed {
     display: none !important;
 }
 
-/* 為了讓視覺上更像摺疊，你可以選擇性加上這行，讓摺疊時 header 有變化 */
-.section-card.collapsed .section-header {
-    border-bottom: none;
-    border-radius: var(--r-sm);
+/* 2. (選用) 摺疊時讓箭頭旋轉，增加視覺回饋 */
+.section-card.collapsed .section-header .toggle-icon {
+    transform: rotate(-90deg);
+    transition: transform 0.2s;
+}
+
+.section-header .toggle-icon {
+    transition: transform 0.2s;
+    display: inline-block;
 }
 
 /* 角色專屬標頭 */
