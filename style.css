@@ -682,8 +682,12 @@ html, body {
 /* 4. 傳授技能: 2x6 (2欄) */
 .grid-link { grid-template-columns: 1fr 1fr; }
 
+/* 5. 六轉Hexa矩陣: */
+.grid-hexa { grid-template-columns: repeat(4, 1fr); }
+
 /* 手機版響應式調整 (手機螢幕較小時，自動變成 1 或 2 欄，避免過擠) */
 @media (max-width: 600px) {
     .grid-vmatrix { grid-template-columns: repeat(3, 1fr); } /* 手機變 3 欄 */
+    .grid-hexa { grid-template-columns: repeat(2, 1fr); }  /* 手機變 2 欄 */
     .grid-artifact, .grid-stats, .grid-link { grid-template-columns: 1fr; } /* 手機變 1 欄 */
 }
