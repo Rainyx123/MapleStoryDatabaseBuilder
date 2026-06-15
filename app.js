@@ -357,28 +357,54 @@ function renderUnionArtifact(data) {
 
   el.innerHTML = effectsHtml + crystalsHtml;
 }
-function renderUnionChampion(data) {
-  const el = document.getElementById('union-champion-grid');
+
+function getArtifactImagePath(name) {
+    const mapping = {
+        '菇菇寶貝': 1, '綠水靈': 2, '刺菇菇': 3, '木妖': 4, 
+        '石巨人': 5, '巴洛古': 6, '殘暴炎魔': 7, '粉豆': 8, '拉圖斯': 9
+    };
+    for (let key in mapping) {
+        if (name.includes(key)) return `images/crystals/Artifact${mapping[key]}.png`;
+    }
+    return 'images/crystals/default.png';
+}
+
+function renderUnionArtifact(data) {
+  const el = document.getElementById('union-artifact-grid');
   if (!el) return;
-  
-  // 根據 Log，資料位於 data.champions
-  const champs = data?.champions || [];
-  const badges = data?.total_badge || [];
-  
-  if (champs.length === 0 && badges.length === 0) {
+
+  const crystals = data?.crystals || [];
+  const effects = data?.effects || [];
+
+  if (crystals.length === 0 && effects.length === 0) {
       el.innerHTML = '<div class="empty">無資料</div>';
       return;
   }
-  
-  el.innerHTML = `
-      <div style="font-size:10px; color:var(--text-4); margin-bottom:5px; padding-bottom:5px; border-bottom:1px solid var(--border)">
-          獎章: ${badges.length > 0 ? badges.join(', ') : '無'}
-      </div>
-      ${champs.map(c => `
-          <div class="raider-row">
-              <span style="color:var(--text-1)">${c.name} (${c.class})</span>
-              <span style="margin-left:auto; color:var(--accent-light); font-weight:bold">${c.grade}</span>
-          </div>
-      `).join('')}
-  `;
+
+  // 1. 總和效果 (橫跨 3 欄)
+  const effectsHtml = effects.length > 0 
+    ? `<div style="grid-column: span 3; padding-bottom: 8px; border-bottom: 1px solid var(--border); margin-bottom: 4px;">
+         <div style="font-size:11px; color:var(--text-4); margin-bottom:6px; font-weight:bold;">總和效果</div>
+         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:4px;">
+           ${effects.map(e => `<div style="font-size:11.5px; color:var(--text-1);">• ${e.name} <span style="color:var(--accent-light)">(Lv.${e.level})</span></div>`).join('')}
+         </div>
+       </div>`
+    : '';
+
+  // 2. 水晶列表
+  const crystalsHtml = crystals.map(item => `
+    <div class="grid-item" style="align-items: flex-start; text-align: left; padding: 10px;">
+        <img src="${getArtifactImagePath(item.name)}" style="width:36px; height:36px; margin-bottom:6px" onerror="this.src='images/crystals/default.png'">
+        <div style="font-weight:bold; font-size:12.5px; color:var(--text-1); margin-bottom:4px;">
+            ${item?.name ?? '水晶'} <span style="color:var(--accent-light); font-size:11px;">Lv.${item?.level ?? 0}</span>
+        </div>
+        <div style="font-size:10.5px; color:var(--text-3); line-height:1.4;">
+           ${item?.option1 ? `<div>- ${item.option1}</div>` : ''}
+           ${item?.option2 ? `<div>- ${item.option2}</div>` : ''}
+           ${item?.option3 ? `<div>- ${item.option3}</div>` : ''}
+        </div>
+    </div>
+  `).join('');
+
+  el.innerHTML = effectsHtml + crystalsHtml;
 }
