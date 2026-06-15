@@ -156,6 +156,7 @@ function renderCharacter(data) {
     // [除錯用] 如果圖示沒出現，你在 F12 Console 會看到這筆資料的詳細結構
     if (!c?.icon) console.log('該核心缺圖示:', c);
 
+    // app.js 中渲染 subSkills 的部分
     const subSkills = Array.isArray(c?.skills) && c.skills.length > 0
         ? `<div style="display:flex; gap:2px; margin-top:3px; justify-content:center; flex-wrap:wrap;">
              ${c.skills.map(sk => `<img src="${sk.icon}" title="${sk.name}" style="width:14px; height:14px; border-radius:2px; opacity:0.8;" onerror="this.style.display='none'">`).join('')}
