@@ -693,7 +693,22 @@ html, body {
 .grid-union { grid-template-columns: 1fr 1fr; }
 
 /* 11. 戰地攻擊隊: 2欄 */
-.grid-unionraider { grid-template-columns: 1fr 1fr; }
+/* 移除邊框、背景，只保留下邊框增加區隔感 */
+.raider-row {
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--border); /* 產生像表格的水平分割線 */
+    font-size: 0.85rem;
+    color: var(--text-1);
+    display: flex;
+    align-items: center;
+}
+
+/* 確保容器沒有多餘的 Padding */
+.grid-unionraider {
+    display: grid;
+    grid-template-columns: 1fr 1fr; /* 保持 2 欄 */
+    gap: 0; /* 列表式通常不需要間距 */
+}
 
 /* 手機版響應式調整 (手機螢幕較小時，自動變成 1 或 2 欄，避免過擠) */
 @media (max-width: 600px) {
