@@ -472,30 +472,26 @@ function renderUnionArtifact(data) {
     return;
   }
 
-  el.innerHTML = `
-    <div class="artifact-header" style="margin-bottom:15px; padding:10px; background:var(--bg-2); border-radius:6px; font-weight:bold;">
-      剩餘 AP: <span style="color:var(--highlight)">${data.remain_ap ?? 0}</span>
-    </div>
-    <div class="crystal-list">
-      ${data.crystals.map(c => `
-        <div class="crystal-card" style="border: 1px solid var(--border); padding:12px; margin-bottom:10px; border-radius:8px; background:var(--bg-1);">
-          <div style="display:flex; align-items:center; gap:12px; margin-bottom:10px;">
-             <img src="${getCrystalIconPath(c.name)}" 
-                  style="width:40px; height:40px; border-radius:4px;" 
-                  onerror="this.style.display='none';">
-             <div>
-                <div style="font-weight:bold; color:var(--text-1);">${c.name}</div>
-                <div style="font-size:0.9em; color:var(--highlight);">等級: Lv.${c.level}</div>
-             </div>
-          </div>
-          <div class="crystal-options" style="font-size:0.85em; color:var(--text-2); background:var(--bg-2); padding:8px; border-radius:4px;">
-             <div style="margin-bottom:4px;">• ${c.option1}</div>
-             <div style="margin-bottom:4px;">• ${c.option2}</div>
-             <div>• ${c.option3}</div>
-          </div>
-        </div>
-      `).join('')}
+  // 1. Header 放在外面 (不用進入 map)
+  const headerHtml = `
+    <div class="artifact-header" style="width:100%; margin-bottom:10px; font-weight:bold; text-align:center;">
+       剩餘 AP: <span style="color:var(--highlight)">${data.remain_ap ?? 0}</span>
     </div>`;
+
+  // 2. 核心區塊：直接將 items 變成 grid-item
+  const contentHtml = data.crystals.map(c => `
+    <div class="grid-item">
+      <img src="${getCrystalIconPath(c.name)}" onerror="this.style.display='none'">
+      
+      <div class="grid-item-text" style="font-weight:bold;">${c.name}<br>Lv.${c.level}</div>
+      
+      <div class="grid-item-text" style="font-size:0.65rem; color:var(--text-2); margin-top:4px;">
+        ${c.option1}<br>${c.option2}<br>${c.option3}
+      </div>
+    </div>
+  `).join('');
+
+  el.innerHTML = headerHtml + contentHtml;
 }
 // 3. 聯盟冠軍
 function renderUnionChampion(data) {
