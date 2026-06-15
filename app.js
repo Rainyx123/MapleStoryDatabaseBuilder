@@ -341,3 +341,44 @@ function renderCashItems(data) {
       </div>`
     ).join('');
 }
+
+// ================================================================
+// 聯盟神器與冠軍 (修正路徑)
+// ================================================================
+
+function renderUnionArtifact(data) {
+  // 根據 Log，資料位於 data.crystals
+  const items = data?.crystals || [];
+  renderList('union-artifact-grid', items, item => 
+    `<div class="grid-item">
+        <div class="grid-item-text" style="font-weight:bold">${item?.name ?? '水晶'}</div>
+        <div style="font-size:10px; color:var(--accent-light)">Lv.${item?.level ?? 0}</div>
+    </div>`
+  );
+}
+
+function renderUnionChampion(data) {
+  const el = document.getElementById('union-champion-grid');
+  if (!el) return;
+  
+  // 根據 Log，資料位於 data.champions
+  const champs = data?.champions || [];
+  const badges = data?.total_badge || [];
+  
+  if (champs.length === 0 && badges.length === 0) {
+      el.innerHTML = '<div class="empty">無資料</div>';
+      return;
+  }
+  
+  el.innerHTML = `
+      <div style="font-size:10px; color:var(--text-4); margin-bottom:5px; padding-bottom:5px; border-bottom:1px solid var(--border)">
+          獎章: ${badges.length > 0 ? badges.join(', ') : '無'}
+      </div>
+      ${champs.map(c => `
+          <div class="raider-row">
+              <span style="color:var(--text-1)">${c.name} (${c.class})</span>
+              <span style="margin-left:auto; color:var(--accent-light); font-weight:bold">${c.grade}</span>
+          </div>
+      `).join('')}
+  `;
+}
