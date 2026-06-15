@@ -470,3 +470,35 @@ function renderUnionChampion(data) {
       </div>`;
   }).join('');
 }
+
+document.addEventListener('click', (e) => {
+    // 1. 偵測點擊目標
+    const header = e.target.closest('.section-header');
+    if (!header) return; // 點擊的不是標頭，忽略
+
+    console.log('點擊成功：偵測到 section-header');
+
+    // 2. 尋找父層 card
+    const card = header.closest('.section-card');
+    if (!card) {
+        console.error('錯誤：找不到 .section-card 容器');
+        return;
+    }
+    console.log('找到對應容器：', card.id);
+
+    // 3. 尋找身體區塊
+    const body = card.querySelector('.section-body');
+    if (!body) {
+        console.error('錯誤：找不到 .section-body 內容區塊');
+        return;
+    }
+
+    // 4. 切換狀態
+    card.classList.toggle('collapsed');
+    body.classList.toggle('collapsed');
+
+    // 5. 儲存狀態
+    const states = JSON.parse(localStorage.getItem('section-states') || '{}');
+    states[card.id] = !body.classList.contains('collapsed');
+    localStorage.setItem('section-states', JSON.stringify(states));
+});
