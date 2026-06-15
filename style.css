@@ -705,6 +705,7 @@ html, body {
 /* 1. 容器：負責控制欄位數量 */
 .grid-container {
     display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(60px, 1fr)); /* 如果不想手動寫每一種，這行能自動適應 */
     gap: 10px;
 }
 
@@ -726,11 +727,13 @@ html, body {
     display: flex;           /* 改回 flex 才能置中 */
     flex-direction: column;  /* 垂直排列 */
     align-items: center;     /* 水平置中 (圖片與文字都會置中) */
+    justify-content: center;
     text-align: center;      /* 文字內容置中 */
     border: 1px solid var(--border);
     border-radius: 8px;
     background: var(--bg-2);
-    padding: 8px;
+    padding: 5px;
+    overflow: hidden;
     min-width: 0;            /* 重要！這行能防止內容撐壞 Grid */
 }
 
@@ -750,9 +753,12 @@ html, body {
     overflow: hidden;
 }
 
-/* 強制確保方塊正確縮放 */
+/* 強制確保方塊正確縮放，並防止撐開網格 */
 .grid-vmatrix .grid-item, 
 .grid-hexa .grid-item {
-    aspect-ratio: 1 / 1; /* 保持正方形 */
-    width: 100%;
+    aspect-ratio: 1 / 1; 
+    width: 100%;       /* 填滿格子 */
+    min-width: 0;      /* 這是關鍵！防止內容過大撐開格子 */
+    min-height: 0;     /* 防止內容過多撐開高度 */
+    overflow: hidden;  /* 如果內容真的太大，強制隱藏，不要撐開 */
 }
