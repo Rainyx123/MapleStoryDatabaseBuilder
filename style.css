@@ -674,9 +674,6 @@ html, body {
 /* 3. 核心屬性: 2欄 */
 .grid-stats { grid-template-columns: 1fr 1fr; }
 
-/* 4. 傳授技能: 2x6 (2欄) */
-.grid-link { grid-template-columns: repeat(6, 1fr); }
-
 /* 5. 六轉Hexa矩陣: 4欄 */
 .grid-hexa { grid-template-columns: repeat(4, 1fr); }
 
@@ -712,8 +709,18 @@ html, body {
 }
 
 /* 特別針對傳授技能的欄位 */
-.grid-link { 
-    grid-template-columns: repeat(6, 1fr); /* 強制 6 欄 */
+/* 移除 Grid，改用 Flexbox 容器 */
+.grid-link {
+    display: flex;
+    flex-wrap: wrap;        /* 自動換行 */
+    justify-content: center; /* 讓所有項目置中對齊 */
+    gap: 10px;
+}
+
+/* 限制每個項目的寬度，讓它在 Flex 中能維持排列 */
+.grid-link .grid-item {
+    flex: 0 0 calc(16.66% - 10px); /* 16.66% 大約是 1/6 的寬度 */
+    min-width: 150px;              /* 確保不會太窄 */
 }
 
 /* 2. 項目：負責內部的排列 (不要用 display: block) */
