@@ -686,7 +686,7 @@ html, body {
 .grid-hexa { grid-template-columns: repeat(4, 1fr); }
 
 /* 6. 符文系統: 3欄 */
-.grid-symbol { grid-template-columns: repeat(3, 1fr); }
+.grid-symbol { grid-template-columns: repeat(6, 1fr); }
 
 /* 7. 聯盟冠軍: 2欄 */
 .grid-champion { grid-template-columns: 1fr 1fr; }
