@@ -702,12 +702,6 @@ html, body {
     .grid-artifact, .grid-stats, .grid-link { grid-template-columns: 1fr; } /* 手機變 1 欄 */
 }
 
-/* 1. 容器：負責控制欄位數量 */
-.grid-container {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(60px, 1fr)); /* 如果不想手動寫每一種，這行能自動適應 */
-    gap: 10px;
-}
 
 /* 特別針對傳授技能的欄位 */
 .grid-link {
@@ -722,35 +716,46 @@ html, body {
     min-width: 60px;              /* 確保不會太窄 */
 }
 
-/* 2. 項目：負責內部的排列 (不要用 display: block) */
+/* 1. 網格容器修正：防止內容撐開容器 */
+.grid-container {
+    display: grid;
+    gap: 10px;
+    min-width: 0; /* 重要：告訴容器不要因為內容多而無限變大 */
+}
+
+/* 2. 核心修正：強制所有格子「鎖定大小」 */
 .grid-item {
-    display: flex;           /* 改回 flex 才能置中 */
-    flex-direction: column;  /* 垂直排列 */
-    align-items: center;     /* 水平置中 (圖片與文字都會置中) */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     justify-content: center;
-    text-align: center;      /* 文字內容置中 */
     border: 1px solid var(--border);
     border-radius: 8px;
     background: var(--bg-2);
     padding: 5px;
-    overflow: hidden;
-    min-width: 0;            /* 重要！這行能防止內容撐壞 Grid */
+    
+    /* 這裡必須設定！防止文字/圖片撐壞格子 */
+    min-width: 0; 
+    min-height: 0;
+    overflow: hidden; 
+    position: relative;
 }
 
-/* 3. 圖片限制：確保圖片不會過大擠壓版面 */
-.grid-item img {
-    width: 40px; 
-    height: 40px;
-    object-fit: contain;
-    margin-bottom: 5px;
-}
-
-/* 4. 文字大小：確保不會溢出 */
+/* 3. 文字強制截斷：防止文字太長導致盒子變形 */
 .grid-item-text {
-    font-size: 0.75rem;
-    line-height: 1.2;
     width: 100%;
-    overflow: hidden;
+    text-align: center;
+    font-size: 0.7rem; /* 稍微縮小字體以適應空間 */
+    white-space: nowrap;      /* 強制文字不換行 */
+    overflow: hidden;         /* 超出隱藏 */
+    text-overflow: ellipsis;  /* 顯示 ... */
+}
+
+/* 4. 圖片強制縮放：防止圖片撐開 */
+.grid-item img {
+    max-width: 80%;
+    max-height: 60%;
+    object-fit: contain;
 }
 
 /* 強制確保方塊正確縮放，並防止撐開網格 */
