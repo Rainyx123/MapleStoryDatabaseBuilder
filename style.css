@@ -715,8 +715,6 @@ html, body {
     aspect-ratio: auto !important; /* 取消正方形限制 */
     height: auto !important;       /* 高度根據內容自動調整 */
     padding: 10px;
-    text-align: left;              /* 文字靠左對齊比較好閱讀 */
-    display: block;                /* 讓內部結構恢復正常流 */
     flex-direction: column; /* 讓圖片與文字垂直排列 */
     align-items: center;    /* 水平置中 */
     justify-content: center; /* 垂直置中 */
