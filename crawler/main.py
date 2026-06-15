@@ -336,19 +336,31 @@ def process_character(char_name):
                 "icon":   skills[0]['icon'] if skills else '',
             })
 
-        # --- HEXA 矩陣 ---
-        hexa_cores = [
-            {
-                "name":  c.get('hexa_core_name',''),
+        # 修改後的處理邏輯
+        hexa_cores = []
+        for c in ((raw.get('h6') or {}).get('character_hexa_core_equipment') or []):
+            if not c.get('hexa_core_name'):
+                continue
+        
+            # 這裡直接從 API 拿圖示，不再查對照表
+            # 如果欄位名稱不是 hexa_core_icon，請換成你 print 出來看到的正確名稱
+            icon_url = c.get('hexa_core_icon', '') 
+            
+            # 處理 Linked Skills (包含圖示)
+            linked_skills = []
+            for ls in (c.get('linked_skill') or []):
+                linked_skills.append({
+                    "name": ls.get('hexa_skill_name', ''),
+                    "icon": ls.get('hexa_skill_icon', '') # 直接抓取副技能的 icon
+                })
+        
+            hexa_cores.append({
+                "name": c.get('hexa_core_name', ''),
                 "level": c.get('hexa_core_level', 0),
-                "type":  c.get('hexa_core_type',''),
-                "icon":  skill_icon_map.get(c.get('hexa_core_name',''), ''),
-                "linked_skills": [ls.get('hexa_skill_id','') for ls in (c.get('linked_skill') or [])]
-            }
-            for c in ((raw.get('h6') or {}).get('character_hexa_core_equipment') or [])
-            if c.get('hexa_core_name')
-        ]
-
+                "type": c.get('hexa_core_type', ''),
+                "icon": icon_url, 
+                "skills": linked_skills
+            })
         # --- HEXA 屬性 ---
         hs_raw = raw.get('hs') or {}
         hexa_stat = [
