@@ -178,22 +178,36 @@ function renderCharacter(data) {
     </div>`
   );
 
-  // 聯盟神器渲染 (請檢查 data.artifact 的結構，若不符請調整路徑)
-  renderList('union-artifact-grid', data?.artifact?.items || [], item => 
+  // 1. 聯盟神器渲染 (來自 union.union_artifact.crystals)
+  renderList('union-artifact-grid', data?.union?.union_artifact?.crystals || [], item => 
     `<div class="grid-item">
-        <img src="${item?.icon || ''}" onerror="this.style.display='none'">
-        <div class="grid-item-text">${item?.name ?? '神器'}</div>
-        <div style="font-size:10px; color:var(--text-3)">Lv.${item?.level ?? 0}</div>
+        <div class="grid-item-text" style="font-weight:bold">${item?.name ?? '水晶'}</div>
+        <div style="font-size:10px; color:var(--accent-light)">Lv.${item?.level ?? 0}</div>
     </div>`
   );
 
-  // 聯盟冠軍渲染
-  renderList('union-champion-grid', data?.champion?.stats || [], stat => 
-     `<div class="raider-row">
-        <span>${stat?.name ?? '能力'}</span>
-        <span style="margin-left:auto; color:var(--accent-light)">${stat?.value ?? ''}</span>
-     </div>`
-  );
+  // 2. 聯盟冠軍渲染 (來自 union.union_champion)
+  const champGrid = document.getElementById('union-champion-grid');
+  if (champGrid) {
+    const champs = data?.union?.union_champion?.champions || [];
+    const badges = data?.union?.union_champion?.total_badge || [];
+    
+    if (champs.length === 0 && badges.length === 0) {
+        champGrid.innerHTML = '<div class="empty">無資料</div>';
+    } else {
+        champGrid.innerHTML = `
+            <div style="font-size:11px; color:var(--text-4); margin-bottom:8px; padding-bottom:5px; border-bottom:1px solid var(--border)">
+                獎章: ${badges.length > 0 ? badges.join(', ') : '無'}
+            </div>
+            ${champs.map(c => `
+                <div class="raider-row">
+                    <span style="color:var(--text-1)">${c.name} (${c.class})</span>
+                    <span style="margin-left:auto; color:var(--accent-light); font-weight:bold">${c.grade}</span>
+                </div>
+            `).join('')}
+        `;
+    }
+  }
   
   // 簡單文字區塊
   const androidEl = document.getElementById('android-grid');
