@@ -1,875 +1,127 @@
 /* ================================================================
-   楓之谷角色資料庫 — Discord 風格深色主題  v2
+   楓之谷角色資料庫 — 模組化深色主題 v3
    ================================================================ */
-/* --- 佈局引擎重置 (請務必放在 CSS 最上方) --- */
 
-/* 確保所有容器盒模型一致 */
-* { box-sizing: border-box; }
-
-/* 1. 確保 Flex 父容器不會擠壓 Grid */
-.flex-row-layout, .flex-column-layout {
-    display: flex;
-    width: 100%;        /* 強制拉滿父層 */
-    min-width: 0;       /* 關鍵：防止 Flex 壓縮內部元素 */
-}
-
-.flex-row-layout { flex-direction: row; gap: 15px; }
-.flex-column-layout { flex-direction: column; gap: 15px; }
-
-/* 2. Grid System 核心修正 (最強力) */
-.grid-system {
-    display: grid !important;
-    grid-template-columns: repeat(12, 1fr) !important;
-    gap: 15px !important;
-    
-    /* 強制撐開 */
-    width: 100% !important;
-    min-width: 100% !important; 
-    flex: 1 1 100% !important; /* 讓它在 Flex 中能伸展 */
-    
-    /* 防止內部內容炸裂 */
-    overflow: hidden;
-}
-
-/* 確保所有 Section 在 Grid 裡都佔滿 */
-.grid-system > .section-card {
-    min-width: 0;
-    width: 100%;
-}
-/* ---- 使用者可調整的外觀變數（由 JS 透過 body class 覆寫）---- */
+/* ---- 1. 全域變數 (UI 主題設定) ---- */
 :root {
-  /* 字體大小 */
-  --fs-xs:   10px;
-  --fs-sm:   11px;
-  --fs-base: 13px;
-  --fs-md:   15px;
-  --fs-lg:   16px;
-
-  /* 左側面板寬度 */
-  --panel-left-w: 250px;
-
-  /* 背景層次 */
-  --bg-0: #111214;
-  --bg-1: #1e1f22;
-  --bg-2: #2b2d31;
-  --bg-3: #313338;
-  --bg-4: #383a40;
-  --bg-hover: #3c3f45;
-
-  /* 文字 */
-  --text-1: #f2f3f5;
-  --text-2: #dbdee1;
-  --text-3: #b5bac1;
-  --text-4: #80848e;
-
-  /* 楓之谷主題色 */
-  --accent:       #e8552b;
-  --accent-dark:  #b34020;
-  --accent-light: #ff7a50;
-
-  /* 邊框與圓角 */
+  --fs-xs: 10px; --fs-sm: 11px; --fs-base: 13px; --fs-md: 15px; --fs-lg: 16px;
+  --bg-0: #111214; --bg-1: #1e1f22; --bg-2: #2b2d31; --bg-3: #313338; --bg-4: #383a40; --bg-hover: #3c3f45;
+  --text-1: #f2f3f5; --text-2: #dbdee1; --text-3: #b5bac1; --text-4: #80848e;
+  --accent: #e8552b; --accent-dark: #b34020; --accent-light: #ff7a50;
   --border: #3f4148;
-  --r:    8px;
-  --r-sm: 4px;
-  --r-lg: 12px;
-
-  /* 潛能等級顏色 */
-  --legendary: #056C00;
-  --unique:    #4e5058;
-  --epic:      #680FC2;
-  --rare:      #DDA71D;
-  --none:      #0EADAD;
+  --r-sm: 4px; --r: 8px; --r-lg: 12px;
+  --none: #0EADAD;
 }
 
-/* ---- 字體大小覆寫 ---- */
-body.font-sm {
-  --fs-xs: 9px; --fs-sm: 10px; --fs-base: 11px; --fs-md: 13px; --fs-lg: 14px;
-}
-body.font-lg {
-  --fs-xs: 12px; --fs-sm: 13px; --fs-base: 15px; --fs-md: 17px; --fs-lg: 18px;
-}
+body.font-sm { --fs-xs: 9px; --fs-sm: 10px; --fs-base: 11px; --fs-md: 13px; --fs-lg: 14px; }
+body.font-lg { --fs-xs: 12px; --fs-sm: 13px; --fs-base: 15px; --fs-md: 17px; --fs-lg: 18px; }
 
-/* ---- 左側面板寬度覆寫 ---- */
-body.panel-narrow { --panel-left-w: 200px; }
-body.panel-wide   { --panel-left-w: 320px; }
-
-/* ================================================================
-   Reset
-   ================================================================ */
+/* ---- 2. 基礎 Reset ---- */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html, body { height: 100%; }
+html, body { overflow-y: auto; height: auto; min-height: 100vh; background: var(--bg-1); color: var(--text-2); }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans TC', sans-serif; font-size: var(--fs-base); }
 
-body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans TC', sans-serif;
-  font-size: var(--fs-base);
-  background: var(--bg-1);
-  color: var(--text-2);
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-  overflow: hidden;
-}
-
-/* ================================================================
-   Header
-   ================================================================ */
-#header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  background: var(--bg-2);
-  border-bottom: 1px solid var(--border);
-  padding: 0 16px;
-  height: 52px;
-  flex-shrink: 0;
-  z-index: 10;
-}
-
-#logo {
-  font-size: var(--fs-md);
-  font-weight: 700;
-  color: var(--text-1);
-  white-space: nowrap;
-  padding-right: 16px;
-  border-right: 1px solid var(--border);
-}
-
-#tab-bar {
-  flex: 1;
-  min-width: 0;                   /* ← 防止 flex 不縮小 */
-  display: flex;
-  gap: 2px;
-  overflow-x: auto;
-  padding: 8px 0;
-  scrollbar-width: none;
-}
-#tab-bar::-webkit-scrollbar { display: none; }
-
-.tab-btn {
-  background: none;
-  border: none;
-  color: var(--text-4);
-  font-size: var(--fs-sm);
-  font-weight: 500;
-  padding: 6px 14px;
-  border-radius: var(--r-sm);
-  cursor: pointer;
-  white-space: nowrap;
-  transition: background 0.12s, color 0.12s;
-  flex-shrink: 0;
-}
-.tab-btn:hover  { background: var(--bg-4); color: var(--text-2); }
+/* ---- 3. 頁面框架 (Header & Main) ---- */
+#header { display: flex; align-items: center; gap: 12px; background: var(--bg-2); border-bottom: 1px solid var(--border); padding: 0 16px; height: 52px; position: sticky; top: 0; z-index: 50; }
+#logo { font-size: var(--fs-md); font-weight: 700; color: var(--text-1); padding-right: 16px; border-right: 1px solid var(--border); }
+#tab-bar { flex: 1; display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; }
+.tab-btn { background: none; border: none; color: var(--text-4); padding: 6px 14px; border-radius: var(--r-sm); cursor: pointer; white-space: nowrap; font-weight: 500; transition: 0.12s; }
+.tab-btn:hover { background: var(--bg-4); color: var(--text-2); }
 .tab-btn.active { background: var(--bg-4); color: var(--text-1); font-weight: 600; }
-
-#header-actions {
-  display: flex;
-  gap: 6px;
-  flex-shrink: 0;
-}
-#header-actions button {
-  background: var(--bg-3);
-  border: 1px solid var(--border);
-  color: var(--text-3);
-  width: 34px; height: 34px;
-  border-radius: var(--r-sm);
-  cursor: pointer;
-  font-size: 16px;
-  display: flex; align-items: center; justify-content: center;
-  transition: background 0.12s, color 0.12s;
-}
+#header-actions { display: flex; gap: 6px; }
+#header-actions button { background: var(--bg-3); border: 1px solid var(--border); color: var(--text-3); width: 34px; height: 34px; border-radius: var(--r-sm); cursor: pointer; transition: 0.12s; }
 #header-actions button:hover { background: var(--bg-hover); color: var(--text-1); }
 
-/* ================================================================
-   Main Layout  ← 關鍵修正：min-height: 0 讓 flex 子元素可以縮小捲動
-   ================================================================ */
-#main {
-  flex: 1;
-  min-height: 0;          /* ← 修正 */
-  display: flex;
-}
+#main { padding: 16px; max-width: 1400px; margin: 0 auto; display: flex; flex-direction: column; gap: 15px; }
 
-#content {
-  flex: 1;
-  min-height: 0;          /* ← 修正 */
-  display: flex;
-  gap: 10px;
-  padding: 10px;
-  overflow: hidden;
-}
+/* ---- 4. 佈局引擎 (Layout System) ---- */
+/* 垂直容器 */
+.flex-column-layout { display: flex; flex-direction: column; gap: 15px; min-width: 0; width: 100%; }
+.container-stack { display: flex; flex-direction: column; gap: 15px; }
 
-/* ================================================================
-   Left Panel
-   ================================================================ */
-#panel-left {
-  width: var(--panel-left-w);
-  flex-shrink: 0;
-  min-height: 0;          /* ← 修正 */
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  overflow-y: auto;
-  scrollbar-width: thin;
-  scrollbar-color: var(--bg-4) transparent;
-  transition: width 0.2s;
-}
+/* 12 欄網格系統 */
+.grid-system { display: grid; grid-template-columns: repeat(12, 1fr); gap: 15px; width: 100%; }
+.span-1 { grid-column: span 1; } .span-2 { grid-column: span 2; } .span-3 { grid-column: span 3; }
+.span-4 { grid-column: span 4; } .span-5 { grid-column: span 5; } .span-6 { grid-column: span 6; }
+.span-7 { grid-column: span 7; } .span-8 { grid-column: span 8; } .span-9 { grid-column: span 9; }
+.span-10{ grid-column: span 10;} .span-11{ grid-column: span 11;} .span-12{ grid-column: span 12;}
 
-#char-header {
-  background: var(--bg-2);
-  border: 1px solid var(--border);
-  border-radius: var(--r-lg);
-  padding: 16px 12px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-  text-align: center;
-  flex-shrink: 0;
-}
+/* ---- 5. 卡片外觀 (Section Cards) ---- */
+.section-card { background: var(--bg-1); border-radius: var(--r); border: 1px solid var(--border); overflow: hidden; min-width: 0; width: 100%; display: flex; flex-direction: column; }
+.section-header { padding: 10px 15px; background: var(--bg-2); display: flex; justify-content: space-between; align-items: center; cursor: pointer; font-weight: bold; font-size: var(--fs-md); user-select: none; border-bottom: 1px solid transparent; }
+.section-card:not(.collapsed) .section-header { border-bottom-color: var(--border); }
+.section-body { padding: 12px; height: auto; min-height: 50px; }
+.section-body.collapsed { display: none; }
+.toggle-icon { font-size: 10px; transition: transform 0.2s; color: var(--text-4); }
+.collapsed .toggle-icon { transform: rotate(-90deg); }
+.empty { color: var(--text-4); font-size: var(--fs-sm); text-align: center; padding: 10px 0; }
 
-#char-image {
-  width: 110px;
-  height: 110px;
-  object-fit: contain;
-  image-rendering: pixelated;
-}
+/* 角色專屬標頭 */
+.char-info { display: flex; align-items: center; gap: 20px; }
+#char-image { width: 90px; height: 90px; object-fit: contain; }
+#char-name { font-size: var(--fs-lg); font-weight: 700; color: var(--text-1); }
+#char-class { font-size: var(--fs-base); color: var(--accent-light); margin-top: 4px; }
+#char-level { font-size: var(--fs-sm); color: var(--text-4); margin-top: 2px; }
 
-#char-name  { font-size: var(--fs-md); font-weight: 700; color: var(--text-1); }
-#char-class { font-size: var(--fs-base); color: var(--accent-light); margin-top: 2px; }
-#char-level { font-size: var(--fs-sm); color: var(--text-4); margin-top: 1px; }
+/* ---- 6. 各區塊內部網格排版 ---- */
+/* 通用內部 Grid 設定 */
+.grid-stats, .grid-hexa, .grid-champion, .grid-pet, .grid-beauty, .grid-union, .grid-symbol, .grid-vmatrix, .grid-artifact, .grid-link { display: grid; gap: 8px; }
 
-/* ================================================================
-   Data Section（共用）
-   ================================================================ */
-.data-section {
-  background: var(--bg-2);
-  border: 1px solid var(--border);
-  border-radius: var(--r-lg);
-  overflow: hidden;
-  flex-shrink: 0;         /* 讓每個區塊保持完整高度，不被擠壓 */
-}
+/* 欄位分配 */
+.grid-stats, .grid-hexa, .grid-champion, .grid-pet, .grid-beauty, .grid-union { grid-template-columns: repeat(2, 1fr); }
+.grid-artifact, .grid-link { grid-template-columns: repeat(3, 1fr); }
+.grid-vmatrix, .grid-symbol { grid-template-columns: repeat(6, 1fr); }
 
-.section-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 9px 14px;
-  font-size: var(--fs-xs);
-  font-weight: 700;
-  color: var(--text-4);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  cursor: pointer;
-  user-select: none;
-  transition: color 0.12s;
-}
-.section-header:hover { color: var(--text-3); }
-.toggle-icon { font-size: 9px; transition: transform 0.2s; }
-.section-header.collapsed .toggle-icon { transform: rotate(-90deg); }
+/* 通用方塊 (grid-item) */
+.grid-item { display: flex; flex-direction: column; align-items: center; justify-content: center; border: 1px solid var(--border); border-radius: var(--r-sm); background: var(--bg-2); padding: 5px; min-width: 0; min-height: 0; overflow: hidden; text-align: center; }
+.grid-item img { max-width: 80%; max-height: 60%; object-fit: contain; }
+.grid-item-text { width: 100%; font-size: 0.7rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 4px; }
+.empty-slot { background: var(--bg-1); border: 1px dashed var(--border); opacity: 0.5; }
 
-.section-body { padding: 6px 12px 12px; }
-.section-body.hidden { display: none; }
+/* 強制正方形 (V矩陣 & 六轉) */
+.grid-vmatrix .grid-item, .grid-hexa .grid-item { aspect-ratio: 1 / 1; width: 100%; }
 
-.empty { color: var(--text-4); font-size: var(--fs-sm); padding: 4px 0; }
+/* 戰地攻擊隊 (列表樣式) */
+.grid-unionraider { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0; }
+.raider-row { padding: 6px 8px; border-bottom: 1px solid var(--border); font-size: 0.85rem; color: var(--text-1); display: flex; align-items: center; }
 
-/* ================================================================
-   Stats
-   ================================================================ */
-#stats-grid { display: flex; flex-direction: column; }
-
-.stat-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 5px 0;
-  font-size: var(--fs-base);
-  border-bottom: 1px solid var(--border);
-}
-.stat-item:last-child { border-bottom: none; }
-
-.stat-label { color: var(--text-4); }
-.stat-value { color: var(--text-1); font-weight: 500; font-variant-numeric: tabular-nums; }
-
-.stat-item.is-big .stat-value {
-  font-size: var(--fs-md);
-  font-weight: 700;
-  color: var(--accent-light);
-}
-.stat-item.is-big { padding: 7px 0; }
-
-/* ================================================================
-   Hyper Stats
-   ================================================================ */
-#hyper-list { display: flex; flex-direction: column; gap: 2px; }
-
-.hyper-item {
-  display: flex;
-  justify-content: space-between;
-  font-size: var(--fs-sm);
-  color: var(--text-3);
-  padding: 3px 0;
-}
-.hyper-lv { color: var(--text-4); font-size: var(--fs-xs); }
-
-/* ================================================================
-   Right Panel
-   ================================================================ */
-#panel-right {
-  flex: 1;
-  min-height: 0;          /* ← 修正 */
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  overflow-y: auto;
-  scrollbar-width: thin;
-  scrollbar-color: var(--bg-4) transparent;
-}
-
-/* ================================================================
-   Equipment
-   ================================================================ */
-#equip-list { display: flex; flex-direction: column; gap: 5px; }
-
-.equip-card {
-  background: var(--bg-3);
-  border: 1px solid var(--border);
-  border-left: 3px solid var(--none);
-  border-radius: var(--r);
-  padding: 8px 12px;
-  transition: background 0.1s;
-}
-.equip-card:hover { background: var(--bg-4); }
-
-.equip-top {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.equip-slot {
-  font-size: var(--fs-xs);
-  font-weight: 600;
-  color: var(--text-4);
-  background: var(--bg-4);
-  padding: 2px 6px;
-  border-radius: var(--r-sm);
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
-.equip-name {
-  font-size: var(--fs-base);
-  font-weight: 500;
-  color: var(--text-1);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.equip-details { margin-top: 5px; display: flex; flex-direction: column; gap: 3px; }
-
-.equip-pot-line, .equip-add-line {
-  display: flex;
-  align-items: flex-start;
-  gap: 6px;
-  font-size: var(--fs-sm);
-  color: var(--text-3);
-  flex-wrap: wrap;
-}
+/* JS 生成元件樣式 (裝備、潛能等) */
+#equip-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 8px; }
+.equip-card { background: var(--bg-3); border: 1px solid var(--border); border-left: 3px solid var(--none); border-radius: var(--r); padding: 8px 12px; }
+.equip-top { display: flex; align-items: center; gap: 8px; }
+.equip-slot { font-size: var(--fs-xs); background: var(--bg-4); padding: 2px 6px; border-radius: var(--r-sm); color: var(--text-4); flex-shrink: 0; }
+.equip-name { font-size: var(--fs-base); font-weight: 500; color: var(--text-1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.equip-details { margin-top: 5px; display: flex; flex-direction: column; gap: 3px; font-size: var(--fs-sm); }
+.equip-pot-line { color: var(--text-3); }
 .equip-add-line { color: var(--text-4); }
 
-.grade-badge {
-  font-size: var(--fs-xs);
-  font-weight: 700;
-  color: #fff;
-  padding: 1px 5px;
-  border-radius: 3px;
-  white-space: nowrap;
-  flex-shrink: 0;
-  line-height: 1.5;
-}
-
-/* ================================================================
-   Matrix Row（V + HEXA 並排）
-   ================================================================ */
-#panel-matrix { display: flex; gap: 8px; }
-#panel-matrix .data-section { flex: 1; min-width: 0; }
-
-#v-grid, #hexa-grid { display: flex; flex-wrap: wrap; gap: 5px; }
-
-.core-chip {
-  background: var(--bg-3);
-  border: 1px solid var(--border);
-  border-radius: var(--r-sm);
-  padding: 4px 10px;
-  font-size: var(--fs-sm);
-  color: var(--text-2);
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.core-chip.hexa { border-color: rgba(0,176,244,0.5); color: #62d4f7; }
-.core-lv { color: var(--text-4); font-size: var(--fs-xs); }
-
-/* ================================================================
-   Bottom Row（連結技能 + 內潛 並排）
-   ================================================================ */
-#panel-bottom { display: flex; gap: 8px; }
-#panel-bottom .data-section { flex: 1; min-width: 0; }
-
-#link-grid { display: flex; flex-wrap: wrap; gap: 5px; }
-
-.link-chip {
-  background: var(--bg-3);
-  border: 1px solid var(--border);
-  border-radius: 20px;
-  padding: 4px 10px;
-  font-size: var(--fs-sm);
-  color: var(--text-3);
-}
-
-#ability-list { display: flex; flex-direction: column; gap: 4px; }
-.ability-grade { margin-bottom: 4px; }
-.ability-line {
-  font-size: var(--fs-base);
-  color: var(--text-2);
-  padding: 2px 0;
-  border-bottom: 1px solid var(--border);
-}
-.ability-line:last-child { border-bottom: none; }
-
-/* ================================================================
-   Loading / Error
-   ================================================================ */
-#loading {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 16px;
-  color: var(--text-4);
-  font-size: var(--fs-base);
-}
-
-.spinner {
-  width: 40px; height: 40px;
-  border: 3px solid var(--bg-4);
-  border-top-color: var(--accent);
-  border-radius: 50%;
-  animation: spin 0.75s linear infinite;
-}
+/* ---- 7. UI 狀態與彈窗 ---- */
+#loading, #error { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px; color: var(--text-4); gap: 15px; }
+.spinner { width: 40px; height: 40px; border: 3px solid var(--bg-4); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.75s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
-
-#error {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 14px;
-  color: var(--text-3);
-  font-size: var(--fs-base);
-  text-align: center;
-  padding: 24px;
-}
-#btn-retry {
-  background: var(--accent);
-  color: #fff; border: none;
-  padding: 9px 24px;
-  border-radius: var(--r);
-  cursor: pointer;
-  font-size: var(--fs-base); font-weight: 600;
-}
-#btn-retry:hover { background: var(--accent-dark); }
-
-/* ================================================================
-   Modals
-   ================================================================ */
-.modal {
-  position: fixed; inset: 0;
-  background: rgba(0,0,0,0.75);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 100;
-}
-
-.modal-box {
-  background: var(--bg-2);
-  border: 1px solid var(--border);
-  border-radius: var(--r-lg);
-  width: 400px;
-  max-width: calc(100vw - 32px);
-  max-height: 90vh;
-  overflow-y: auto;
-  animation: modal-in 0.15s ease;
-}
-@keyframes modal-in {
-  from { opacity: 0; transform: scale(0.96); }
-  to   { opacity: 1; transform: scale(1); }
-}
-
-.modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 20px;
-  border-bottom: 1px solid var(--border);
-  position: sticky; top: 0;
-  background: var(--bg-2);
-  z-index: 1;
-}
-.modal-header h2 { font-size: var(--fs-lg); font-weight: 700; color: var(--text-1); }
-.modal-header button {
-  background: none; border: none;
-  color: var(--text-4); font-size: 18px;
-  cursor: pointer; line-height: 1; padding: 2px;
-  border-radius: var(--r-sm);
-  transition: color 0.1s;
-}
-.modal-header button:hover { color: var(--text-1); }
-
-.modal-body {
-  padding: 16px 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-/* 設定區塊標題 */
-.settings-group-title {
-  font-size: var(--fs-xs);
-  font-weight: 700;
-  color: var(--text-4);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  margin-bottom: -8px;
-}
-
-/* 按鈕群組（字體大小、面板寬度）*/
-.btn-group {
-  display: flex;
-  gap: 4px;
-}
-.btn-opt {
-  flex: 1;
-  background: var(--bg-3);
-  border: 1px solid var(--border);
-  color: var(--text-3);
-  font-size: var(--fs-sm);
-  padding: 7px 0;
-  border-radius: var(--r-sm);
-  cursor: pointer;
-  transition: all 0.12s;
-  text-align: center;
-}
-.btn-opt:hover  { background: var(--bg-hover); color: var(--text-2); }
-.btn-opt.active { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
-
-/* Checkbox 設定列 */
-.modal-body label {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: var(--fs-base);
-  color: var(--text-2);
-  cursor: pointer;
-  padding: 3px 0;
-}
-.modal-body label:hover { color: var(--text-1); }
-.modal-body input[type="checkbox"] {
-  width: 16px; height: 16px;
-  accent-color: var(--accent);
-  cursor: pointer;
-}
-
-/* 即時查詢 */
-.modal-hint { font-size: var(--fs-sm); color: var(--text-4); }
-
-.modal-body input[type="text"] {
-  background: var(--bg-3);
-  border: 1px solid var(--border);
-  border-radius: var(--r);
-  color: var(--text-1);
-  font-size: var(--fs-base);
-  padding: 10px 12px;
-  width: 100%;
-  outline: none;
-  transition: border-color 0.15s;
-}
-.modal-body input[type="text"]:focus { border-color: var(--accent); }
-.modal-body input[type="text"]::placeholder { color: var(--text-4); }
-
-#btn-query-submit {
-  background: var(--accent);
-  color: #fff; border: none;
-  padding: 10px;
-  border-radius: var(--r);
-  cursor: pointer;
-  font-size: var(--fs-base); font-weight: 600;
-  transition: background 0.12s;
-}
-#btn-query-submit:hover { background: var(--accent-dark); }
-#btn-query-submit:disabled { opacity: 0.5; cursor: not-allowed; }
-
-#query-status { font-size: var(--fs-sm); min-height: 20px; }
-.status-loading { color: var(--text-4); }
-.status-error   { color: #ed4245; }
-.status-ok      { color: #23a55a; }
-
-/* ================================================================
-   Utility
-   ================================================================ */
 .hidden { display: none !important; }
 
-/* ================================================================
-   RWD — 手機版
-   ================================================================ */
-@media (max-width: 760px) {
-  body { overflow: auto; height: auto; }
-  #main { min-height: auto; overflow: visible; }
-  #content { flex-direction: column; overflow: visible; height: auto; }
-  #panel-left { width: 100%; min-height: auto; overflow: visible; }
-  #panel-right { min-height: auto; overflow: visible; }
-  #char-header { flex-direction: row; align-items: center; text-align: left; }
-  #char-image { width: 80px; height: 80px; }
-  #panel-matrix, #panel-bottom { flex-direction: column; }
+/* Modals */
+.modal { position: fixed; inset: 0; background: rgba(0,0,0,0.75); display: flex; align-items: center; justify-content: center; z-index: 100; }
+.modal-box { background: var(--bg-2); border: 1px solid var(--border); border-radius: var(--r-lg); width: 400px; max-width: 90vw; max-height: 90vh; overflow-y: auto; }
+.modal-header { display: flex; justify-content: space-between; padding: 16px; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--bg-2); z-index: 1; }
+.modal-body { padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.modal-body input[type="text"] { background: var(--bg-3); border: 1px solid var(--border); color: var(--text-1); padding: 10px; border-radius: var(--r-sm); width: 100%; outline: none; }
+.modal-body button { background: var(--accent); color: #fff; border: none; padding: 10px; border-radius: var(--r-sm); cursor: pointer; font-weight: bold; }
+.settings-group-title { font-size: var(--fs-xs); color: var(--text-4); font-weight: bold; }
+.modal-body label { display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: var(--fs-base); }
+
+/* ---- 8. 響應式佈局 (RWD) ---- */
+@media (max-width: 1024px) {
+    /* 平板尺寸：將 12 欄強制改為 2 欄垂直堆疊 */
+    .grid-system { display: flex; flex-direction: column; }
+    .span-1, .span-2, .span-3, .span-4, .span-5, .span-6, .span-7, .span-8, .span-9, .span-10, .span-11, .span-12 { width: 100%; }
 }
 
-/* --- 垂直堆疊改版專用 --- */
-.container-stack { display: flex; flex-direction: column; gap: 12px; margin-top: 10px; }
-.section-card { background: var(--bg-1); border-radius: 8px; border: 1px solid var(--border); overflow: hidden; }
-.section-header { 
-    padding: 10px 15px; cursor: pointer; display: flex; justify-content: space-between;
-    background: var(--bg-2); font-weight: bold; font-size: var(--fs-md); 
-    user-select: none;
-}
-.section-body { padding: 15px; }
-.section-body.collapsed { display: none; }
-.toggle-icon { transition: transform 0.2s; font-size: 12px; }
-.collapsed .toggle-icon { transform: rotate(-90deg); }
-
-/* 讓網頁可以捲動 */
-html, body {
-  overflow-y: auto !important; 
-  height: auto !important;
-  margin: 0;
-}
-#main {
-  height: auto !important;
-  overflow: visible !important;
-  padding-bottom: 50px;
-}
-
-/* 確保版塊展開時內容不被隱藏 */
-.section-body {
-  height: auto !important;
-  min-height: 50px; /* 給予最小高度，避免空白 */
-}
-
-/* 並排佈局容器 */
-.flex-row-layout {
-    display: flex;
-    flex-direction: row; /* 強制並排 */
-    gap: 12px;           /* 版塊間距 */
-    width: 100%;
-}
-
-/* 並排中的每一個子區塊設定 */
-.flex-row-layout > .section-card {
-    flex: 1;             /* 讓它們自動平分寬度 */
-    min-width: 0;        /* 這是關鍵，避免內容過長導致版面撐開 */
-}
-
-/* 手機版自動改回垂直排列 (為了響應式設計) */
 @media (max-width: 768px) {
-    .flex-row-layout {
-        flex-direction: column;
-    }
+    /* 手機尺寸：內部網格降級 */
+    .grid-vmatrix, .grid-symbol { grid-template-columns: repeat(4, 1fr); }
+    .grid-artifact, .grid-link { grid-template-columns: repeat(2, 1fr); }
+    .grid-stats, .grid-hexa, .grid-champion, .grid-pet, .grid-beauty, .grid-union, .grid-unionraider { grid-template-columns: 1fr; }
+    .char-info { flex-direction: column; text-align: center; }
 }
-
-/* 垂直堆疊容器 */
-.flex-column-layout {
-    display: flex;
-    flex-direction: column; /* 垂直排列 */
-    gap: 12px;              /* 版塊間距 */
-    flex: 1;                /* 讓這兩欄自動平分左右寬度 */
-    min-width: 0;           /* 避免內容過長導致版面跑掉 */
-    width: 100%;
-}
-
-
-/* 1. 聯盟神器: 3x3 */
-.grid-artifact { grid-template-columns: repeat(3, 1fr); }
-
-/* 2. 五轉矩陣: 6x5 (6欄) */
-.grid-vmatrix { grid-template-columns: repeat(6, 1fr); }
-
-/* 3. 核心屬性: 2欄 */
-.grid-stats { grid-template-columns: 1fr 1fr; }
-
-/* 5. 六轉Hexa矩陣: 4欄 */
-.grid-hexa { grid-template-columns: repeat(2, 1fr); }
-
-/* 2. 空方塊樣式 (當資料不足時，顯示灰色的底框) */
-.grid-item.empty-slot {
-    background: var(--bg-1); /* 使用比背景稍亮的顏色 */
-    border: 1px dashed var(--border); /* 用虛線表示這是空位 */
-    opacity: 0.5; /* 降低透明度 */
-}
-
-/* 6. 符文系統: 3欄 */
-.grid-symbol { grid-template-columns: repeat(6, 1fr); }
-
-/* 7. 聯盟冠軍: 2欄 */
-.grid-champion { grid-template-columns: 1fr 1fr; }
-
-/* 8. 寵物: 2欄 */
-.grid-pet { grid-template-columns: 1fr 1fr; }
-
-/* 9. 美容美髮: 2欄 */
-.grid-beauty { grid-template-columns: 1fr 1fr; }
-
-/* 10. 戰地聯盟: 2欄 */
-.grid-union { grid-template-columns: 1fr 1fr; }
-
-/* 11. 戰地攻擊隊: 2欄 */
-/* 移除邊框、背景，只保留下邊框增加區隔感 */
-.raider-row {
-    padding: 6px 8px;
-    border-bottom: 1px solid var(--border); /* 產生像表格的水平分割線 */
-    font-size: 0.85rem;
-    color: var(--text-1);
-    display: flex;
-    align-items: center;
-}
-
-/* 確保容器沒有多餘的 Padding */
-.grid-unionraider {
-    display: grid;
-    grid-template-columns: 1fr 1fr; /* 保持 2 欄 */
-    gap: 0; /* 列表式通常不需要間距 */
-}
-
-/* 手機版響應式調整 (手機螢幕較小時，自動變成 1 或 2 欄，避免過擠) */
-@media (max-width: 600px) {
-    .grid-vmatrix, .grid-symbol { grid-template-columns: repeat(3, 1fr); } /* 手機變 3 欄 */
-    .grid-hexa, .grid-champion, .grid-pet, .grid-beauty, .grid-union, .grid-unionraider { grid-template-columns: repeat(2, 1fr); }  /* 手機變 2 欄 */
-    .grid-artifact, .grid-stats, .grid-link { grid-template-columns: 1fr; } /* 手機變 1 欄 */
-}
-
-
-/* 特別針對傳授技能的欄位 */
-.grid-link {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr); /* 強制 3 欄 */
-    gap: 10px;
-}
-
-/* 限制每個項目的寬度，讓它在 Flex 中能維持排列 */
-.grid-link .grid-item {
-    flex: 0 0 calc(25% - 10px); /* 16.66% 大約是 1/6 的寬度 */
-    min-width: 60px;              /* 確保不會太窄 */
-}
-
-/* 1. 網格容器修正：防止內容撐開容器 */
-.grid-container {
-    display: grid;
-    gap: 10px;
-    min-width: 0; /* 重要：告訴容器不要因為內容多而無限變大 */
-}
-
-/* 2. 核心修正：強制所有格子「鎖定大小」 */
-.grid-item {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    background: var(--bg-2);
-    padding: 5px;
-    
-    /* 這裡必須設定！防止文字/圖片撐壞格子 */
-    min-width: 0; 
-    min-height: 0;
-    overflow: hidden; 
-    position: relative;
-}
-
-/* 3. 文字強制截斷：防止文字太長導致盒子變形 */
-.grid-item-text {
-    width: 100%;
-    text-align: center;
-    font-size: 0.7rem; /* 稍微縮小字體以適應空間 */
-    white-space: nowrap;      /* 強制文字不換行 */
-    overflow: hidden;         /* 超出隱藏 */
-    text-overflow: ellipsis;  /* 顯示 ... */
-}
-
-/* 4. 圖片強制縮放：防止圖片撐開 */
-.grid-item img {
-    max-width: 80%;
-    max-height: 60%;
-    object-fit: contain;
-}
-
-/* 強制確保方塊正確縮放，並防止撐開網格 */
-.grid-vmatrix .grid-item, 
-.grid-hexa .grid-item {
-    aspect-ratio: 1 / 1; 
-    width: 100%;       /* 填滿格子 */
-    min-width: 0;      /* 這是關鍵！防止內容過大撐開格子 */
-    min-height: 0;     /* 防止內容過多撐開高度 */
-    overflow: hidden;  /* 如果內容真的太大，強制隱藏，不要撐開 */
-}
-
-/* 強制啟動 Grid 引擎，並確保欄位定義有效 */
-#v-grid, #hexa-grid {
-    display: grid !important;
-    width: 100% !important; /* 確保容器吃滿寬度 */
-}
-
-/* 強制定義欄位 */
-#v-grid { grid-template-columns: repeat(6, 1fr) !important; }
-#hexa-grid { grid-template-columns: repeat(6, 1fr) !important; }
-
-/* 確保容器內的項目不會撐壞版面 */
-#v-grid .grid-item, 
-#hexa-grid .grid-item {
-    min-width: 0 !important;
-    width: 100% !important;
-}
-
-/* 1. 修正 Grid System 的核心設定 */
-.grid-system {
-    display: grid;
-    grid-template-columns: repeat(12, 1fr);
-    gap: 15px;
-    width: 100%;           /* 關鍵：強制填滿父層 */
-    box-sizing: border-box; /* 關鍵：確保 padding 不會把版面撐破 */
-}
-
-/* 2. 修正 Flex 容器內的子元素 */
-/* 因為你的 grid-system 包在 flex-column-layout 裡面，
-   這個設定能確保 grid 容器不會被壓縮 */
-.flex-column-layout > .grid-system {
-    flex: 1;               /* 強制佔據可用空間 */
-    min-width: 0;          /* 防止內容溢出 */
-}
-
-/* 定義寬度權重 (Span 就是佔據幾格的意思) */
-/* 完整定義 12 欄網格的權重 */
-.span-1  { grid-column: span 1; }
-.span-2  { grid-column: span 2; }
-.span-3  { grid-column: span 3; }
-.span-4  { grid-column: span 4; }
-.span-5  { grid-column: span 5; }
-.span-6  { grid-column: span 6; }
-.span-7  { grid-column: span 7; }
-.span-8  { grid-column: span 8; }
-.span-9  { grid-column: span 9; }
-.span-10 { grid-column: span 10; }
-.span-11 { grid-column: span 11; }
-.span-12 { grid-column: span 12; }
