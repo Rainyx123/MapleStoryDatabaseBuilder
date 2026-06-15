@@ -102,6 +102,11 @@ function switchTab(idx) {
   window.scrollTo(0, 0); // 回到最上方
 }
 
+// 初始化 UI 功能
+initModals();
+initSettings();
+initQuery();
+
 // ================================================================
 // 2. 共用渲染工廠 (大幅減少重複程式碼)
 // ================================================================
@@ -534,3 +539,88 @@ document.addEventListener('click', (e) => {
         console.log(`[執行成功] 區塊 ${card.id} 現在狀態是：${isCollapsed ? '已隱藏' : '已展開'}`);
     }
 });
+
+// ================================================================
+// 彈窗與設定功能 (Modal & Settings)
+// ================================================================
+
+// 1. 全域開關 Modal (綁定在 window 上供 HTML onclick 使用)
+window.openModal = function(id) {
+    document.getElementById(id)?.classList.remove('hidden');
+};
+window.closeModal = function(id) {
+    document.getElementById(id)?.classList.add('hidden');
+};
+
+// 2. 初始化按鈕與背景點擊關閉
+function initModals() {
+    document.getElementById('btn-query')?.addEventListener('click', () => openModal('modal-query'));
+    document.getElementById('btn-settings')?.addEventListener('click', () => openModal('modal-settings'));
+
+    // 點擊半透明背景關閉
+    document.querySelectorAll('.modal').forEach(modal => {
+        modal.addEventListener('click', (e) => {
+            // 確保點擊的是背景層而非內容框
+            if (e.target === modal) closeModal(modal.id);
+        });
+    });
+}
+
+// 3. 設定功能：板塊顯示切換與 LocalStorage 記憶
+function initSettings() {
+    // 抓取所有帶有 data-section 屬性的 checkbox
+    const checkboxes = document.querySelectorAll('#modal-settings input[type="checkbox"][data-section]');
+    const savedSettings = JSON.parse(localStorage.getItem('display-settings') || '{}');
+
+    checkboxes.forEach(cb => {
+        const sectionId = cb.dataset.section;
+        const sectionEl = document.getElementById(sectionId);
+
+        // 讀取紀錄，預設為顯示 (true)
+        const isVisible = savedSettings[sectionId] !== false;
+        cb.checked = isVisible;
+        if (sectionEl) sectionEl.style.display = isVisible ? '' : 'none';
+
+        // 監聽變更事件
+        cb.addEventListener('change', (e) => {
+            const checked = e.target.checked;
+            if (sectionEl) sectionEl.style.display = checked ? '' : 'none';
+            
+            // 儲存設定
+            savedSettings[sectionId] = checked;
+            localStorage.setItem('display-settings', JSON.stringify(savedSettings));
+        });
+    });
+}
+
+// 4. 搜尋功能框架
+function initQuery() {
+    // 請核對你 HTML 中 modal-query 裡面的實際 ID
+    const queryBtn = document.getElementById('btn-query-submit'); // 執行查詢的按鈕
+    const queryInput = document.getElementById('query-input'); // 角色名稱輸入框
+
+    if (queryBtn && queryInput) {
+        queryBtn.addEventListener('click', async () => {
+            const charName = queryInput.value.trim();
+            if (!charName) return alert('請輸入角色名稱');
+            
+            queryBtn.disabled = true;
+            queryBtn.textContent = '查詢中...';
+
+            try {
+                // 發送請求給後端或爬蟲 (此處端點請確認是否符合你的 API 設計)
+                const res = await fetch(`/api/update?name=${encodeURIComponent(charName)}`);
+                if (!res.ok) throw new Error(`查詢失敗 (${res.status})`);
+                
+                alert('查詢成功，資料已更新！');
+                closeModal('modal-query');
+                location.reload(); // 重整頁面以載入新資料
+            } catch (err) {
+                alert(err.message);
+            } finally {
+                queryBtn.disabled = false;
+                queryBtn.textContent = '查詢';
+            }
+        });
+    }
+}
