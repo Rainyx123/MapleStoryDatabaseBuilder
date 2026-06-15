@@ -719,8 +719,8 @@ html, body {
 
 /* 限制每個項目的寬度，讓它在 Flex 中能維持排列 */
 .grid-link .grid-item {
-    flex: 0 0 calc(16.66% - 10px); /* 16.66% 大約是 1/6 的寬度 */
-    min-width: 150px;              /* 確保不會太窄 */
+    flex: 0 0 calc(25% - 10px); /* 16.66% 大約是 1/6 的寬度 */
+    min-width: 60px;              /* 確保不會太窄 */
 }
 
 /* 2. 項目：負責內部的排列 (不要用 display: block) */
