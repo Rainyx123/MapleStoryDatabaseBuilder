@@ -1,83 +1,76 @@
 // ================================================================
-// 楓之谷角色資料庫 — 前端主程式  v2
+// 楓之谷角色資料庫 — 前端主程式 v3 (模組優化版)
 // ================================================================
 
 // ★★★ 請將這裡換成你的 Vercel 網址 ★★★
 const API_BASE = 'https://maple-story-database-builder.vercel.app';
-const MODULE_MAP = {
-  'section-symbol': 'symbol',
-  'section-beauty': 'beauty',
-  'section-pet': 'pet'
-};
+
 const GRADE_COLOR = {
-  '傳說': 'var(--legendary)', 
-  '唯一': 'var(--unique)',
-  '稀有': 'var(--epic)',       
-  '罕見': 'var(--rare)'
+  '傳說': '#a3e877', '唯一': '#e8c15a',
+  '稀有': '#a68ce8', '罕見': '#62b5e8', '無': 'var(--border)'
 };
 
-// ---- 全域狀態 ----
 let characters = [];
 let currentIdx = 0;
-let isQuerying = false; // 新增：防止重複查詢與競態條件的鎖定標記
-let peakCache = {}; // 在全域變數區新增快取物件偵測是否顯示7日內最高戰力
 
 // ================================================================
-// 初始化
+// 1. 系統初始化與事件綁定
 // ================================================================
+document.addEventListener('DOMContentLoaded', init);
+
 async function init() {
-  applyAppearanceSettings();
-  setupEventListeners();
-
   try {
-    showState('loading');
     const res = await fetch(`${API_BASE}/api/characters`);
-    if (!res.ok) throw new Error(`伺服器回應錯誤 (HTTP ${res.status})`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    
     characters = await res.json();
-    if (!Array.isArray(characters) || characters.length === 0) {
-      throw new Error('資料庫中沒有角色資料。\n請先到 GitHub Actions 手動執行一次資料更新。');
-    }
+    if (!Array.isArray(characters) || characters.length === 0) throw new Error('無角色資料。');
+    
     buildTabs();
     renderCharacter(characters[0]);
-    showState('content');
-
-    // 【這裡一定要補上這行】
-    // 確保 DOM 渲染出來後，馬上對所有的 .section-card 進行綁定
+    
+    // 隱藏載入中，顯示內容
+    document.getElementById('loading')?.classList.add('hidden');
+    document.getElementById('content')?.classList.remove('hidden');
+    
+    // 確保內容出現後綁定收合事件
     initCollapsible();
-
-    
   } catch (err) {
-    showState('error', err.message);
+    const loadEl = document.getElementById('loading');
+    if (loadEl) loadEl.innerHTML = `<p style="color:var(--accent)">載入失敗：${err.message}</p>`;
   }
-  
 }
-// 將函式移到外面，這樣比較乾淨且易於維護
+
+// 卡片收合與狀態記憶
 function initCollapsible() {
-    const states = loadStorage('section-states') || {};
-    
+    const states = JSON.parse(localStorage.getItem('section-states') || '{}');
     document.querySelectorAll('.section-card').forEach(card => {
         const id = card.id;
         const body = card.querySelector('.section-body');
+        const header = card.querySelector('.section-header');
         
-        // 恢復上次狀態
+        // 恢復上次的收合狀態
         if (states[id] === false) {
+            card.classList.add('collapsed');
             body.classList.add('collapsed');
         }
 
-        // 綁定點擊開關
-        card.querySelector('.section-header').onclick = () => {
-            body.classList.toggle('collapsed');
-            const currentStates = loadStorage('section-states') || {};
-            currentStates[id] = !body.classList.contains('collapsed');
-            saveStorage('section-states', currentStates);
-        };
+        // 點擊事件
+        if (header) {
+            header.onclick = () => {
+                card.classList.toggle('collapsed');
+                body.classList.toggle('collapsed');
+                states[id] = !body.classList.contains('collapsed');
+                localStorage.setItem('section-states', JSON.stringify(states));
+            };
+        }
     });
 }
-// ================================================================
-// 分頁
-// ================================================================
+
+// 分頁切換
 function buildTabs() {
   const bar = document.getElementById('tab-bar');
+  if(!bar) return;
   bar.innerHTML = '';
   characters.forEach((char, i) => {
     const btn = document.createElement('button');
@@ -90,845 +83,226 @@ function buildTabs() {
 
 function switchTab(idx) {
   currentIdx = idx;
-  document.querySelectorAll('.tab-btn').forEach((btn, i) => {
-    btn.classList.toggle('active', i === idx);
-  });
+  document.querySelectorAll('.tab-btn').forEach((btn, i) => btn.classList.toggle('active', i === idx));
   renderCharacter(characters[idx]);
-  // 捲回頂部
-  document.getElementById('panel-left')?.scrollTo(0, 0);
-  document.getElementById('panel-right')?.scrollTo(0, 0);
+  window.scrollTo(0, 0); // 回到最上方
 }
 
 // ================================================================
-// 主渲染
+// 2. 共用渲染工廠 (大幅減少重複程式碼)
+// ================================================================
+/**
+ * @param {string} containerId - 目標 div 的 ID
+ * @param {Array} dataArray - 要渲染的陣列資料
+ * @param {Function} renderItemFn - 將單一資料轉為 HTML 字串的函式
+ */
+function renderList(containerId, dataArray, renderItemFn) {
+    const el = document.getElementById(containerId);
+    if (!el) return;
+    if (!Array.isArray(dataArray) || dataArray.length === 0) {
+        el.innerHTML = '<div class="empty">無資料</div>';
+        return;
+    }
+    el.innerHTML = dataArray.map(item => item ? renderItemFn(item) : '').join('');
+}
+
+// ================================================================
+// 3. 核心資料分配
 // ================================================================
 function renderCharacter(data) {
-  console.log("正在渲染角色:", data); // 新增這行
   if (!data) return;
 
+  // 頂部角色資訊
   const img = document.getElementById('char-image');
-  if (data?.image_url) {
-    img.src = data.image_url;
-    img.style.display = '';
-    img.onerror = () => { img.style.display = 'none'; };
-  } else {
-    img.style.display = 'none';
+  if (img) {
+      img.src = data?.image_url || '';
+      img.style.display = data?.image_url ? '' : 'none';
+      img.onerror = () => img.style.display = 'none';
   }
+  document.getElementById('char-name').textContent = data?.name ?? '—';
+  document.getElementById('char-class').textContent = data?.class ?? '—';
+  document.getElementById('char-level').textContent = data?.level ? `Lv. ${data.level}` : '—';
 
-  setText('char-name',  data?.name  ?? '—');
-  setText('char-class', data?.class ?? '—');
-  setText('char-level', data?.level ? `Lv. ${data.level}` : '—');
-
+  // 獨立邏輯的區塊
   renderStats(data);
-  renderHyperStats(data?.hyper_stats  ?? []);
-  renderEquipment(data?.equipment     ?? []);
-  renderVMatrix(data?.v_cores         ?? []);
-  renderHEXA(data?.hexa_cores         ?? []);
-  renderLinkSkills(data?.link_skills  ?? []);
+  renderEquipment(data?.equipment ?? []);
   renderInnerAbility(data?.inner_ability ?? {});
-  if (data.symbols) renderSymbols(data.symbols);
-  if (data.union_artifact) renderUnionArtifact(data.union_artifact);
-  if (data.union_champion) renderUnionChampion(data.union_champion);
-  if (data.union) renderUnion(data.union);// 範例：如果查出來真正的陣列在 data.union_raider.raiders
-  if (data.union_raider && data.union_raider.raiders) {
-      renderUnionRaider(data.union_raider.raiders);
-  } 
-  // 或者如果是直接在 union_raider 裡，但要確保它是陣列
-  else if (Array.isArray(data.union_raider)) {
-      renderUnionRaider(data.union_raider);
-  }
-  if (data.union_raider) renderUnionRaider(data.union_raider);
-  if (data.pets) renderPets(data.pets);
-  if (data.android) renderAndroid(data.android);
-  if (data.beauty) renderBeauty(data.beauty);
-  if (data.cash_items) renderCashItems(data.cash_items);
+  renderUnionRaider(data?.union_raider ?? []);
+  renderCashItems(data?.cash_items ?? []);
+
+  // 使用「渲染工廠」一鍵生成的區塊 (超簡潔寫法)
+  renderList('hyper-list', data?.hyper_stats, hs => 
+    `<div style="display:flex; justify-content:space-between; padding:4px 0; border-bottom:1px solid var(--border)">
+        <span style="color:var(--text-1)">${hs?.type ?? '未知'}</span>
+        <span style="color:var(--accent-light)">Lv.${hs?.level ?? 0}</span>
+    </div>`
+  );
+
+  renderList('v-grid', data?.v_cores, c => 
+    `<div class="grid-item">
+        <div class="grid-item-text">${c?.name ?? '核心'}</div>
+        <div style="color:var(--text-4); font-size:10px;">Lv.${c?.level ?? 0}</div>
+    </div>`
+  );
+
+  renderList('hexa-grid', data?.hexa_cores, c => 
+    `<div class="grid-item">
+        <div class="grid-item-text" style="color:var(--text-1);">${c?.name ?? '核心'}</div>
+        <div style="color:var(--accent-light); font-size:10px;">Lv.${c?.level ?? 0}</div>
+    </div>`
+  );
+
+  renderList('link-grid', data?.link_skills, sk => 
+    `<div class="grid-item" style="flex-direction:row; justify-content:flex-start; padding:8px;">
+        <img src="${sk?.icon || ''}" style="width:28px; height:28px; margin-right:8px; border-radius:4px" onerror="this.style.display='none'">
+        <div style="text-align:left">
+            <div style="font-size:11px; font-weight:bold; color:var(--text-1)">${sk?.name ?? '技能'}</div>
+            <div style="font-size:10px; color:var(--text-4)">Lv.${sk?.level ?? 0}</div>
+        </div>
+    </div>`
+  );
+
+  renderList('symbol-grid', data?.symbols, s => 
+    `<div class="grid-item">
+        <img src="${s?.icon || ''}" onerror="this.style.display='none'">
+        <div class="grid-item-text">${s?.name ?? '符文'}</div>
+        <div style="font-size:10px; color:var(--text-3)">Lv.${s?.level ?? 0}</div>
+    </div>`
+  );
+
+  renderList('pets-grid', data?.pets, p => 
+    `<div class="grid-item">
+        <img src="${p?.icon || ''}" onerror="this.style.display='none'">
+        <div class="grid-item-text">${p?.name ?? '寵物'}</div>
+    </div>`
+  );
+
+  // 簡單文字區塊
+  const androidEl = document.getElementById('android-grid');
+  if(androidEl) androidEl.innerHTML = data?.android?.name ? `<div class="raider-row">${data.android.name}</div>` : '<div class="empty">無資料</div>';
+  
+  const beautyEl = document.getElementById('beauty-grid');
+  if(beautyEl) beautyEl.innerHTML = data?.beauty ? `<div class="raider-row">髮型: ${data.beauty.hair || '無'}</div><div class="raider-row">臉型: ${data.beauty.face || '無'}</div>` : '<div class="empty">無資料</div>';
+
+  const unionEl = document.getElementById('union-grid');
+  if(unionEl) unionEl.innerHTML = data?.union ? `<div class="raider-row">總等級: ${data.union.level || 0}</div><div class="raider-row">階級: ${data.union.grade || '無'}</div>` : '<div class="empty">無資料</div>';
 }
 
 // ================================================================
-// 極限屬性
+// 4. 具備特殊邏輯的渲染函式
 // ================================================================
-function renderHyperStats(hyper_stats) {
-  const el = document.getElementById('hyper-list');
-  if (!hyper_stats || hyper_stats.length === 0) { el.innerHTML = '<div class="empty">無資料</div>'; return; }
-  el.innerHTML = hyper_stats.map(hs =>
-    `<div class="hyper-item"><span>${hs?.type ?? '未知'}</span><span class="hyper-lv">Lv.${hs?.level ?? 0}</span></div>`
-  ).join('');
+
+// 核心屬性
+function renderStats(data) {
+  const grid = document.getElementById('stat-grid');
+  if (!grid) return;
+  grid.innerHTML = '';
+
+  const STAT_CONFIG = [
+    { key: 'combat_power',    label: '戰鬥力',   suffix: '' },
+    { key: 'damage',          label: '傷害',     suffix: '%' },
+    { key: 'boss_damage',     label: 'BOSS傷',  suffix: '%' },
+    { key: 'ignore_defense',  label: '無視防禦', suffix: '%' },
+    { key: 'critical_damage', label: '爆擊傷害', suffix: '%' },
+    { key: '_starforce',      label: '總星力',   suffix: '★' },
+  ];
+
+  STAT_CONFIG.forEach(cfg => {
+    let rawValue = cfg.key === '_starforce' ? (data.starforce_total ?? 0) : data.stats?.[cfg.key];
+    let display = (rawValue === undefined || rawValue === null) ? '—' : `${Number(rawValue).toLocaleString()}${cfg.suffix}`;
+    
+    grid.innerHTML += `
+      <div class="grid-item" style="padding:10px 5px;">
+        <div style="font-size:10px; color:var(--text-4); margin-bottom:2px;">${cfg.label}</div>
+        <div style="font-size:13px; font-weight:bold; color:var(--text-1);">${display}</div>
+      </div>`;
+  });
 }
 
-// ================================================================
 // 裝備
-// ================================================================
 function renderEquipment(data) {
   const list = document.getElementById('equip-list');
   if (!list) return;
 
-  // 統一資料源
   const equips = Array.isArray(data) ? data : (data?.preset_0 ?? []);
-
-  if (equips.length === 0) {
-    list.innerHTML = '<div class="empty">無裝備資料</div>';
-    return;
-  }
+  if (equips.length === 0) { list.innerHTML = '<div class="empty">無裝備資料</div>'; return; }
 
   list.innerHTML = equips.map(eq => {
     if (!eq) return '';
-
-    const pColor = GRADE_COLOR[eq?.potential_grade] ?? 'var(--none)';
-    const aColor = GRADE_COLOR[eq?.additional_grade] ?? 'var(--none)';
-    const star = eq?.starforce > 0 ? `<span style="color:var(--legendary)">★${eq.starforce}</span>` : '';
+    const pColor = GRADE_COLOR[eq?.potential_grade] ?? 'var(--border)';
     
-    const pBadge = eq?.potential_grade && eq.potential_grade !== '無' ? `<span class="grade-badge" style="background:${pColor}">${eq.potential_grade}</span>` : '';
-    const aBadge = eq?.additional_grade && eq.additional_grade !== '無' ? `<span class="grade-badge" style="background:${aColor}">${eq.additional_grade}</span>` : '';
-
-    // 圖示邏輯：如果有 icon 網址則顯示，否則不佔空間
-    const iconHtml = eq?.icon ? `<img src="${eq.icon}" style="width:40px; height:40px; margin-right:10px; border-radius:4px;" onerror="this.style.display='none'">` : '';
-
     return `
       <div class="equip-card" style="border-left-color:${pColor}">
-        <div class="equip-top" style="display:flex; align-items:center;">
-          ${iconHtml}
+        <div class="equip-top">
+          ${eq?.icon ? `<img src="${eq.icon}" style="width:36px; height:36px; border-radius:4px" onerror="this.style.display='none'">` : ''}
           <div>
-            <div class="equip-slot" style="font-size:0.8em; color:var(--text-2);">${eq?.slot ?? '未知'}</div>
-            <div class="equip-name">${eq?.name ?? '空'}${star}</div>
+            <div class="equip-slot">${eq?.slot ?? '未知'}</div>
+            <div class="equip-name">${eq?.name ?? '空'} ${eq?.starforce > 0 ? `<span style="color:var(--legendary)">★${eq.starforce}</span>` : ''}</div>
           </div>
         </div>
-        ${(pBadge || aBadge) ? `
+        ${(eq?.potential_grade && eq.potential_grade !== '無') ? `
           <div class="equip-details">
-            ${pBadge ? `<div class="equip-pot-line">${pBadge} <span>${eq?.potential?.join(' / ') ?? ''}</span></div>` : ''}
-            ${aBadge ? `<div class="equip-pot-line">${aBadge} <span>${eq?.additional?.join(' / ') ?? ''}</span></div>` : ''}
+            <div class="equip-pot-line"><span style="color:${pColor}">[${eq.potential_grade}]</span> ${eq?.potential?.join(' / ') ?? ''}</div>
           </div>` : ''}
       </div>`;
   }).join('');
 }
 
-// ================================================================
-// 現金道具
-// ================================================================
-function renderCashItems(data) {
-  const el = document.getElementById('cash-grid');
-  if (!el) return;
-  
-  // 找出目前作用中的套裝 (Active Preset)
-  const activeIdx = data?.active_preset ?? 1;
-  const items = data?.[`preset_${activeIdx}`] ?? [];
-  
-  if (!Array.isArray(items) || items.length === 0) {
-    el.innerHTML = '<div class="empty">目前無穿戴現金道具</div>';
-    return;
-  }
-
-  el.innerHTML = items.map(i => {
-    // 圖示邏輯：處理圖片顯示與破圖隱藏
-    const iconHtml = i?.icon ? `<img src="${i.icon}" style="width:40px; height:40px; border-radius:4px;" onerror="this.style.display='none'">` : '';
-    
-    return `
-      <div class="item-row" style="display:flex; align-items:center; gap:10px; margin-bottom:8px; padding:5px; background:var(--bg-2); border-radius:4px;">
-        ${iconHtml}
-        <span style="font-weight:bold;">${i?.name ?? '未知道具'}</span>
-      </div>`;
-  }).join('');
-}
-// ================================================================
-// V矩陣 & HEXA
-// ================================================================
-function renderVMatrix(v_cores) {
-  const el = document.getElementById('v-grid');
-  if (!v_cores || v_cores.length === 0) { el.innerHTML = '<div class="empty">無資料</div>'; return; }
-  el.innerHTML = v_cores.map(c =>
-    `<div class="core-chip"><span>${c?.name ?? '未知'}</span><span class="core-lv">Lv.${c?.level ?? 0}</span></div>`
-  ).join('');
-}
-
-function renderHEXA(hexa_cores) {
-  const el = document.getElementById('hexa-grid');
-  if (!hexa_cores || hexa_cores.length === 0) { el.innerHTML = '<div class="empty">無資料</div>'; return; }
-  el.innerHTML = hexa_cores.map(c =>
-    `<div class="core-chip hexa"><span>${c?.name ?? '未知'}</span><span class="core-lv">Lv.${c?.level ?? 0}</span></div>`
-  ).join('');
-}
-
-// ================================================================
-// 內潛
-// ================================================================
+// 內在潛能
 function renderInnerAbility(ability) {
   const el = document.getElementById('ability-list');
-  const abilitiesArr = ability?.abilities ?? [];
-  if (abilitiesArr.length === 0) { el.innerHTML = '<div class="empty">無資料</div>'; return; }
+  if (!ability || !ability.abilities?.length) { el.innerHTML = '<div class="empty">無資料</div>'; return; }
   
-  const gradeStr = ability?.grade ?? '無';
-  const gc = GRADE_COLOR[gradeStr] || 'var(--none)';
-  el.innerHTML = `<div class="ability-grade"><span class="grade-badge" style="background:${gc}">${gradeStr}</span></div>`
-    + abilitiesArr.map(ab => `<div class="ability-line">${ab}</div>`).join('');
+  const gc = GRADE_COLOR[ability.grade] || 'var(--text-4)';
+  el.innerHTML = `
+    <div style="color:${gc}; font-weight:bold; padding-bottom:6px; border-bottom:1px solid var(--border); margin-bottom:6px;">
+        ${ability.grade}能力
+    </div>` 
+    + ability.abilities.map(ab => `<div style="font-size:12px; padding:3px 0; color:var(--text-2)">${ab}</div>`).join('');
 }
 
-// ================================================================
-// 核心屬性
-// ================================================================
-const STAT_CONFIG = [
-  { key: 'combat_power',    label: '戰鬥力',   suffix: '',  big: true },
-  { key: 'damage',          label: '傷害',     suffix: '%' },
-  { key: 'final_damage',    label: '最終傷害', suffix: '%' },
-  { key: 'boss_damage',     label: 'BOSS傷',  suffix: '%' },
-  { key: 'ignore_defense',  label: '無視防禦', suffix: '%' },
-  { key: 'critical_damage', label: '爆擊傷害', suffix: '%' },
-  { key: 'arc',             label: 'ARC',      suffix: '' },
-  { key: 'authentic',       label: 'AUT',      suffix: '' },
-  { key: 'max_damage',      label: '最高屬攻', suffix: '' },
-  { key: 'min_damage',      label: '最低屬攻', suffix: '' },
-  { key: '_starforce',      label: '總星力',   suffix: '★' },
-  { key: '_union',          label: '聯盟等級', suffix: '' },
-  { key: '_rings',          label: '塔戒',     suffix: '' },
-];
-
-function formatNum(val) {
-  if (val === undefined || val === null || val === '' || val === '0') return '—';
-  const n = parseFloat(val);
-  if (isNaN(n)) return String(val) || '—';
-  if (n >= 100000000) return (n / 100000000).toFixed(2) + '億';
-  if (n >= 10000000)  return Math.floor(n / 10000) + '萬';
-  if (n >= 10000)     return n.toLocaleString('zh-TW');
-  return n % 1 === 0 ? String(n) : n.toFixed(1);
-}
-
-function renderStats(data) {
-  const grid = document.getElementById('stat-grid');
-  // 如果找不到元件，就不要執行寫入，避免報錯
-    if (!grid) {
-        console.warn('找不到 stat-grid，跳過渲染');
-        return;
-    }
-  grid.innerHTML = '';
-  STAT_CONFIG.forEach(cfg => {
-    let display;
-    if (cfg.key === '_starforce') {
-      display = `${data.starforce_total ?? 0}${cfg.suffix}`;
-    } else if (cfg.key === '_union') {
-      display = data.union_level ? String(data.union_level) : '—';
-    } else if (cfg.key === '_rings') {
-      display = data.rings?.length ? data.rings.join(' ') : '無';
-    } else {
-      const f = formatNum(data.stats?.[cfg.key]);
-      display = f === '—' ? '—' : `${f}${cfg.suffix}`;
-    }
-    const div = document.createElement('div');
-    div.className = 'stat-item' + (cfg.big ? ' is-big' : '');
-    div.innerHTML = `<span class="stat-label">${cfg.label}</span>`
-                  + `<span class="stat-value">${display}</span>`;
-    grid.appendChild(div);
-  });
-}
-
-// ================================================================
-// 極限屬性
-// ================================================================
-function renderHyperStats(hyper_stats) {
-  const el = document.getElementById('hyper-list');
-  if (!hyper_stats.length) { el.innerHTML = '<div class="empty">無資料</div>'; return; }
-  el.innerHTML = hyper_stats.map(hs =>
-    `<div class="hyper-item"><span>${hs.type}</span><span class="hyper-lv">Lv.${hs.level}</span></div>`
-  ).join('');
-}
-
-// ================================================================
-// 傳授技能 (防禦性渲染)
-// ================================================================
-// ================================================================
-// 傳授技能 (渲染)
-// ================================================================
-function renderLinkSkills(link_skills) {
-  const el = document.getElementById('link-grid');
-  if (!el) return;
-
-  if (!Array.isArray(link_skills) || link_skills.length === 0) {
-    el.innerHTML = '<div class="empty">無資料</div>';
-    return;
-  }
-
-  el.innerHTML = link_skills.map(skill => {
-    // 修正點：加上了 , '<br>'，告訴程式遇到 \n 要換行而不是變成 undefined
-    const formattedEffect = skill.effect ? skill.effect.replace(/\\n/g, '<br>') : '';
-    
-    return `
-      <div class="grid-item">
-        <div style="display: flex; align-items: center; gap: 8px;">
-          <img src="${skill.icon || ''}" style="width: 40px; height: 40px; border-radius: 4px; flex-shrink: 0;" onerror="this.style.display='none'">
-          <div style="overflow: hidden;">
-            <div style="font-weight: bold; font-size: 0.9rem;">${skill.name}</div>
-            <div style="font-size: 0.8rem; color: var(--highlight);">Lv.${skill.level || 0}</div>
-          </div>
-        </div>
-      </div>
-    `;
-  }).join('');
-}
-// ================================================================
-// 內潛
-// ================================================================
-function renderInnerAbility(ability) {
-  const el = document.getElementById('ability-list');
-  if (!ability.abilities?.length) { el.innerHTML = '<div class="empty">無資料</div>'; return; }
-  const gc = GRADE_COLOR[ability.grade] || 'var(--none)';
-  el.innerHTML = `<div class="ability-grade"><span class="grade-badge" style="background:${gc}">${ability.grade}</span></div>`
-    + ability.abilities.map(ab => `<div class="ability-line">${ab}</div>`).join('');
-}
-
-// 戰地聯盟 (總等級/等級)
-function renderUnion(union) {
-  const el = document.getElementById('union-grid');
-  if (!el) return;
-  if (!union) { el.innerHTML = '<div class="empty">無資料</div>'; return; }
-  el.innerHTML = `<div class="info-block">
-    <p>等級: ${union.level || 0}</p>
-    <p>階級: ${union.grade || '無'}</p>
-  </div>`;
-}
-
-
-// 機器人
-function renderAndroid(android) {
-  const el = document.getElementById('android-grid');
-  if (!el) return;
-  // 檢查是否為物件且存在
-  if (!android || typeof android !== 'object') {
-    el.innerHTML = '<div class="empty">無資料</div>';
-    return;
-  }
-  el.innerHTML = `<div class="chip">${android.name || '無'}</div>`;
-}
-
-// 美容美髮
-function renderBeauty(beauty) {
-  const el = document.getElementById('beauty-grid');
-  if (!el) return;
-  // 檢查是否為物件
-  if (!beauty || typeof beauty !== 'object') {
-    el.innerHTML = '<div class="empty">無資料</div>';
-    return;
-  }
-  el.innerHTML = `<div class="info-block">
-    <p>髮型: ${beauty.hair || '無'}</p>
-    <p>臉型: ${beauty.face || '無'}</p>
-  </div>`;
-}
-
-// 戰地攻擊隊
+// 戰地攻擊隊 (數值合併邏輯)
 function renderUnionRaider(data) {
   const el = document.getElementById('union-raider-grid');
   if (!el) return;
 
-  const raiders = data.raider_stats || [];
+  let raiders = [];
+  if (Array.isArray(data)) raiders = data;
+  else if (data && Array.isArray(data.raider_stats)) raiders = data.raider_stats;
 
-  if (!Array.isArray(raiders) || raiders.length === 0) {
-    el.innerHTML = '<div class="empty">無戰地攻擊隊資料</div>';
-    return;
-  }
+  if (raiders.length === 0) { el.innerHTML = '<div class="empty">無資料</div>'; return; }
 
-  // 1. 資料合併邏輯
-  const statsMap = {}; // 用來存放合併後的資料
-
+  const statsMap = {};
   raiders.forEach(stat => {
-    // 正規表達式：(屬性名) (數字) (可選的%)
-    // 例如： "增加STR 80" -> 名: "增加STR", 數值: 80, 單位: ""
-    // 例如： "增加無視防禦率 5%" -> 名: "增加無視防禦率", 數值: 5, 單位: "%"
     const match = stat.match(/(.+?)\s*(\d+(?:\.\d+)?)\s*(%?)/);
-
     if (match) {
-      const name = match[1].trim(); // 屬性名
-      const value = parseFloat(match[2]); // 數值
-      const unit = match[3]; // 單位 (%)
-      const key = name + unit; // 以「屬性名+單位」作為合併依據
-
-      if (!statsMap[key]) {
-        statsMap[key] = { name: name, value: 0, unit: unit };
-      }
-      statsMap[key].value += value;
+      const key = match[1].trim() + match[3];
+      statsMap[key] = (statsMap[key] || 0) + parseFloat(match[2]);
     } else {
-      // 如果是非數字屬性（例如特殊條件），就原樣保留
-      if (!statsMap[stat]) statsMap[stat] = { name: stat, value: null, unit: '' };
+      statsMap[stat] = null;
     }
   });
 
-  // 2. 將合併後的物件轉回陣列並渲染
-  const consolidated = Object.values(statsMap).map(item => {
-    return item.value !== null 
-      ? `${item.name} ${item.value}${item.unit}` 
-      : item.name;
-  });
+  const consolidated = Object.entries(statsMap).map(([key, val]) => 
+    val !== null ? `${key.replace('%', '')} ${val}${key.includes('%') ? '%' : ''}` : key
+  );
 
-  el.innerHTML = consolidated.map(stat => `
-    <div class="raider-row">
-       ${stat}
-    </div>
-  `).join('');
-}
-// ================================================================
-// 升級版渲染函式 (含 Icon 與防呆)
-// ================================================================
-
-// 1. 符文系統 (ARC/AUT)
-function renderSymbols(symbols) {
-  const el = document.getElementById('symbol-grid');
-  if (!el) return;
-  if (!Array.isArray(symbols)) { el.innerHTML = '<div class="empty">無資料</div>'; return; }
-  el.innerHTML = symbols.map(s => `
-    <div class="grid-item">
-        <img src="${s.icon}" style="width:32px; height:32px;" onerror="this.style.display='none'">
-        
-        <div class="grid-item-text">
-          <div style="font-weight: bold; font-size: 0.9rem; max-width: 10ch; word-break: break-all">${s.name}</div>
-          <span style="color:var(--highlight)">Lv.${s.level}</span>
-      </div>
-    </div>
-  `).join('');
+  el.innerHTML = consolidated.map(stat => `<div class="raider-row">${stat}</div>`).join('');
 }
 
-// ================================================================
-// 聯盟神器 (Artifact) 渲染
-// ================================================================
-// 水晶名稱轉圖片檔名的對應表
-function getCrystalIconPath(name) {
-  const basePath = 'images/crystals/';
-  const mapping = {
-    '菇菇寶貝': 'Artifact1.png',
-    '綠水靈': 'Artifact2.png',
-    '刺菇菇': 'Artifact3.png',
-    '木妖': 'Artifact4.png',
-    '石巨人': 'Artifact5.png',
-    '巴洛古': 'Artifact6.png',
-    '殘暴炎魔': 'Artifact7.png',
-    '粉豆': 'Artifact8.png',
-    '拉圖斯': 'Artifact9.png',
-  };
-
-  // 從名稱中取出關鍵字（例如：將 "水晶：菇菇寶貝" 變成 "菇菇寶貝"）
-  const key = name.split('：')[1]; 
-  const fileName = mapping[key] || 'default.png'; // 找不到則顯示預設圖片
-  return basePath + fileName;
-}
-// 聯盟神器本體
-function renderUnionArtifact(data) {
-  const el = document.getElementById('union-artifact-grid');
-  if (!el) return;
-
-  if (!data || !Array.isArray(data.crystals)) {
-    el.innerHTML = '<div class="empty">無神器資料</div>';
-    return;
-  }
-
-  // 1. 生成水晶清單 (Grid Items)
-  const crystalsHtml = data.crystals.map(c => `
-    <div class="grid-item">
-      <img src="${getCrystalIconPath(c.name)}" onerror="this.style.display='none'">
-      <span><div class="grid-item-text" style="font-size:1rem;font-weight:bold;">${c.name}</span>
-      <span>Lv.${c.level}</div></span>
-      <div class="grid-item-text" style="font-size:0.9rem; color:var(--text-2); margin-top:4px;">
-        ${c.option1}<br>${c.option2}<br>${c.option3}
-      </div>
-    </div>
-  `).join('');
-
-  // 2. 生成剩餘 AP (Footer)，加上 grid-column: 1 / -1 讓它橫跨整行
-  const footerHtml = `
-    <div style="grid-column: 1 / -1; text-align: center; margin-top: 10px; padding: 10px; font-weight: bold; background: var(--bg-2); border-radius: 6px;">
-       剩餘 AP: <span style="color:var(--highlight)">${data.remain_ap ?? 0}</span>
-    </div>`;
-
-  // 3. 合併放入容器
-  el.innerHTML = crystalsHtml + footerHtml;
-}
-// 3. 聯盟冠軍
-function renderUnionChampion(data) {
-  const el = document.getElementById('union-champion-grid');
-  if (!el) return;
-  if (!data || !Array.isArray(data.champions)) { el.innerHTML = '<div class="empty">無資料</div>'; return; }
-  el.innerHTML = data.champions.map(c => `
-    <div class="item-row" style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
-      <img src="${c.icon}" style="width:32px; height:32px;" onerror="this.style.display='none'">
-      <div><strong>${c.name}</strong> <span style="font-size:0.8em; color:#888;">${c.class} / ${c.grade}</span></div>
-    </div>
-  `).join('');
-}
-
-// 4. 五轉 V-Matrix (含 Icon)
-function renderVMatrix(v_cores) {
-  const el = document.getElementById('v-grid');
-  if (!el) return;
-
-  el.innerHTML = v_cores.map(c => `
-    <div class="grid-item">
-      <img src="${c.icon}" onerror="this.style.display='none'">
-      <div class="grid-item-text">
-         <strong>${c.name}</strong><br>
-         <span style="color:var(--highlight)">Lv.${c.level}</span>
-      </div>
-    </div>
-  `).join('');
-}
-
-// 5. 六轉 HEXA (含 Icon)
-function renderHEXA(cores) {
-  const el = document.getElementById('hexa-grid');
-  if (!el) return;
-
-  // 1. 補齊邏輯：確保至少有 12 個項目
-  const totalSlots = 12;
-  const displayItems = [...cores]; // 複製一份資料
-  
-  // 如果資料不足 12 個，不斷塞入空物件 { isEmpty: true }
-  while (displayItems.length < totalSlots) {
-    displayItems.push({ isEmpty: true });
-  }
-
-  // 2. 渲染邏輯
-  el.innerHTML = displayItems.map(core => {
-    // 如果是空位，渲染一個空框
-    if (core.isEmpty) {
-      return `<div class="grid-item empty-slot"></div>`;
-    }
+// 現金道具
+function renderCashItems(data) {
+    const el = document.getElementById('cash-grid');
+    if (!el) return;
+    const activeIdx = data?.active_preset ?? 1;
+    const items = data?.[`preset_${activeIdx}`] ?? [];
     
-    // 原本的渲染邏輯 (請根據你的資料結構調整)
-    return `
-      <div class="grid-item">
-         <img src="${core.icon_url || ''}" />
-         <div class="grid-item-text">${core.name || '核心'}</div>
-      </div>
-    `;
-  }).join('');
-}
-
-// 7. 寵物 (含 Icon)
-function renderPets(pets) {
-  const el = document.getElementById('pets-grid');
-  if (!el) return;
-  if (!Array.isArray(pets)) { el.innerHTML = '<div class="empty">無資料</div>'; return; }
-  el.innerHTML = pets.map(p => `
-    <div class="item-row" style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
-      <img src="${p.icon}" style="width:40px; height:40px;" onerror="this.style.display='none'">
-      <div><strong>${p.name}</strong></div>
-    </div>
-  `).join('');
-}
-// ================================================================
-// 區塊折疊
-// ================================================================
-function toggleSection(header) {
-  header.classList.toggle('collapsed');
-  const body = header.nextElementSibling;
-  if (body) body.classList.toggle('hidden');
-}
-
-// ================================================================
-// 外觀設定（字體大小、面板寬度）
-// ================================================================
-const APPEARANCE_KEYS = ['fontSize', 'panelWidth'];
-
-// 所有可能的 body class（用來切換前先全部移除）
-const APPEARANCE_CLASSES = {
-  fontSize:   ['font-sm', 'font-lg'],
-  panelWidth: ['panel-narrow', 'panel-wide'],
-};
-
-function applyAppearanceSettings() {
-  const saved = loadStorage('appearance') || {};
-  APPEARANCE_KEYS.forEach(key => {
-    const val = saved[key] || '';
-    applyBodyClass(key, val);
-    // 把 active 狀態套回按鈕
-    document.querySelectorAll(`[data-setting="${key}"]`).forEach(btn => {
-      btn.classList.toggle('active', btn.dataset.value === val);
-    });
-  });
-
-  // checkbox 區塊設定
-  const sections = loadStorage('sections') || {};
-  document.querySelectorAll('[data-section]').forEach(cb => {
-    const id  = cb.dataset.section;
-    const vis = sections[id] !== false;   // 預設顯示
-    cb.checked = vis;
-    document.getElementById(id)?.classList.toggle('hidden', !vis);
-  });
-}
-
-function applyBodyClass(key, value) {
-  // 移除該 key 的所有舊 class
-  (APPEARANCE_CLASSES[key] || []).forEach(c => document.body.classList.remove(c));
-  // 套用新的（空字串 = 預設，不加 class）
-  if (value) document.body.classList.add(value);
-}
-
-// ================================================================
-// 即時查詢
-// ================================================================
-async function doLiveQuery() {
-  if (isQuerying) return; // 若正在查詢則阻擋後續點擊
+    if (!Array.isArray(items) || items.length === 0) { el.innerHTML = '<div class="empty">無資料</div>'; return; }
   
-  const input  = document.getElementById('query-input');
-  const status = document.getElementById('query-status');
-  const btn    = document.getElementById('btn-query-submit');
-  const name   = input.value.trim();
-  if (!name) return;
-
-  // 鎖定 UI
-  isQuerying = true;
-  btn.disabled = true;
-  document.querySelectorAll('.tab-btn').forEach(b => b.disabled = true);
-  status.className = 'status-loading';
-  status.textContent = '查詢中，請稍候...';
-
-  try {
-    const res = await fetch(`${API_BASE}/api/query`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ character_name: name })
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
-
-    const existing = characters.findIndex(c => c.name === data.name);
-    if (existing >= 0) {
-      characters[existing] = data;
-      switchTab(existing);
-    } else {
-      characters.push(data);
-      buildTabs();
-      switchTab(characters.length - 1);
-    }
-
-    status.className = 'status-ok';
-    status.textContent = `✓ 已載入 ${data.name} 的即時資料`;
-    input.value = '';
-    setTimeout(() => closeModal('modal-query'), 1200);
-  } catch (err) {
-    status.className = 'status-error';
-    status.textContent = `❌ ${err.message}`;
-  } finally {
-    // 解除鎖定
-    isQuerying = false;
-    btn.disabled = false;
-    document.querySelectorAll('.tab-btn').forEach(b => b.disabled = false);
-  }
+    el.innerHTML = items.map(i => 
+      `<div class="grid-item" style="flex-direction:row; justify-content:flex-start; padding:5px;">
+        ${i?.icon ? `<img src="${i.icon}" style="width:28px; height:28px; margin-right:8px" onerror="this.style.display='none'">` : ''}
+        <span style="font-size:11px; color:var(--text-2);">${i?.name ?? '未知'}</span>
+      </div>`
+    ).join('');
 }
-
-// ================================================================
-// Modal 控制
-// ================================================================
-function closeModal(id) {
-  // 先嘗試取得 modal 元素
-  const modal = document.getElementById(id);
-  
-  // 只有找到元素才執行隱藏
-  if (modal) {
-    modal.classList.add('hidden');
-  }
-
-  // 處理 query 相關的清除邏輯
-  if (id === 'modal-query') {
-    const status = document.getElementById('query-status');
-    const input = document.getElementById('query-input');
-    
-    // 如果元素存在才清除，避免報錯
-    if (status) status.textContent = '';
-    if (input) input.value = '';
-  }
-}
-
-// ================================================================
-// 顯示狀態
-// ================================================================
-function showState(state, message) {
-    const loading = document.getElementById('loading');
-    const content = document.getElementById('content');
-    
-    // 如果找不到這些區塊，直接跳出，避免崩潰
-    if (!loading || !content) {
-        console.error("Critical Error: 'loading' or 'content' div is missing in index.html!");
-        return;
-    }
-
-    if (state === 'loading') {
-        loading.classList.remove('hidden');
-        content.classList.add('hidden');
-    } else if (state === 'content') {
-        loading.classList.add('hidden');
-        content.classList.remove('hidden');
-    } else if (state === 'error') {
-        loading.classList.add('hidden');
-        content.classList.add('hidden');
-        // 如果你有 error 區塊，記得也要做同樣的防禦處理
-    }
-}
-
-// ================================================================
-// 輔助函式
-// ================================================================
-function setText(id, text) {
-  const el = document.getElementById(id);
-  if (el) el.textContent = text;
-}
-
-function loadStorage(key) {
-  try { return JSON.parse(localStorage.getItem(`ms-db-${key}`) || 'null'); }
-  catch { return null; }
-}
-
-function saveStorage(key, val) {
-  try { localStorage.setItem(`ms-db-${key}`, JSON.stringify(val)); }
-  catch { /* 無法寫入時靜默失敗 */ }
-}
-
-// ================================================================
-// 事件綁定 (完整整合版)
-// ================================================================
-function setupEventListeners() {
-
-  // ---- 設定按鈕 (開啟設定 Modal) ----
-  const btnSettings = document.getElementById('btn-settings');
-  if (btnSettings) {
-    btnSettings.onclick = () => {
-      const modal = document.getElementById('modal-settings');
-      if (modal) modal.classList.remove('hidden');
-    };
-  }
-
-  // ---- 外觀切換按鈕 (字體 / 寬度) ----
-  document.querySelectorAll('.btn-opt[data-setting]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const key = btn.dataset.setting;
-      const val = btn.dataset.value;
-      
-      document.querySelectorAll(`[data-setting="${key}"]`).forEach(b => {
-        b.classList.toggle('active', b === btn);
-      });
-      applyBodyClass(key, val);
-      
-      const saved = loadStorage('appearance') || {};
-      saved[key] = val;
-      saveStorage('appearance', saved);
-    });
-  });
-
-  // ---- [新增] 7日最高戰力切換 ----
-  const togglePeak = document.getElementById('toggle-peak');
-  if (togglePeak) {
-    togglePeak.addEventListener('change', async (e) => {
-      const isChecked = e.target.checked;
-      const charName = characters[currentIdx].name;
-
-      if (isChecked) {
-        if (!peakCache[charName]) {
-          try {
-            const res = await fetch(`${API_BASE}/api/peak?character_name=${encodeURIComponent(charName)}`);
-            if (!res.ok) throw new Error('API 請求失敗');
-            const data = await res.json();
-            peakCache[charName] = data; 
-          } catch (err) {
-            console.error(err);
-            alert('無法載入最高戰力資料');
-            e.target.checked = false;
-            return;
-          }
-        }
-        renderCharacter(peakCache[charName]);
-      } else {
-        renderCharacter(characters[currentIdx]);
-      }
-    });
-  }
-
-  // ---- 區塊顯示 Checkbox (記憶顯示/隱藏) ----
-  document.querySelectorAll('[data-section]').forEach(cb => {
-    cb.addEventListener('change', async (e) => {
-      const sectionId = e.target.dataset.section;
-      const isChecked = e.target.checked;
-      const sectionEl = document.getElementById(sectionId);
-
-      if (sectionEl) sectionEl.classList.toggle('hidden', !isChecked);
-
-      const sections = loadStorage('sections') || {};
-      sections[sectionId] = isChecked;
-      saveStorage('sections', sections);
-
-      const moduleName = MODULE_MAP[sectionId];
-      if (isChecked && moduleName) {
-        const char = characters[currentIdx];
-        if (!char[moduleName]) {
-          await fetchLazyModule(char.name, moduleName, sectionId);
-        }
-      }
-    });
-  });
-
-  // ---- 點擊 Modal 外部關閉 ----
-  document.querySelectorAll('.modal').forEach(modal => {
-    modal.addEventListener('click', e => {
-      if (e.target === modal) closeModal(modal.id);
-    });
-  });
-
-  // ---- 即時查詢 ----
-  const btnQuery = document.getElementById('btn-query');
-  if (btnQuery) {
-    btnQuery.onclick = () => {
-      const modal = document.getElementById('modal-query');
-      if (modal) {
-        modal.classList.remove('hidden');
-        const input = document.getElementById('query-input');
-        if (input) setTimeout(() => input.focus(), 50);
-      }
-    };
-  }
-
-  const btnQuerySubmit = document.getElementById('btn-query-submit');
-  if (btnQuerySubmit) {
-    btnQuerySubmit.onclick = doLiveQuery;
-  }
-
-  const queryInput = document.getElementById('query-input');
-  if (queryInput) {
-    queryInput.addEventListener('keydown', e => {
-      if (e.key === 'Enter') doLiveQuery();
-    });
-  }
-
-  // ---- 重試按鈕 ----
-  const btnRetry = document.getElementById('btn-retry');
-  if (btnRetry) {
-    btnRetry.onclick = init;
-  }
-}
-
-// ================================================================
-// 延遲加載模組 (Lazy Loading)
-// ================================================================
-async function fetchLazyModule(charName, moduleName, sectionId) {
-  const sectionEl = document.getElementById(sectionId);
-  // 可選：在此處對 sectionEl 插入 loading 動畫
-  
-  try {
-    const res = await fetch(`${API_BASE}/api/query`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ character_name: charName, modules: [moduleName] })
-    });
-    
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
-
-    // 1. 寫入記憶體快取，確保下次點擊不會再發 API
-    characters[currentIdx][moduleName] = data[moduleName] || {};
-
-    // 2. 觸發對應的渲染函式 (未來開發 UI 時需補齊這些函式)
-    if (moduleName === 'symbol') renderSymbol(characters[currentIdx].symbol);
-    else if (moduleName === 'beauty') renderBeauty(characters[currentIdx].beauty);
-    else if (moduleName === 'pet') renderPet(characters[currentIdx].pet);
-
-  } catch (err) {
-    console.error(`無法載入模組 [${moduleName}]:`, err);
-    // 可選：在此處對 sectionEl 插入錯誤提示
-  }
-}
-
-// ================================================================
-// 啟動
-// ================================================================
-document.addEventListener('DOMContentLoaded', init);
