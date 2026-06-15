@@ -477,7 +477,7 @@ function renderUnionArtifact(data) {
     <div class="grid-item">
       <img src="${getCrystalIconPath(c.name)}" onerror="this.style.display='none'">
       <div class="grid-item-text" style="font-weight:bold;">${c.name}<br>Lv.${c.level}</div>
-      <div class="grid-item-text" style="font-size:0.65rem; color:var(--text-2); margin-top:4px;">
+      <div class="grid-item-text" style="font-size:1.2rem; color:var(--text-2); margin-top:4px;">
         ${c.option1}<br>${c.option2}<br>${c.option3}
       </div>
     </div>
