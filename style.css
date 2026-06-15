@@ -798,7 +798,7 @@ html, body {
 
 /* 強制定義欄位 */
 #v-grid { grid-template-columns: repeat(6, 1fr) !important; }
-#hexa-grid { grid-template-columns: repeat(4, 1fr) !important; }
+#hexa-grid { grid-template-columns: repeat(6, 1fr) !important; }
 
 /* 確保容器內的項目不會撐壞版面 */
 #v-grid .grid-item, 
