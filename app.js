@@ -177,6 +177,23 @@ function renderCharacter(data) {
     </div>`
   );
 
+  // 聯盟神器渲染 (請檢查 data.artifact 的結構，若不符請調整路徑)
+  renderList('union-artifact-grid', data?.artifact?.items || [], item => 
+    `<div class="grid-item">
+        <img src="${item?.icon || ''}" onerror="this.style.display='none'">
+        <div class="grid-item-text">${item?.name ?? '神器'}</div>
+        <div style="font-size:10px; color:var(--text-3)">Lv.${item?.level ?? 0}</div>
+    </div>`
+  );
+
+  // 聯盟冠軍渲染
+  renderList('union-champion-grid', data?.champion?.stats || [], stat => 
+     `<div class="raider-row">
+        <span>${stat?.name ?? '能力'}</span>
+        <span style="margin-left:auto; color:var(--accent-light)">${stat?.value ?? ''}</span>
+     </div>`
+  );
+  
   // 簡單文字區塊
   const androidEl = document.getElementById('android-grid');
   if(androidEl) androidEl.innerHTML = data?.android?.name ? `<div class="raider-row">${data.android.name}</div>` : '<div class="empty">無資料</div>';
