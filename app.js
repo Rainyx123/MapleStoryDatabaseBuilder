@@ -493,7 +493,7 @@ function renderUnionArtifact(data) {
   const crystalsHtml = data.crystals.map(c => `
     <div class="grid-item">
       <img src="${getCrystalIconPath(c.name)}" onerror="this.style.display='none'">
-      <span><div class="grid-item-text" style="font-size:1.2rem;font-weight:bold;">${c.name}</span>
+      <span><div class="grid-item-text" style="font-size:1rem;font-weight:bold;">${c.name}</span>
       <span>Lv.${c.level}</div></span>
       <div class="grid-item-text" style="font-size:0.9rem; color:var(--text-2); margin-top:4px;">
         ${c.option1}<br>${c.option2}<br>${c.option3}
