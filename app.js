@@ -142,29 +142,35 @@ function renderCharacter(data) {
     </div>`
   );
 
+  // 在 app.js 中，五轉的渲染邏輯：
   renderList('v-grid', data?.v_cores, c => {
-    return `<div class="grid-item" title="${c?.name ?? ''}">
-        ${c?.icon ? `<img src="${c.icon}" style="width:32px; height:32px; object-fit:contain;" onerror="this.style.display='none'">` : ''}
-        <div class="grid-item-text" style="color:var(--text-2);">${c?.name ?? '核心'}</div>
-        <div style="color:var(--text-4); font-size:10px;">Lv.${c?.level ?? 0}</div>
-    </div>`;
+      return `
+      <div class="grid-item">
+          ${c?.icon ? `<img src="${c.icon}" style="width:32px; height:32px; object-fit:contain; margin-bottom:4px;" onerror="this.style.display='none'">` : ''}
+          <div class="grid-item-text">${c?.name ?? '核心'}</div>
+          <div style="color:var(--text-4); font-size:10px;">Lv.${c?.level ?? 0}</div>
+      </div>`;
   });
 
   renderList('hexa-grid', data?.hexa_cores, c => {
-    // 渲染 sub-skills，加入 flex-wrap 防止溢出
+    // [除錯用] 如果圖示沒出現，你在 F12 Console 會看到這筆資料的詳細結構
+    if (!c?.icon) console.log('該核心缺圖示:', c);
+
     const subSkills = Array.isArray(c?.skills) && c.skills.length > 0
-      ? `<div style="display:flex; gap:2px; margin-top:2px; justify-content:center; flex-wrap:wrap;">
-            ${c.skills.map(sk => `<img src="${sk.icon}" title="${sk.name}" style="width:14px; height:14px; border-radius:2px; opacity:0.8;" onerror="this.style.display='none'">`).join('')}
-         </div>`
-      : '';
+        ? `<div style="display:flex; gap:2px; margin-top:3px; justify-content:center; flex-wrap:wrap;">
+             ${c.skills.map(sk => `<img src="${sk.icon}" title="${sk.name}" style="width:14px; height:14px; border-radius:2px; opacity:0.8;" onerror="this.style.display='none'">`).join('')}
+           </div>`
+        : '';
 
     return `
-      <div class="grid-item" title="${c?.name ?? ''}" style="padding: 4px;">
-        ${c?.icon ? `<img src="${c.icon}" style="width:30px; height:30px; object-fit:contain; margin-bottom:2px;" onerror="this.style.display='none'">` : ''}
-        <div class="grid-item-text" style="color:var(--text-1); font-size:10px; font-weight:bold;">${c?.name ?? '核心'}</div>
+    <div class="grid-item">
+        ${c?.icon 
+            ? `<img src="${c.icon}" style="width:32px; height:32px; object-fit:contain;" onerror="this.style.display='none'">` 
+            : `<div style="width:32px; height:32px; background:var(--bg-3); border-radius:4px;"></div>`}
+        <div class="grid-item-text" style="color:var(--text-1);">${c?.name ?? '核心'}</div>
         <div style="color:var(--accent-light); font-size:10px;">Lv.${c?.level ?? 0}</div>
         ${subSkills}
-      </div>`;
+    </div>`;
   });
 
   renderList('link-grid', data?.link_skills, sk => 
