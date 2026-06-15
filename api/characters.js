@@ -4,6 +4,8 @@
 // =====================================================
 import { createClient } from '@supabase/supabase-js';
 
+console.log("Row Data:", row.data);
+
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_ANON_KEY
