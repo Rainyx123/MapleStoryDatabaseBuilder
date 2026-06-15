@@ -41,28 +41,39 @@ async function init() {
   }
 }
 
-// 卡片收合與狀態記憶
-function initCollapsible() {
-    const states = JSON.parse(localStorage.getItem('section-states') || '{}');
-    document.querySelectorAll('.section-card').forEach(card => {
-        const id = card.id;
-        const body = card.querySelector('.section-body');
-        const header = card.querySelector('.section-header');
-        
-        // 恢復上次的收合狀態
-        if (states[id] === false) {
-            card.classList.add('collapsed');
-            body.classList.add('collapsed');
-        }
+// 1. 事件委派：處理所有點擊 (不需要綁定在個別元素上)
+document.addEventListener('click', (e) => {
+    // 檢查點擊的是否為標頭
+    const header = e.target.closest('.section-header');
+    if (!header) return;
 
-        // 點擊事件
-        if (header) {
-            header.onclick = () => {
-                card.classList.toggle('collapsed');
-                body.classList.toggle('collapsed');
-                states[id] = !body.classList.contains('collapsed');
-                localStorage.setItem('section-states', JSON.stringify(states));
-            };
+    // 取得該卡片的 ID
+    const card = header.closest('.section-card');
+    if (!card || !card.id) return;
+
+    const body = card.querySelector('.section-body');
+    if (!body) return;
+
+    // 切換類別
+    const isNowCollapsed = card.classList.toggle('collapsed');
+    body.classList.toggle('collapsed');
+
+    // 儲存狀態
+    const states = JSON.parse(localStorage.getItem('section-states') || '{}');
+    states[card.id] = !isNowCollapsed; // true 為展開，false 為收合
+    localStorage.setItem('section-states', JSON.stringify(states));
+});
+
+// 2. 狀態恢復：僅在頁面初始化時執行一次
+function restoreCollapsibleStates() {
+    const states = JSON.parse(localStorage.getItem('section-states') || '{}');
+    
+    // 尋找所有卡片並根據記憶恢復狀態
+    document.querySelectorAll('.section-card').forEach(card => {
+        if (states[card.id] === false) { // 之前是收合狀態
+            card.classList.add('collapsed');
+            const body = card.querySelector('.section-body');
+            if (body) body.classList.add('collapsed');
         }
     });
 }
