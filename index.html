@@ -6,15 +6,6 @@
   <title>🍁 楓之谷角色資料庫</title>
   <link rel="stylesheet" href="style.css">
   <link rel="icon" href="data:image/x-icon;base64,AAABAAEAEBAAAAEAIABoBAAAFgAAACgAAAAQAAAAIAAAAAEAIAAAAAAAAAAAABMLAAATCwAAAAAAAAAAAAD///8A8PDwAPDw8AD///8A">
-  <style>
-    .container-stack { display: flex; flex-direction: column; gap: 12px; margin-top: 10px; }
-    .section-card { background: var(--bg-1); border-radius: 8px; border: 1px solid var(--border); overflow: hidden; }
-    .section-header { padding: 10px 15px; cursor: pointer; display: flex; justify-content: space-between; background: var(--bg-2); font-weight: bold; }
-    .section-body { padding: 15px; }
-    .section-body.collapsed { display: none; }
-    .toggle-icon { transition: transform 0.2s; font-size: 12px; }
-    .collapsed .toggle-icon { transform: rotate(-90deg); }
-  </style>
 </head>
 <body>
 
@@ -27,7 +18,7 @@
     </div>
   </header>
 
-<main id="main">
+  <main id="main">
     <div id="loading"><div class="spinner"></div><p>讀取角色資料中...</p></div>
 
     <div id="content" class="hidden container-stack">      
@@ -35,31 +26,29 @@
       <div class="grid-system">
         <section class="section-card span-2" id="section-header">
           <div class="section-header"><span>角色資訊</span><span class="toggle-icon">▼</span></div>
-          <div class="section-body">
-            <div id="char-header" style="display:flex; align-items:center; gap:20px;">
-              <img id="char-image" src="" alt="角色圖片">
-              <div id="char-meta">
-                <div id="char-name"></div>
-                <div id="char-class"></div>
-                <div id="char-level"></div>
-              </div>
+          <div class="section-body char-info" id="char-header">
+            <img id="char-image" src="" alt="角色圖片">
+            <div class="char-meta">
+              <div id="char-name"></div>
+              <div id="char-class"></div>
+              <div id="char-level"></div>
             </div>
           </div>
         </section>        
         
         <section class="section-card span-6" id="section-stats">
           <div class="section-header"><span>核心屬性</span><span class="toggle-icon">▼</span></div>
-          <div class="section-body"><div id="stat-grid" class="grid-container grid-stats"></div></div>
+          <div class="section-body grid-stats" id="stat-grid"></div>
         </section>
         
         <div class="flex-column-layout span-4">
           <section class="section-card" id="section-ability">
             <div class="section-header"><span>內在潛能</span><span class="toggle-icon">▼</span></div>
-            <div class="section-body"><div id="ability-list"></div></div>
+            <div class="section-body" id="ability-list"></div>
           </section>
           <section class="section-card" id="section-hyper">
             <div class="section-header"><span>極限屬性</span><span class="toggle-icon">▼</span></div>
-            <div class="section-body"><div id="hyper-list"></div></div>
+            <div class="section-body" id="hyper-list"></div>
           </section>
         </div>
       </div>
@@ -67,7 +56,7 @@
       <div class="grid-system">
         <section class="section-card span-12" id="section-equip">
           <div class="section-header"><span>裝備</span><span class="toggle-icon">▼</span></div>
-          <div class="section-body"><div id="equip-list"></div></div>
+          <div class="section-body" id="equip-list"></div>
         </section>
       </div>
 
@@ -75,41 +64,41 @@
         <div class="flex-column-layout span-4">
           <section class="section-card" id="section-symbol">
             <div class="section-header"><span>符文系統 (ARC/AUT)</span><span class="toggle-icon">▼</span></div>
-            <div class="section-body"><div id="symbol-grid" class="grid-container grid-symbol"></div></div>
+            <div class="section-body grid-symbol" id="symbol-grid"></div>
           </section>
           <section class="section-card" id="section-artifact">
             <div class="section-header"><span>聯盟神器</span><span class="toggle-icon">▼</span></div>
-            <div class="section-body"><div id="union-artifact-grid" class="grid-container grid-artifact"></div></div>
+            <div class="section-body grid-artifact" id="union-artifact-grid"></div>
           </section>
         </div>
         
         <div class="flex-column-layout span-3">
           <section class="section-card" id="section-union">
             <div class="section-header"><span>戰地聯盟</span><span class="toggle-icon">▼</span></div>
-            <div class="section-body"><div id="union-grid" class="grid-container grid-union"></div></div>
+            <div class="section-body grid-union" id="union-grid"></div>
           </section>
           <section class="section-card" id="section-raider">
             <div class="section-header"><span>戰地攻擊隊</span><span class="toggle-icon">▼</span></div>
-            <div class="section-body"><div id="union-raider-grid" class="grid-container grid-unionraider"></div></div>
+            <div class="section-body grid-unionraider" id="union-raider-grid"></div>
           </section>
           <section class="section-card" id="section-champion">
             <div class="section-header"><span>聯盟冠軍</span><span class="toggle-icon">▼</span></div>
-            <div class="section-body"><div id="union-champion-grid" class="grid-container grid-champion"></div></div>
+            <div class="section-body grid-champion" id="union-champion-grid"></div>
           </section>
           <section class="section-card" id="section-link">
             <div class="section-header"><span>傳授技能</span><span class="toggle-icon">▼</span></div>
-            <div class="section-body"><div id="link-grid" class="grid-container grid-link"></div></div>
+            <div class="section-body grid-link" id="link-grid"></div>
           </section>        
         </div>
         
         <div class="flex-column-layout span-5">
           <section class="section-card" id="section-hexa">
             <div class="section-header"><span>六轉 HEXA</span><span class="toggle-icon">▼</span></div>
-            <div class="section-body"><div id="hexa-grid" class="grid-container grid-hexa"></div></div>
+            <div class="section-body grid-hexa" id="hexa-grid"></div>
           </section>
           <section class="section-card" id="section-v">
             <div class="section-header"><span>五轉 V-Matrix</span><span class="toggle-icon">▼</span></div>
-            <div class="section-body"><div id="v-grid" class="grid-container grid-vmatrix"></div></div>
+            <div class="section-body grid-vmatrix" id="v-grid"></div>
           </section>
         </div>
       </div>
@@ -117,27 +106,27 @@
       <div class="grid-system">
         <section class="section-card span-8" id="section-cash">
           <div class="section-header"><span>外觀與現金道具</span><span class="toggle-icon">▼</span></div>
-          <div class="section-body"><div id="cash-grid"></div></div>
+          <div class="section-body" id="cash-grid"></div>
         </section>
         
         <div class="flex-column-layout span-4">
           <section class="section-card" id="section-pets">
             <div class="section-header"><span>寵物</span><span class="toggle-icon">▼</span></div>
-            <div class="section-body"><div id="pets-grid" class="grid-container grid-pet"></div></div>
+            <div class="section-body grid-pet" id="pets-grid"></div>
           </section>
           <section class="section-card" id="section-android">
             <div class="section-header"><span>機器人</span><span class="toggle-icon">▼</span></div>
-            <div class="section-body"><div id="android-grid"></div></div>
+            <div class="section-body" id="android-grid"></div>
           </section>
           <section class="section-card" id="section-beauty">
             <div class="section-header"><span>美容美髮</span><span class="toggle-icon">▼</span></div>
-            <div class="section-body"><div id="beauty-grid" class="grid-container grid-beauty"></div></div>
+            <div class="section-body grid-beauty" id="beauty-grid"></div>
           </section>
         </div>
       </div>
 
     </div>
-</main>
+  </main>
 
   <div id="modal-settings" class="modal hidden">
     <div class="modal-box">
@@ -151,18 +140,19 @@
         <label><input type="checkbox" data-section="section-hexa" checked> 六轉 HEXA</label>
         <label><input type="checkbox" data-section="section-link" checked> 傳授技能</label>
         <label><input type="checkbox" data-section="section-ability" checked> 內在潛能</label>
-        <label><input type="checkbox" data-section="section-symbol" checked> 符文系統</label><br>
-        <label><input type="checkbox" data-section="section-artifact" checked> 聯盟神器</label><br>
-        <label><input type="checkbox" data-section="section-champion" checked> 聯盟冠軍</label><br>
+        <label><input type="checkbox" data-section="section-symbol" checked> 符文系統</label>
+        <label><input type="checkbox" data-section="section-artifact" checked> 聯盟神器</label>
+        <label><input type="checkbox" data-section="section-champion" checked> 聯盟冠軍</label>
         <label><input type="checkbox" data-section="section-cash" checked> 外觀與現金道具</label>
-        <label><input type="checkbox" data-section="section-union" checked> 戰地聯盟</label><br>
-        <label><input type="checkbox" data-section="section-raider" checked> 戰地攻擊隊</label><br>
-        <label><input type="checkbox" data-section="section-pets" checked> 寵物</label><br>
-        <label><input type="checkbox" data-section="section-android" checked> 機器人</label><br>
-        <label><input type="checkbox" data-section="section-beauty" checked> 美容美髮</label><br>
+        <label><input type="checkbox" data-section="section-union" checked> 戰地聯盟</label>
+        <label><input type="checkbox" data-section="section-raider" checked> 戰地攻擊隊</label>
+        <label><input type="checkbox" data-section="section-pets" checked> 寵物</label>
+        <label><input type="checkbox" data-section="section-android" checked> 機器人</label>
+        <label><input type="checkbox" data-section="section-beauty" checked> 美容美髮</label>
         <hr>
         <label><input type="checkbox" id="toggle-peak"> 顯示 7 日最高戰力</label>
       </div>    
+    </div>
   </div>
 
   <div id="modal-query" class="modal hidden">
