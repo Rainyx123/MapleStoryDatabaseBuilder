@@ -129,7 +129,14 @@ function renderCharacter(data) {
   if (data.symbols) renderSymbols(data.symbols);
   if (data.union_artifact) renderUnionArtifact(data.union_artifact);
   if (data.union_champion) renderUnionChampion(data.union_champion);
-  if (data.union) renderUnion(data.union);
+  if (data.union) renderUnion(data.union);// 範例：如果查出來真正的陣列在 data.union_raider.raiders
+  if (data.union_raider && data.union_raider.raiders) {
+      renderUnionRaider(data.union_raider.raiders);
+  } 
+  // 或者如果是直接在 union_raider 裡，但要確保它是陣列
+  else if (Array.isArray(data.union_raider)) {
+      renderUnionRaider(data.union_raider);
+  }
   if (data.union_raider) renderUnionRaider(data.union_raider);
   if (data.pets) renderPets(data.pets);
   if (data.android) renderAndroid(data.android);
