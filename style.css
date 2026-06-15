@@ -807,11 +807,21 @@ html, body {
     width: 100% !important;
 }
 
-/* 定義父容器為 12 欄網格 */
+/* 1. 修正 Grid System 的核心設定 */
 .grid-system {
     display: grid;
-    grid-template-columns: repeat(12, 1fr); /* 這裡設定 12 欄，也就是 12 份權重 */
-    gap: 15px; /* 這裡設定間距，Grid 會自動扣除，你不用手動算 width */
+    grid-template-columns: repeat(12, 1fr);
+    gap: 15px;
+    width: 100%;           /* 關鍵：強制填滿父層 */
+    box-sizing: border-box; /* 關鍵：確保 padding 不會把版面撐破 */
+}
+
+/* 2. 修正 Flex 容器內的子元素 */
+/* 因為你的 grid-system 包在 flex-column-layout 裡面，
+   這個設定能確保 grid 容器不會被壓縮 */
+.flex-column-layout > .grid-system {
+    flex: 1;               /* 強制佔據可用空間 */
+    min-width: 0;          /* 防止內容溢出 */
 }
 
 /* 定義寬度權重 (Span 就是佔據幾格的意思) */
