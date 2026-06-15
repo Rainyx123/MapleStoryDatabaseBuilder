@@ -767,3 +767,20 @@ html, body {
     min-height: 0;     /* 防止內容過多撐開高度 */
     overflow: hidden;  /* 如果內容真的太大，強制隱藏，不要撐開 */
 }
+
+/* 強制啟動 Grid 引擎，並確保欄位定義有效 */
+#v-grid, #hexa-grid {
+    display: grid !important;
+    width: 100% !important; /* 確保容器吃滿寬度 */
+}
+
+/* 強制定義欄位 */
+#v-grid { grid-template-columns: repeat(6, 1fr) !important; }
+#hexa-grid { grid-template-columns: repeat(4, 1fr) !important; }
+
+/* 確保容器內的項目不會撐壞版面 */
+#v-grid .grid-item, 
+#hexa-grid .grid-item {
+    min-width: 0 !important;
+    width: 100% !important;
+}
