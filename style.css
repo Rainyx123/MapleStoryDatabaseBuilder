@@ -709,11 +709,9 @@ html, body {
 }
 
 /* 特別針對傳授技能的欄位 */
-/* 移除 Grid，改用 Flexbox 容器 */
 .grid-link {
-    display: flex;
-    flex-wrap: wrap;        /* 自動換行 */
-    justify-content: center; /* 讓所有項目置中對齊 */
+    display: grid;
+    grid-template-columns: repeat(3, 1fr); /* 強制 3 欄 */
     gap: 10px;
 }
 
