@@ -178,25 +178,28 @@ function renderCharacter(data) {
     </div>`
   );
 
-  // 1. 聯盟神器渲染 (來自 union.union_artifact.crystals)
-  renderList('union-artifact-grid', data?.union?.union_artifact?.crystals || [], item => 
+ // 1. 聯盟神器渲染 (明確路徑)
+  const artifactData = data?.union?.union_artifact?.crystals || [];
+  console.log("偵錯：神器資料", artifactData); // 看這裡有沒有印出陣列
+  renderList('union-artifact-grid', artifactData, item => 
     `<div class="grid-item">
         <div class="grid-item-text" style="font-weight:bold">${item?.name ?? '水晶'}</div>
         <div style="font-size:10px; color:var(--accent-light)">Lv.${item?.level ?? 0}</div>
     </div>`
   );
 
-  // 2. 聯盟冠軍渲染 (來自 union.union_champion)
+  // 2. 聯盟冠軍渲染 (明確路徑)
   const champGrid = document.getElementById('union-champion-grid');
   if (champGrid) {
     const champs = data?.union?.union_champion?.champions || [];
     const badges = data?.union?.union_champion?.total_badge || [];
+    console.log("偵錯：冠軍資料", champs); // 看這裡有沒有印出陣列
     
     if (champs.length === 0 && badges.length === 0) {
         champGrid.innerHTML = '<div class="empty">無資料</div>';
     } else {
         champGrid.innerHTML = `
-            <div style="font-size:11px; color:var(--text-4); margin-bottom:8px; padding-bottom:5px; border-bottom:1px solid var(--border)">
+            <div style="font-size:10px; color:var(--text-4); margin-bottom:5px;">
                 獎章: ${badges.length > 0 ? badges.join(', ') : '無'}
             </div>
             ${champs.map(c => `
