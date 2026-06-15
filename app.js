@@ -210,32 +210,83 @@ function renderCharacter(data) {
 // 4. 具備特殊邏輯的渲染函式
 // ================================================================
 
-// 核心屬性 (動態渲染所有 final_stat)
+// 核心屬性
 function renderStats(data) {
   const grid = document.getElementById('stat-grid');
   if (!grid) return;
-  grid.innerHTML = '';
 
-  // 永遠顯示的固定欄位
-  const pinned = [
-    { label: '戰鬥力',   value: data.stats?.combat_power   != null ? Number(data.stats.combat_power).toLocaleString()  : '—' },
-    { label: '剩餘 AP',  value: data.remain_ap              != null ? data.remain_ap                                      : '—' },
-    { label: '總星力',   value: data.starforce_total        != null ? `${data.starforce_total} ★`                        : '—' },
+  // 建立 stat_name → stat_value 快取
+  const S = {};
+  (data.final_stat ?? []).forEach(({ stat_name, stat_value }) => { S[stat_name] = stat_value; });
+
+  // 需要加 % 的欄位
+  const PCT = new Set([
+    '傷害','BOSS怪物傷害','最終傷害','無視防禦率','爆擊機率','爆擊傷害',
+    '冷卻時間減少(％)','未套用冷卻時間','無視屬性耐性','狀態異常追加傷害',
+    '武器熟練度','Buff持續時間','一般怪物傷害','道具掉落率','楓幣獲得量',
+    '獲得額外經驗值','召喚獸持續時間增加',
+  ]);
+
+  // 格式化單一數值
+  const fmt = name => {
+    const v = S[name];
+    if (v == null) return '—';
+    if (name === '冷卻時間減少(秒)') return `${v}秒`;
+    if (PCT.has(name)) return `${v}%`;
+    const n = parseFloat(v);
+    return isNaN(n) ? v : Math.round(n).toLocaleString();
+  };
+
+  // 排版定義（每個 section 是一組 [左欄, 右欄] pairs）
+  const SECTIONS = [
+    { pairs: [['HP','MP'], ['STR','DEX'], ['INT','LUK']] },
+    { pairs: [
+        ['戰鬥力','最低屬性攻擊力'],
+        ['傷害','最高屬性攻擊力'],
+        ['最終傷害','BOSS怪物傷害'],
+        ['無視防禦率','一般怪物傷害'],
+        ['攻擊力','爆擊機率'],
+        ['魔法攻擊力','爆擊傷害'],
+        ['冷卻時間減少(秒)','Buff持續時間'],
+        ['冷卻時間減少(％)','無視屬性耐性'],
+        ['未套用冷卻時間','召喚獸持續時間增加'],
+        ['狀態異常追加傷害','武器熟練度'],
+    ]},
+    { pairs: [
+        ['道具掉落率','星力'],
+        ['楓幣獲得量','神秘力量'],
+        ['獲得額外經驗值','真實之力'],
+        ['防禦力','狀態異常耐性'],
+        ['移動速度','跳躍力'],
+        ['格擋','攻擊速度'],
+    ]},
   ];
 
-  pinned.forEach(({ label, value }) => {
-    grid.innerHTML += statCell(label, value, true);
+  const renderPair = (l, r) => `
+    <div class="stat-row">
+      <div class="stat-pair">
+        <span class="stat-name">${l}</span>
+        <span class="stat-val">${fmt(l)}</span>
+      </div>
+      <div class="stat-pair stat-pair-right">
+        <span class="stat-name">${r}</span>
+        <span class="stat-val">${fmt(r)}</span>
+      </div>
+    </div>`;
+
+  let html = '';
+  SECTIONS.forEach((sec, i) => {
+    if (i > 0) html += '<div class="stat-divider"></div>';
+    sec.pairs.forEach(([l, r]) => { html += renderPair(l, r); });
   });
 
-  // 動態展開 final_stat 陣列（跳過已固定的戰鬥力）
-  const SKIP = new Set(['戰鬥力']);
-  const statList = Array.isArray(data.final_stat) ? data.final_stat : [];
+  // 剩餘 AP
+  if (data.remain_ap != null) {
+    html += '<div class="stat-divider"></div>';
+    html += `<div class="stat-row"><div class="stat-pair"><span class="stat-name">剩餘 AP</span><span class="stat-val">${data.remain_ap}</span></div></div>`;
+  }
 
-  statList.forEach(({ stat_name, stat_value }) => {
-    if (SKIP.has(stat_name)) return;
-    const display = stat_value != null ? String(stat_value) : '—';
-    grid.innerHTML += statCell(stat_name, display, false);
-  });
+  grid.innerHTML = html;
 }
 
 function statCell(label, value, highlight) {
