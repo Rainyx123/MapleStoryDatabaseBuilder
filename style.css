@@ -691,3 +691,36 @@ html, body {
     .grid-hexa { grid-template-columns: repeat(2, 1fr); }  /* 手機變 2 欄 */
     .grid-artifact, .grid-stats, .grid-link { grid-template-columns: 1fr; } /* 手機變 1 欄 */
 }
+
+/* 讓每個格子維持正方形且內部內容居中 */
+.grid-item {
+    aspect-ratio: 1 / 1; /* 這裡決定長寬比，1/1 就是正方形 */
+    display: flex;
+    flex-direction: column; /* 讓圖片與文字垂直排列 */
+    align-items: center;    /* 水平置中 */
+    justify-content: center; /* 垂直置中 */
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--bg-2);
+    padding: 5px;
+    overflow: hidden; /* 防止內容溢出 */
+}
+
+/* 調整圖片大小 */
+.grid-item img {
+    width: 60%; /* 佔據格子寬度的 60% */
+    height: auto;
+    object-fit: contain; /* 確保圖片不變形 */
+    margin-bottom: 5px;
+}
+
+/* 調整文字大小 */
+.grid-item-text {
+    font-size: 0.75rem; /* 字體大小 */
+    text-align: center;
+    white-space: nowrap; /* 強制不換行，或改為 normal 若想換行 */
+    overflow: hidden;
+    text-overflow: ellipsis; /* 文字過長顯示... */
+    width: 100%;
+}
+
