@@ -419,26 +419,28 @@ function renderUnionRaider(data) {
   const el = document.getElementById('union-raider-grid');
   if (!el) return;
 
-  // 1. 除錯：直接在 Console 印出收到的資料結構
-  console.log("Union Raider 收到的原始資料:", data);
+  // 【除錯關鍵】：直接把收到的東西印出來，看看是不是空的或是物件結構跑掉了
+  console.log("=== 戰地攻擊隊偵錯 ===");
+  console.log("收到的資料類型:", typeof data);
+  console.log("收到的資料內容:", data);
 
-  // 2. 自動判斷資料在哪裡
-  // 如果傳進來直接就是陣列，就用它；如果是物件，嘗試找 raiders 或 list 屬性
+  // 讓我們手動指定陣列來源 (假設 API 資料是在 data 物件裡面的某個屬性)
+  // 如果你不知道屬性名，Console 會告訴你
   let raiders = [];
   if (Array.isArray(data)) {
-    raiders = data;
+      raiders = data;
   } else if (data && typeof data === 'object') {
-    // 常見的 API 屬性名稱可能是 raiders, list, data, members
-    raiders = data.raiders || data.list || data.members || [];
+      // 這裡嘗試找出陣列，例如 data.raiders, data.list 等
+      raiders = data.raiders || data.list || Object.values(data); 
   }
+  
+  console.log("最終處理後的陣列:", raiders);
 
-  // 3. 防禦性檢查
   if (raiders.length === 0) {
     el.innerHTML = '<div class="empty">無戰地攻擊隊資料</div>';
     return;
   }
 
-  // 4. 安全地渲染
   el.innerHTML = raiders.map(r => `
     <div class="grid-item" style="aspect-ratio: auto; flex-direction: row; justify-content: flex-start; padding: 8px;">
        <div style="font-weight:bold; width: 50%;">${r.name || '未知'}</div>
