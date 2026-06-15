@@ -334,9 +334,16 @@ function renderLinkSkills(link_skills) {
     return;
   }
 
-  el.innerHTML = link_skills.map(skill => {
+  // 1. 計算中間點 (Math.ceil 確保奇數時，上列多一筆)
+  const midpoint = Math.ceil(link_skills.length / 2);
+  
+  // 2. 切分陣列
+  const topRow = link_skills.slice(0, midpoint);
+  const bottomRow = link_skills.slice(midpoint);
+
+  // 3. 渲染函式 (封裝一下，減少重複代碼)
+  const renderItem = (skill) => {
     const formattedEffect = skill.effect ? skill.effect.replace(/\\n/g, '<br>') : '';
-    
     return `
       <div class="grid-item">
         <div style="display: flex; align-items: flex-start; gap: 8px;">
@@ -351,7 +358,14 @@ function renderLinkSkills(link_skills) {
         </div>
       </div>
     `;
-  }).join('');
+  };
+
+  // 4. 將兩個陣列渲染出來
+  // 為了讓 CSS Grid 能夠控制寬度，我們將它們放進同一個 grid 中，
+  // 但我們可以用 CSS 強制換行，或者分兩個 container。
+  // 最簡單的作法：直接把這兩組拼在一起，HTML 不需要動，邏輯靠 JS 決定順序即可。
+  
+  el.innerHTML = topRow.map(renderItem).join('') + bottomRow.map(renderItem).join('');
 }
 // ================================================================
 // 內潛
