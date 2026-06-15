@@ -110,6 +110,7 @@ function renderList(containerId, dataArray, renderItemFn) {
 // 3. 核心資料分配
 // ================================================================
 function renderCharacter(data) {
+  console.log("Current Character Data:", data)
   if (!data) return;
 
   // 頂部角色資訊
