@@ -505,3 +505,32 @@ document.addEventListener('click', (e) => {
     states[card.id] = !body.classList.contains('collapsed');
     localStorage.setItem('section-states', JSON.stringify(states));
 });
+
+// ================================================================
+// 終極防護版：區塊收合邏輯 (自帶防重複觸發機制)
+// ================================================================
+document.addEventListener('click', (e) => {
+    const header = e.target.closest('.section-header');
+    if (!header) return;
+
+    // 🔒【安全鎖機制】防止殘留的舊程式碼重複執行導致抵消
+    if (header.dataset.isToggling === "true") return; 
+    header.dataset.isToggling = "true";
+    setTimeout(() => { header.dataset.isToggling = ""; }, 50); // 50毫秒後自動解鎖
+
+    const card = header.closest('.section-card');
+    const body = card ? card.querySelector('.section-body') : null;
+
+    if (body) {
+        // 切換狀態
+        const isCollapsed = body.classList.toggle('collapsed');
+        card.classList.toggle('collapsed');
+
+        // 儲存至本機記憶
+        const states = JSON.parse(localStorage.getItem('section-states') || '{}');
+        states[card.id] = !isCollapsed;
+        localStorage.setItem('section-states', JSON.stringify(states));
+
+        console.log(`[執行成功] 區塊 ${card.id} 現在狀態是：${isCollapsed ? '已隱藏' : '已展開'}`);
+    }
+});
