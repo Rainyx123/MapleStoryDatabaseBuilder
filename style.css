@@ -56,6 +56,17 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans TC
 .collapsed .toggle-icon { transform: rotate(-90deg); }
 .empty { color: var(--text-4); font-size: var(--fs-sm); text-align: center; padding: 10px 0; }
 
+/* 當 section-body 被加上 collapsed 類別時，強制隱藏 */
+.section-body.collapsed {
+    display: none !important;
+}
+
+/* 為了讓視覺上更像摺疊，你可以選擇性加上這行，讓摺疊時 header 有變化 */
+.section-card.collapsed .section-header {
+    border-bottom: none;
+    border-radius: var(--r-sm);
+}
+
 /* 角色專屬標頭 */
 .char-info { display: flex; align-items: center; gap: 20px; }
 #char-image { width: 90px; height: 90px; object-fit: contain; }
