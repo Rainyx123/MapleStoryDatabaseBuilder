@@ -68,7 +68,8 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans TC
 .grid-stats, .grid-hexa, .grid-champion, .grid-pet, .grid-beauty, .grid-union, .grid-symbol, .grid-vmatrix, .grid-artifact, .grid-link { display: grid; gap: 8px; }
 
 /* 欄位分配 */
-.grid-stats, .grid-hexa, .grid-champion, .grid-pet, .grid-beauty, .grid-union { grid-template-columns: repeat(2, 1fr); }
+.grid-hexa, .grid-champion, .grid-pet, .grid-beauty, .grid-union { grid-template-columns: repeat(2, 1fr); }
+.grid-stats { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); }
 .grid-artifact, .grid-link { grid-template-columns: repeat(3, 1fr); }
 .grid-vmatrix, .grid-symbol { grid-template-columns: repeat(6, 1fr); }
 
@@ -110,6 +111,13 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans TC
 .modal-body button { background: var(--accent); color: #fff; border: none; padding: 10px; border-radius: var(--r-sm); cursor: pointer; font-weight: bold; }
 .settings-group-title { font-size: var(--fs-xs); color: var(--text-4); font-weight: bold; }
 .modal-body label { display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: var(--fs-base); }
+
+/* 新增 stat cell 樣式 */
+.stat-cell  { padding: 8px 5px; align-items: flex-start; text-align: left; }
+.stat-label { font-size: 10px; color: var(--text-4); margin-bottom: 3px; line-height: 1.3; }
+.stat-value { font-size: 12px; font-weight: bold; color: var(--text-2); word-break: break-all; }
+.stat-pinned .stat-label { color: var(--accent-light); }
+.stat-pinned .stat-value { color: var(--text-1); font-size: 13px; }
 
 /* ---- 8. 響應式佈局 (RWD) ---- */
 @media (max-width: 1024px) {
