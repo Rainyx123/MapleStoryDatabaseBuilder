@@ -210,31 +210,40 @@ function renderCharacter(data) {
 // 4. 具備特殊邏輯的渲染函式
 // ================================================================
 
-// 核心屬性
+// 核心屬性 (動態渲染所有 final_stat)
 function renderStats(data) {
   const grid = document.getElementById('stat-grid');
   if (!grid) return;
   grid.innerHTML = '';
 
-  const STAT_CONFIG = [
-    { key: 'combat_power',    label: '戰鬥力',   suffix: '' },
-    { key: 'damage',          label: '傷害',     suffix: '%' },
-    { key: 'boss_damage',     label: 'BOSS傷',  suffix: '%' },
-    { key: 'ignore_defense',  label: '無視防禦', suffix: '%' },
-    { key: 'critical_damage', label: '爆擊傷害', suffix: '%' },
-    { key: '_starforce',      label: '總星力',   suffix: '★' },
+  // 永遠顯示的固定欄位
+  const pinned = [
+    { label: '戰鬥力',   value: data.stats?.combat_power   != null ? Number(data.stats.combat_power).toLocaleString()  : '—' },
+    { label: '剩餘 AP',  value: data.remain_ap              != null ? data.remain_ap                                      : '—' },
+    { label: '總星力',   value: data.starforce_total        != null ? `${data.starforce_total} ★`                        : '—' },
   ];
 
-  STAT_CONFIG.forEach(cfg => {
-    let rawValue = cfg.key === '_starforce' ? (data.starforce_total ?? 0) : data.stats?.[cfg.key];
-    let display = (rawValue === undefined || rawValue === null) ? '—' : `${Number(rawValue).toLocaleString()}${cfg.suffix}`;
-    
-    grid.innerHTML += `
-      <div class="grid-item" style="padding:10px 5px;">
-        <div style="font-size:10px; color:var(--text-4); margin-bottom:2px;">${cfg.label}</div>
-        <div style="font-size:13px; font-weight:bold; color:var(--text-1);">${display}</div>
-      </div>`;
+  pinned.forEach(({ label, value }) => {
+    grid.innerHTML += statCell(label, value, true);
   });
+
+  // 動態展開 final_stat 陣列（跳過已固定的戰鬥力）
+  const SKIP = new Set(['戰鬥力']);
+  const statList = Array.isArray(data.final_stat) ? data.final_stat : [];
+
+  statList.forEach(({ stat_name, stat_value }) => {
+    if (SKIP.has(stat_name)) return;
+    const display = stat_value != null ? String(stat_value) : '—';
+    grid.innerHTML += statCell(stat_name, display, false);
+  });
+}
+
+function statCell(label, value, highlight) {
+  return `
+    <div class="grid-item stat-cell${highlight ? ' stat-pinned' : ''}">
+      <div class="stat-label">${label}</div>
+      <div class="stat-value">${value}</div>
+    </div>`;
 }
 
 // 裝備
