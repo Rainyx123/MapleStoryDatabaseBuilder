@@ -685,6 +685,9 @@ html, body {
 /* 5. 六轉Hexa矩陣: */
 .grid-hexa { grid-template-columns: repeat(4, 1fr); }
 
+/* 6. 符文系統: */
+.grid-symbol { grid-template-columns: repeat(3, 1fr); }
+
 /* 手機版響應式調整 (手機螢幕較小時，自動變成 1 或 2 欄，避免過擠) */
 @media (max-width: 600px) {
     .grid-vmatrix { grid-template-columns: repeat(3, 1fr); } /* 手機變 3 欄 */
