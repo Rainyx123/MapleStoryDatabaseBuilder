@@ -222,3 +222,13 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans TC
     .grid-stats, .grid-hexa, .grid-champion, .grid-pet, .grid-beauty, .grid-union, .grid-unionraider { grid-template-columns: 1fr; }
     .char-info { flex-direction: column; text-align: center; }
 }
+
+/* 鏈式選擇器：權重比單純的 class 更高 */
+.section-card .section-body.collapsed {
+    display: none !important;
+}
+
+/* 確保摺疊時箭頭轉向，且 transition 有效 */
+.section-card.collapsed .section-header .toggle-icon {
+    transform: rotate(-90deg);
+}
