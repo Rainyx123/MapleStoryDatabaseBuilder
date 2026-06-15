@@ -357,9 +357,6 @@ function renderLinkSkills(link_skills) {
             <div style="font-size: 0.8rem; color: var(--highlight);">Lv.${skill.level || 0}</div>
           </div>
         </div>
-        <div style="font-size: 0.75rem; color: var(--text-2); margin-top: 6px; line-height: 1.2; word-break: break-all;">
-          ${formattedEffect}
-        </div>
       </div>
     `;
   }).join('');
@@ -569,19 +566,34 @@ function renderVMatrix(v_cores) {
 }
 
 // 5. 六轉 HEXA (含 Icon)
-function renderHEXA(hexa_cores) {
+function renderHEXA(cores) {
   const el = document.getElementById('hexa-grid');
   if (!el) return;
 
-  el.innerHTML = hexa_cores.map(c => `
-    <div class="grid-item">
-      <img src="${c.icon}" onerror="this.style.display='none'">
-      <div class="grid-item-text">
-         <strong>${c.name}</strong><br>
-         <span style="color:var(--highlight)">Lv.${c.level}</span>
+  // 1. 補齊邏輯：確保至少有 12 個項目
+  const totalSlots = 12;
+  const displayItems = [...cores]; // 複製一份資料
+  
+  // 如果資料不足 12 個，不斷塞入空物件 { isEmpty: true }
+  while (displayItems.length < totalSlots) {
+    displayItems.push({ isEmpty: true });
+  }
+
+  // 2. 渲染邏輯
+  el.innerHTML = displayItems.map(core => {
+    // 如果是空位，渲染一個空框
+    if (core.isEmpty) {
+      return `<div class="grid-item empty-slot"></div>`;
+    }
+    
+    // 原本的渲染邏輯 (請根據你的資料結構調整)
+    return `
+      <div class="grid-item">
+         <img src="${core.icon_url || ''}" />
+         <div class="grid-item-text">${core.name || '核心'}</div>
       </div>
-    </div>
-  `).join('');
+    `;
+  }).join('');
 }
 
 // 7. 寵物 (含 Icon)
