@@ -210,16 +210,14 @@ function renderCharacter(data) {
 // 4. 具備特殊邏輯的渲染函式
 // ================================================================
 
-// 核心屬性
+// 核心屬性 (直接使用你提供的邏輯)
 function renderStats(data) {
   const grid = document.getElementById('stat-grid');
   if (!grid) return;
 
-  // 建立 stat_name → stat_value 快取
   const S = {};
   (data.final_stat ?? []).forEach(({ stat_name, stat_value }) => { S[stat_name] = stat_value; });
 
-  // 需要加 % 的欄位
   const PCT = new Set([
     '傷害','BOSS怪物傷害','最終傷害','無視防禦率','爆擊機率','爆擊傷害',
     '冷卻時間減少(％)','未套用冷卻時間','無視屬性耐性','狀態異常追加傷害',
@@ -227,7 +225,6 @@ function renderStats(data) {
     '獲得額外經驗值','召喚獸持續時間增加',
   ]);
 
-  // 格式化單一數值
   const fmt = name => {
     const v = S[name];
     if (v == null) return '—';
@@ -237,28 +234,17 @@ function renderStats(data) {
     return isNaN(n) ? v : Math.round(n).toLocaleString();
   };
 
-  // 排版定義（每個 section 是一組 [左欄, 右欄] pairs）
   const SECTIONS = [
     { pairs: [['HP','MP'], ['STR','DEX'], ['INT','LUK']] },
     { pairs: [
-        ['戰鬥力','最低屬性攻擊力'],
-        ['傷害','最高屬性攻擊力'],
-        ['最終傷害','BOSS怪物傷害'],
-        ['無視防禦率','一般怪物傷害'],
-        ['攻擊力','爆擊機率'],
-        ['魔法攻擊力','爆擊傷害'],
-        ['冷卻時間減少(秒)','Buff持續時間'],
-        ['冷卻時間減少(％)','無視屬性耐性'],
-        ['未套用冷卻時間','召喚獸持續時間增加'],
-        ['狀態異常追加傷害','武器熟練度'],
+        ['戰鬥力','最低屬性攻擊力'], ['傷害','最高屬性攻擊力'], ['最終傷害','BOSS怪物傷害'],
+        ['無視防禦率','一般怪物傷害'], ['攻擊力','爆擊機率'], ['魔法攻擊力','爆擊傷害'],
+        ['冷卻時間減少(秒)','Buff持續時間'], ['冷卻時間減少(％)','無視屬性耐性'],
+        ['未套用冷卻時間','召喚獸持續時間增加'], ['狀態異常追加傷害','武器熟練度'],
     ]},
     { pairs: [
-        ['道具掉落率','星力'],
-        ['楓幣獲得量','神秘力量'],
-        ['獲得額外經驗值','真實之力'],
-        ['防禦力','狀態異常耐性'],
-        ['移動速度','跳躍力'],
-        ['格擋','攻擊速度'],
+        ['道具掉落率','星力'], ['楓幣獲得量','神秘力量'], ['獲得額外經驗值','真實之力'],
+        ['防禦力','狀態異常耐性'], ['移動速度','跳躍力'], ['格擋','攻擊速度'],
     ]},
   ];
 
@@ -280,7 +266,6 @@ function renderStats(data) {
     sec.pairs.forEach(([l, r]) => { html += renderPair(l, r); });
   });
 
-  // 剩餘 AP
   if (data.remain_ap != null) {
     html += '<div class="stat-divider"></div>';
     html += `<div class="stat-row"><div class="stat-pair"><span class="stat-name">剩餘 AP</span><span class="stat-val">${data.remain_ap}</span></div></div>`;
