@@ -664,11 +664,6 @@ html, body {
     min-width: 0;           /* 避免內容過長導致版面跑掉 */
 }
 
-/* 通用網格設定 */
-.grid-container {
-    display: grid;
-    gap: 8px; /* 版塊間的間距 */
-}
 
 /* 1. 聯盟神器: 3x3 */
 .grid-artifact { grid-template-columns: repeat(3, 1fr); }
@@ -710,37 +705,42 @@ html, body {
     .grid-artifact, .grid-stats, .grid-link { grid-template-columns: 1fr; } /* 手機變 1 欄 */
 }
 
-/* 讓每個格子維持正方形且內部內容居中 */
+/* 1. 容器：負責控制欄位數量 */
+.grid-container {
+    display: grid;
+    gap: 10px;
+}
+
+/* 特別針對傳授技能的欄位 */
+.grid-link { 
+    grid-template-columns: repeat(6, 1fr); /* 強制 6 欄 */
+}
+
+/* 2. 項目：負責內部的排列 (不要用 display: block) */
 .grid-item {
-    aspect-ratio: auto !important; /* 取消正方形限制 */
-    height: auto !important;       /* 高度根據內容自動調整 */
-    padding: 5px;
-    text-align: left;              /* 文字靠左對齊比較好閱讀 */
-    display: block;                /* 讓內部結構恢復正常流 */
-    flex-direction: column; /* 讓圖片與文字垂直排列 */
-    align-items: center;    /* 水平置中 */
-    justify-content: center; /* 垂直置中 */
+    display: flex;           /* 改回 flex 才能置中 */
+    flex-direction: column;  /* 垂直排列 */
+    align-items: center;     /* 水平置中 (圖片與文字都會置中) */
+    text-align: center;      /* 文字內容置中 */
     border: 1px solid var(--border);
     border-radius: 8px;
     background: var(--bg-2);
-    overflow: hidden; /* 防止內容溢出 */
+    padding: 8px;
+    min-width: 0;            /* 重要！這行能防止內容撐壞 Grid */
 }
 
-/* 調整圖片大小 */
+/* 3. 圖片限制：確保圖片不會過大擠壓版面 */
 .grid-item img {
-    width: 60%; /* 佔據格子寬度的 60% */
-    height: auto;
-    object-fit: contain; /* 確保圖片不變形 */
+    width: 40px; 
+    height: 40px;
+    object-fit: contain;
     margin-bottom: 5px;
 }
 
-/* 調整文字大小 */
+/* 4. 文字大小：確保不會溢出 */
 .grid-item-text {
-    font-size: 0.75rem; /* 字體大小 */
-    text-align: center;
-    white-space: nowrap; /* 強制不換行，或改為 normal 若想換行 */
-    overflow: hidden;
-    text-overflow: ellipsis; /* 文字過長顯示... */
+    font-size: 0.75rem;
+    line-height: 1.2;
     width: 100%;
+    overflow: hidden;
 }
-
