@@ -432,9 +432,13 @@ function renderSymbols(symbols) {
   if (!el) return;
   if (!Array.isArray(symbols)) { el.innerHTML = '<div class="empty">無資料</div>'; return; }
   el.innerHTML = symbols.map(s => `
-    <div class="item-row" style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
-      <img src="${s.icon}" style="width:32px; height:32px;" onerror="this.style.display='none'">
-      <div><strong>${s.name}</strong> <span style="color:var(--highlight)">Lv.${s.level}</span></div>
+    <div class="grid-item">
+        <img src="${s.icon}" style="width:32px; height:32px;" onerror="this.style.display='none'">
+        
+        <div class="grid-item-text">
+          <strong>${s.name}</strong><br>
+          <span style="color:var(--highlight)">Lv.${s.level}</span>
+      </div>
     </div>
   `).join('');
 }
