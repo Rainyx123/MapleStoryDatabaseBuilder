@@ -680,7 +680,7 @@ html, body {
 .grid-stats { grid-template-columns: 1fr 1fr; }
 
 /* 4. 傳授技能: 2x6 (2欄) */
-.grid-link { grid-template-columns: 1fr 1fr; }
+.grid-link { grid-template-columns: repeat(6, 1fr); }
 
 /* 5. 六轉Hexa矩陣: 4欄 */
 .grid-hexa { grid-template-columns: repeat(4, 1fr); }
@@ -696,6 +696,12 @@ html, body {
 
 /* 9. 美容美髮: 2欄 */
 .grid-beauty { grid-template-columns: 1fr 1fr; }
+
+/* 9. 美容美髮: 2欄 */
+.grid-union { grid-template-columns: 1fr 1fr; }
+
+/* 3. 核心屬性: 2欄 */
+.grid-unionraider { grid-template-columns: 1fr 1fr; }
 
 /* 手機版響應式調整 (手機螢幕較小時，自動變成 1 或 2 欄，避免過擠) */
 @media (max-width: 600px) {
