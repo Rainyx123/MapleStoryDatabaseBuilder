@@ -419,7 +419,6 @@ function renderUnionRaider(data) {
   const el = document.getElementById('union-raider-grid');
   if (!el) return;
 
-  // 取得正確資料路徑 (根據你剛剛偵測到的結構)
   const raiders = data.raider_stats || [];
 
   if (!Array.isArray(raiders) || raiders.length === 0) {
@@ -427,8 +426,39 @@ function renderUnionRaider(data) {
     return;
   }
 
-  // 渲染為列表形式
-  el.innerHTML = raiders.map(stat => `
+  // 1. 資料合併邏輯
+  const statsMap = {}; // 用來存放合併後的資料
+
+  raiders.forEach(stat => {
+    // 正規表達式：(屬性名) (數字) (可選的%)
+    // 例如： "增加STR 80" -> 名: "增加STR", 數值: 80, 單位: ""
+    // 例如： "增加無視防禦率 5%" -> 名: "增加無視防禦率", 數值: 5, 單位: "%"
+    const match = stat.match(/(.+?)\s*(\d+(?:\.\d+)?)\s*(%?)/);
+
+    if (match) {
+      const name = match[1].trim(); // 屬性名
+      const value = parseFloat(match[2]); // 數值
+      const unit = match[3]; // 單位 (%)
+      const key = name + unit; // 以「屬性名+單位」作為合併依據
+
+      if (!statsMap[key]) {
+        statsMap[key] = { name: name, value: 0, unit: unit };
+      }
+      statsMap[key].value += value;
+    } else {
+      // 如果是非數字屬性（例如特殊條件），就原樣保留
+      if (!statsMap[stat]) statsMap[stat] = { name: stat, value: null, unit: '' };
+    }
+  });
+
+  // 2. 將合併後的物件轉回陣列並渲染
+  const consolidated = Object.values(statsMap).map(item => {
+    return item.value !== null 
+      ? `${item.name} ${item.value}${item.unit}` 
+      : item.name;
+  });
+
+  el.innerHTML = consolidated.map(stat => `
     <div class="raider-row">
        ${stat}
     </div>
