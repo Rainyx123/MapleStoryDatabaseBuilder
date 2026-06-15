@@ -697,10 +697,10 @@ html, body {
 /* 9. 美容美髮: 2欄 */
 .grid-beauty { grid-template-columns: 1fr 1fr; }
 
-/* 9. 美容美髮: 2欄 */
+/* 10. 戰地聯盟: 2欄 */
 .grid-union { grid-template-columns: 1fr 1fr; }
 
-/* 3. 核心屬性: 2欄 */
+/* 11. 戰地攻擊隊: 2欄 */
 .grid-unionraider { grid-template-columns: 1fr 1fr; }
 
 /* 手機版響應式調整 (手機螢幕較小時，自動變成 1 或 2 欄，避免過擠) */
