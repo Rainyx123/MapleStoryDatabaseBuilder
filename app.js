@@ -341,13 +341,12 @@ function renderLinkSkills(link_skills) {
     const formattedEffect = skill.effect ? skill.effect.replace(/\\n/g, '<br>') : '';
     
     return `
-      <div class="skill-item" style="display: flex; align-items: flex-start; gap: 10px; margin-bottom: 10px; padding: 8px; border-bottom: 1px solid var(--border);">
+      <div class="grid-item">      
         <img src="${skill.icon || ''}" alt="${skill.name}" style="width: 40px; height: 40px; border-radius: 4px;">
-        <div class="skill-info">
-          <div class="skill-name" style="font-weight: bold;">
-            ${skill.name} <span class="skill-lv" style="color: var(--highlight);">Lv.${skill.level || 0}</span>
-          </div>
-          <div class="skill-effect" style="font-size: 0.9em; color: var(--text-2);">
+        
+        <div class="grid-item-text">
+          ${skill.name} <span class="skill-lv" style="color: var(--highlight);">Lv.${skill.level || 0}</span>
+          <div class="grid-item-text" style="font-size: 0.9em; color: var(--text-2);">
             ${formattedEffect}
           </div>
         </div>
