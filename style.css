@@ -68,7 +68,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans TC
 .grid-stats, .grid-hexa, .grid-champion, .grid-pet, .grid-beauty, .grid-union, .grid-symbol, .grid-vmatrix, .grid-artifact, .grid-link { display: grid; gap: 8px; }
 
 /* 欄位分配 */
-.grid-hexa, .grid-champion, .grid-pet, .grid-beauty, .grid-union { grid-template-columns: repeat(2, 1fr); }
+.grid-champion, .grid-pet, .grid-beauty, .grid-union { grid-template-columns: repeat(2, 1fr); }
 .grid-artifact, .grid-link { grid-template-columns: repeat(3, 1fr); }
 .grid-vmatrix, .grid-symbol { grid-template-columns: repeat(6, 1fr); }
 
@@ -93,6 +93,29 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans TC
 /* 戰地攻擊隊 (列表樣式) */
 .grid-unionraider { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0; }
 .raider-row { padding: 6px 8px; border-bottom: 1px solid var(--border); font-size: 0.85rem; color: var(--text-1); display: flex; align-items: center; }
+
+/* 六轉 HEXA 專屬設定：強制 6 欄寬，並限制顯示為 2 列 (共 12 格) */
+.grid-hexa {
+    display: grid !important;
+    grid-template-columns: repeat(6, 1fr) !important;
+    grid-template-rows: repeat(2, 1fr) !important; /* 強制設定 2 列 */
+    gap: 8px !important;
+    width: 100% !important;
+}
+
+/* 確保六轉格子外觀與五轉一致 */
+.grid-hexa .grid-item {
+    aspect-ratio: 1 / 1; 
+    width: 100%;
+    border-radius: var(--r-sm);
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    padding: 5px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
 
 /* JS 生成元件樣式 (裝備、潛能等) */
 #equip-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 8px; }
