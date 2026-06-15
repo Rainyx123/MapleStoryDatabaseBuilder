@@ -349,7 +349,7 @@ function renderLinkSkills(link_skills) {
         <div style="display: flex; align-items: flex-start; gap: 8px;">
           <img src="${skill.icon || ''}" style="width: 40px; height: 40px; border-radius: 4px; flex-shrink: 0;">
           <div style="overflow: hidden;">
-            <div style="font-weight: bold; font-size: 0.9rem;">${skill.name}</div><div style="font-size: 0.9rem; color: var(--highlight);">Lv.${skill.level || 0}</div>
+            <div style="font-weight: bold; font-size: 0.9rem;">${skill.name}Lv.${skill.level || 0}</div>
           </div>
         </div>
         <div style="font-size: 0.85rem; color: var(--text-2); margin-top: 6px; line-height: 1.2; max-width: 30ch; word-break: break-all">
@@ -447,7 +447,7 @@ function renderSymbols(symbols) {
         <img src="${s.icon}" style="width:32px; height:32px;" onerror="this.style.display='none'">
         
         <div class="grid-item-text">
-          <strong>${s.name}</strong><br>
+          <div style="font-weight: bold; font-size: 0.9rem; max-width: 5ch; word-break: break-all">${s.name}</div>br>
           <span style="color:var(--highlight)">Lv.${s.level}</span>
       </div>
     </div>
@@ -491,7 +491,7 @@ function renderUnionArtifact(data) {
   const crystalsHtml = data.crystals.map(c => `
     <div class="grid-item">
       <img src="${getCrystalIconPath(c.name)}" onerror="this.style.display='none'">
-      <div class="grid-item-text" style="font-weight:bold;">${c.name}<br>Lv.${c.level}</div>
+      <div class="grid-item-text" style="font-weight:bold;">${c.name}Lv.${c.level}</div>
       <div class="grid-item-text" style="font-size:0.9rem; color:var(--text-2); margin-top:4px;">
         ${c.option1}<br>${c.option2}<br>${c.option3}
       </div>
