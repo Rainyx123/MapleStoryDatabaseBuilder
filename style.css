@@ -1,5 +1,5 @@
 /* ================================================================
-   楓之谷角色資料庫 — 模組化深色主題 v3
+   楓之谷角色資料庫 — 模組化深色主題 v3 (完整修正版)
    ================================================================ */
 
 /* ---- 1. 全域變數 (UI 主題設定) ---- */
@@ -35,41 +35,21 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans TC
 #main { padding: 16px; max-width: 1400px; margin: 0 auto; display: flex; flex-direction: column; gap: 15px; }
 
 /* ---- 4. 佈局引擎 (Layout System) ---- */
-/* 垂直容器 */
 .flex-column-layout { display: flex; flex-direction: column; gap: 15px; min-width: 0; width: 100%; }
 .container-stack { display: flex; flex-direction: column; gap: 15px; }
 
-/* 12 欄網格系統 */
 .grid-system { display: grid; grid-template-columns: repeat(12, 1fr); gap: 15px; width: 100%; }
 .span-1 { grid-column: span 1; } .span-2 { grid-column: span 2; } .span-3 { grid-column: span 3; }
 .span-4 { grid-column: span 4; } .span-5 { grid-column: span 5; } .span-6 { grid-column: span 6; }
 .span-7 { grid-column: span 7; } .span-8 { grid-column: span 8; } .span-9 { grid-column: span 9; }
 .span-10{ grid-column: span 10;} .span-11{ grid-column: span 11;} .span-12{ grid-column: span 12;}
 
-/* ---- 5. 卡片外觀 (Section Cards) ---- */
+/* ---- 5. 卡片外觀與收合邏輯 (Section Cards) ---- */
 .section-card { background: var(--bg-1); border-radius: var(--r); border: 1px solid var(--border); overflow: hidden; min-width: 0; width: 100%; display: flex; flex-direction: column; }
 .section-header { padding: 10px 15px; background: var(--bg-2); display: flex; justify-content: space-between; align-items: center; cursor: pointer; font-weight: bold; font-size: var(--fs-md); user-select: none; border-bottom: 1px solid transparent; }
 .section-card:not(.collapsed) .section-header { border-bottom-color: var(--border); }
 .section-body { padding: 12px; height: auto; min-height: 50px; }
-.toggle-icon { font-size: 10px; transition: transform 0.2s; color: var(--text-4); }
-.collapsed .toggle-icon { transform: rotate(-90deg); }
 .empty { color: var(--text-4); font-size: var(--fs-sm); text-align: center; padding: 10px 0; }
-
-/* 1. 摺疊功能的關鍵：隱藏身體區塊 */
-.section-body.collapsed {
-    display: none !important;
-}
-
-/* 2. (選用) 摺疊時讓箭頭旋轉，增加視覺回饋 */
-.section-card.collapsed .section-header .toggle-icon {
-    transform: rotate(-90deg);
-    transition: transform 0.2s;
-}
-
-.section-header .toggle-icon {
-    transition: transform 0.2s;
-    display: inline-block;
-}
 
 /* 角色專屬標頭 */
 .char-info { display: flex; align-items: center; gap: 20px; }
@@ -78,102 +58,51 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans TC
 #char-class { font-size: var(--fs-base); color: var(--accent-light); margin-top: 4px; }
 #char-level { font-size: var(--fs-sm); color: var(--text-4); margin-top: 2px; }
 
+/* 絕對優先權的收合隱藏規則 (鏈式選擇器) */
+.section-card .section-body.collapsed { display: none !important; }
+.section-card .section-body.collapsed * { display: none !important; }
+
+/* 收合箭頭動畫 */
+.toggle-icon { font-size: 10px; transition: transform 0.2s ease; color: var(--text-4); display: inline-block; }
+.section-card.collapsed .section-header .toggle-icon { transform: rotate(-90deg); }
+
 /* ---- 6. 各區塊內部網格排版 ---- */
-/* 通用內部 Grid 設定 */
 .grid-stats, .grid-hexa, .grid-champion, .grid-pet, .grid-beauty, .grid-union, .grid-symbol, .grid-vmatrix, .grid-artifact, .grid-link { display: grid; gap: 8px; }
 
-/* 欄位分配 */
 .grid-champion, .grid-pet, .grid-beauty, .grid-union { grid-template-columns: repeat(2, 1fr); }
 .grid-artifact, .grid-link { grid-template-columns: repeat(3, 1fr); }
 .grid-vmatrix, .grid-symbol { grid-template-columns: repeat(6, 1fr); }
 
 /* 通用方塊 (grid-item) */
 .grid-item {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: flex-start; /* 改為從上方開始排列 */
-    border: 1px solid var(--border);
-    border-radius: var(--r-sm);
-    background: var(--bg-2);
-    padding: 6px 4px;
-    width: 100%;
-    /* 移除 min-height: 0，改為讓它自動撐開 */
-    height: 100%; 
-    overflow: hidden;
-    text-align: center;
-    box-sizing: border-box; /* 確保 padding 不會撐破版面 */
+    display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+    border: 1px solid var(--border); border-radius: var(--r-sm); background: var(--bg-2);
+    padding: 6px 4px; width: 100%; height: 100%; overflow: hidden; text-align: center; box-sizing: border-box;
 }
-
-/* 圖片設定：固定大小，避免過大擠壓文字 */
-.grid-item img {
-    width: 32px; 
-    height: 32px;
-    object-fit: contain;
-    margin-bottom: 4px;
-    flex-shrink: 0; /* 確保圖片不會被壓縮 */
-}
-
-/* 技能名稱設定 */
-.grid-item-text {
-    width: 100%;
-    font-size: 10px; /* 統一字體大小 */
-    line-height: 1.2;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    margin-bottom: auto; /* 將名稱下方的空間推開 */
-    color: var(--text-2);
-}
-
-/* 等級文字設定 (配合你 JS 裡的 Level div) */
-.grid-item .level-text {
-    font-size: 10px;
-    color: var(--accent-light);
-    font-weight: bold;
-    margin-top: 2px;
-    flex-shrink: 0;
-}
+.grid-item img { width: 32px; height: 32px; object-fit: contain; margin-bottom: 4px; flex-shrink: 0; }
+.grid-item-text { width: 100%; font-size: 10px; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: auto; color: var(--text-2); }
+.grid-item .level-text { font-size: 10px; color: var(--accent-light); font-weight: bold; margin-top: 2px; flex-shrink: 0; }
 .empty-slot { background: var(--bg-1); border: 1px dashed var(--border); opacity: 0.5; }
+
 /* 核心屬性 — 列表式排版 */
-.grid-stats          { display: flex; flex-direction: column; padding: 0; gap: 0; }
-.stat-divider        { height: 1px; background: var(--border); margin: 6px 0; }
-.stat-row            { display: grid; grid-template-columns: 1fr 1fr; }
-.stat-pair           { display: flex; justify-content: space-between; align-items: center;
-                       padding: 4px 12px; gap: 8px; border-bottom: 1px solid var(--bg-3); }
-.stat-pair-right     { border-left: 1px solid var(--bg-3); }
-.stat-name           { font-size: 11px; color: var(--text-3); white-space: nowrap; flex-shrink: 0; }
-.stat-val            { font-size: 12px; font-weight: 600; color: var(--text-1); text-align: right; }
+.grid-stats { display: flex; flex-direction: column; padding: 0; gap: 0; }
+.stat-divider { height: 1px; background: var(--border); margin: 6px 0; }
+.stat-row { display: grid; grid-template-columns: 1fr 1fr; }
+.stat-pair { display: flex; justify-content: space-between; align-items: center; padding: 4px 12px; gap: 8px; border-bottom: 1px solid var(--bg-3); }
+.stat-pair-right { border-left: 1px solid var(--bg-3); }
+.stat-name { font-size: 11px; color: var(--text-3); white-space: nowrap; flex-shrink: 0; }
+.stat-val { font-size: 12px; font-weight: 600; color: var(--text-1); text-align: right; }
 
 /* 強制正方形 (V矩陣 & 六轉) */
 .grid-vmatrix .grid-item, .grid-hexa .grid-item { aspect-ratio: 1 / 1; width: 100%; }
 
-/* 戰地攻擊隊 (列表樣式) */
+/* 戰地攻擊隊 */
 .grid-unionraider { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0; }
 .raider-row { padding: 6px 8px; border-bottom: 1px solid var(--border); font-size: 0.85rem; color: var(--text-1); display: flex; align-items: center; }
 
-/* 六轉 HEXA 專屬設定：強制 6 欄寬，並限制顯示為 2 列 (共 12 格) */
-.grid-hexa {
-    display: grid !important;
-    grid-template-columns: repeat(6, 1fr) !important;
-    grid-template-rows: repeat(2, 1fr) !important; /* 強制設定 2 列 */
-    gap: 8px !important;
-    width: 100% !important;
-}
-
-/* 確保六轉格子外觀與五轉一致 */
-.grid-hexa .grid-item {
-    aspect-ratio: 1 / 1; 
-    width: 100%;
-    border-radius: var(--r-sm);
-    background: var(--bg-2);
-    border: 1px solid var(--border);
-    padding: 5px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-}
+/* 六轉 HEXA 專屬設定 */
+.grid-hexa { display: grid !important; grid-template-columns: repeat(6, 1fr) !important; grid-template-rows: repeat(2, 1fr) !important; gap: 8px !important; width: 100% !important; }
+.grid-hexa .grid-item { aspect-ratio: 1 / 1; width: 100%; border-radius: var(--r-sm); background: var(--bg-2); border: 1px solid var(--border); padding: 5px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
 
 /* JS 生成元件樣式 (裝備、潛能等) */
 #equip-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 8px; }
@@ -210,25 +139,13 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans TC
 
 /* ---- 8. 響應式佈局 (RWD) ---- */
 @media (max-width: 1024px) {
-    /* 平板尺寸：將 12 欄強制改為 2 欄垂直堆疊 */
     .grid-system { display: flex; flex-direction: column; }
     .span-1, .span-2, .span-3, .span-4, .span-5, .span-6, .span-7, .span-8, .span-9, .span-10, .span-11, .span-12 { width: 100%; }
 }
 
 @media (max-width: 768px) {
-    /* 手機尺寸：內部網格降級 */
     .grid-vmatrix, .grid-symbol { grid-template-columns: repeat(4, 1fr); }
     .grid-artifact, .grid-link { grid-template-columns: repeat(2, 1fr); }
     .grid-stats, .grid-hexa, .grid-champion, .grid-pet, .grid-beauty, .grid-union, .grid-unionraider { grid-template-columns: 1fr; }
     .char-info { flex-direction: column; text-align: center; }
-}
-
-/* 鏈式選擇器：權重比單純的 class 更高 */
-.section-card .section-body.collapsed {
-    display: none !important;
-}
-
-/* 確保摺疊時箭頭轉向，且 transition 有效 */
-.section-card.collapsed .section-header .toggle-icon {
-    transform: rotate(-90deg);
 }
