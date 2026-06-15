@@ -343,13 +343,15 @@ function renderLinkSkills(link_skills) {
 
   // 3. 渲染函式 (封裝一下，減少重複代碼)
   const renderItem = (skill) => {
-    const formattedEffect = skill.effect ? skill.effect.replace(/\\n/g, '<br>') : '';
+    const formattedEffect = skill.effect ? skill.effect.replace(/\\n/g) : '';
     return `
       <div class="grid-item">
         <div style="display: flex; align-items: flex-start; gap: 8px;">
           <img src="${skill.icon || ''}" style="width: 40px; height: 40px; border-radius: 4px; flex-shrink: 0;">
           <div style="overflow: hidden;">
-            <div style="font-weight: bold; font-size: 0.9rem;">${skill.name}Lv.${skill.level || 0}</div>
+            <div style="font-weight: bold; font-size: 0.9rem;">
+            <span>${skill.name}</span>
+            <span>Lv.${skill.level || 0}</div></span>
           </div>
         </div>
         <div style="font-size: 0.85rem; color: var(--text-2); margin-top: 6px; line-height: 1.2; max-width: 30ch; word-break: break-all">
@@ -447,7 +449,7 @@ function renderSymbols(symbols) {
         <img src="${s.icon}" style="width:32px; height:32px;" onerror="this.style.display='none'">
         
         <div class="grid-item-text">
-          <div style="font-weight: bold; font-size: 0.9rem; max-width: 5ch; word-break: break-all">${s.name}</div>br>
+          <div style="font-weight: bold; font-size: 0.9rem; max-width: 10ch; word-break: break-all">${s.name}</div>br>
           <span style="color:var(--highlight)">Lv.${s.level}</span>
       </div>
     </div>
@@ -491,7 +493,8 @@ function renderUnionArtifact(data) {
   const crystalsHtml = data.crystals.map(c => `
     <div class="grid-item">
       <img src="${getCrystalIconPath(c.name)}" onerror="this.style.display='none'">
-      <div class="grid-item-text" style="font-weight:bold;">${c.name}Lv.${c.level}</div>
+      <span><div class="grid-item-text" style="font-weight:bold;">${c.name}</span>
+      <span>Lv.${c.level}</div></span>
       <div class="grid-item-text" style="font-size:0.9rem; color:var(--text-2); margin-top:4px;">
         ${c.option1}<br>${c.option2}<br>${c.option3}
       </div>
