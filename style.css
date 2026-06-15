@@ -1,8 +1,40 @@
 /* ================================================================
    楓之谷角色資料庫 — Discord 風格深色主題  v2
    ================================================================ */
-* {
-    outline: 1px solid red !important;
+/* --- 佈局引擎重置 (請務必放在 CSS 最上方) --- */
+
+/* 確保所有容器盒模型一致 */
+* { box-sizing: border-box; }
+
+/* 1. 確保 Flex 父容器不會擠壓 Grid */
+.flex-row-layout, .flex-column-layout {
+    display: flex;
+    width: 100%;        /* 強制拉滿父層 */
+    min-width: 0;       /* 關鍵：防止 Flex 壓縮內部元素 */
+}
+
+.flex-row-layout { flex-direction: row; gap: 15px; }
+.flex-column-layout { flex-direction: column; gap: 15px; }
+
+/* 2. Grid System 核心修正 (最強力) */
+.grid-system {
+    display: grid !important;
+    grid-template-columns: repeat(12, 1fr) !important;
+    gap: 15px !important;
+    
+    /* 強制撐開 */
+    width: 100% !important;
+    min-width: 100% !important; 
+    flex: 1 1 100% !important; /* 讓它在 Flex 中能伸展 */
+    
+    /* 防止內部內容炸裂 */
+    overflow: hidden;
+}
+
+/* 確保所有 Section 在 Grid 裡都佔滿 */
+.grid-system > .section-card {
+    min-width: 0;
+    width: 100%;
 }
 /* ---- 使用者可調整的外觀變數（由 JS 透過 body class 覆寫）---- */
 :root {
