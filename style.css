@@ -682,11 +682,20 @@ html, body {
 /* 4. 傳授技能: 2x6 (2欄) */
 .grid-link { grid-template-columns: 1fr 1fr; }
 
-/* 5. 六轉Hexa矩陣: */
+/* 5. 六轉Hexa矩陣: 4欄 */
 .grid-hexa { grid-template-columns: repeat(4, 1fr); }
 
-/* 6. 符文系統: */
+/* 6. 符文系統: 3欄 */
 .grid-symbol { grid-template-columns: repeat(3, 1fr); }
+
+/* 7. 聯盟冠軍: 2欄 */
+.grid-champion { grid-template-columns: 1fr 1fr; }
+
+/* 8. 寵物: 2欄 */
+.grid-pet { grid-template-columns: 1fr 1fr; }
+
+/* 9. 美容美髮: 2欄 */
+.grid-beauty { grid-template-columns: 1fr 1fr; }
 
 /* 手機版響應式調整 (手機螢幕較小時，自動變成 1 或 2 欄，避免過擠) */
 @media (max-width: 600px) {
