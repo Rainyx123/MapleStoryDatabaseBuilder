@@ -749,3 +749,10 @@ html, body {
     width: 100%;
     overflow: hidden;
 }
+
+/* 強制確保方塊正確縮放 */
+.grid-vmatrix .grid-item, 
+.grid-hexa .grid-item {
+    aspect-ratio: 1 / 1; /* 保持正方形 */
+    width: 100%;
+}
