@@ -157,17 +157,20 @@ function renderCharacter(data) {
   });
 
   renderList('hexa-grid', data?.hexa_cores, c => {
-    const subSkills = Array.isArray(c?.skills) && c.skills.length > 1
-      ? `<div style="display:flex; gap:2px; margin-top:3px; justify-content:center;">
-           ${c.skills.map(sk => `<img src="${sk.icon}" title="${sk.name}" style="width:14px; height:14px; border-radius:2px; opacity:0.75;" onerror="this.style.display='none'">`).join('')}
+    // 渲染 sub-skills，加入 flex-wrap 防止溢出
+    const subSkills = Array.isArray(c?.skills) && c.skills.length > 0
+      ? `<div style="display:flex; gap:2px; margin-top:2px; justify-content:center; flex-wrap:wrap;">
+            ${c.skills.map(sk => `<img src="${sk.icon}" title="${sk.name}" style="width:14px; height:14px; border-radius:2px; opacity:0.8;" onerror="this.style.display='none'">`).join('')}
          </div>`
       : '';
-    return `<div class="grid-item" title="${c?.name ?? ''}">
-        ${c?.icon ? `<img src="${c.icon}" style="width:32px; height:32px; object-fit:contain;" onerror="this.style.display='none'">` : ''}
-        <div class="grid-item-text" style="color:var(--text-1);">${c?.name ?? '核心'}</div>
+
+    return `
+      <div class="grid-item" title="${c?.name ?? ''}" style="padding: 4px;">
+        ${c?.icon ? `<img src="${c.icon}" style="width:30px; height:30px; object-fit:contain; margin-bottom:2px;" onerror="this.style.display='none'">` : ''}
+        <div class="grid-item-text" style="color:var(--text-1); font-size:10px; font-weight:bold;">${c?.name ?? '核心'}</div>
         <div style="color:var(--accent-light); font-size:10px;">Lv.${c?.level ?? 0}</div>
         ${subSkills}
-    </div>`;
+      </div>`;
   });
 
   renderList('link-grid', data?.link_skills, sk => 
