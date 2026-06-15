@@ -312,51 +312,8 @@ function renderCashItems(data) {
 }
 
 // ================================================================
-// 聯盟神器與冠軍 (修正路徑)
+// 聯盟神器與冠軍
 // ================================================================
-
-// ================================================================
-// 聯盟神器 (圖片、總和效果與個別屬性)
-// ================================================================
-function renderUnionArtifact(data) {
-  const el = document.getElementById('union-artifact-grid');
-  if (!el) return;
-
-  const crystals = data?.crystals || [];
-  const effects = data?.effects || [];
-
-  if (crystals.length === 0 && effects.length === 0) {
-      el.innerHTML = '<div class="empty">無資料</div>';
-      return;
-  }
-
-  // 1. 頂部總和效果 (橫跨 3 欄)
-  const effectsHtml = effects.length > 0 
-    ? `<div style="grid-column: span 3; padding-bottom: 8px; border-bottom: 1px solid var(--border); margin-bottom: 4px;">
-         <div style="font-size:11px; color:var(--text-4); margin-bottom:6px; font-weight:bold;">總和效果</div>
-         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:4px;">
-           ${effects.map(e => `<div style="font-size:11.5px; color:var(--text-1);">• ${e.name} <span style="color:var(--accent-light)">(Lv.${e.level})</span></div>`).join('')}
-         </div>
-       </div>`
-    : '';
-
-  // 2. 下方水晶列表 (保持 3 欄排列)
-  const crystalsHtml = crystals.map(item => `
-    <div class="grid-item" style="align-items: flex-start; text-align: left; padding: 10px;">
-        ${item?.icon ? `<img src="${item.icon}" style="width:32px; height:32px; margin-bottom:6px" onerror="this.style.display='none'">` : ''}
-        <div style="font-weight:bold; font-size:12.5px; color:var(--text-1); margin-bottom:4px;">
-            ${item?.name ?? '水晶'} <span style="color:var(--accent-light); font-size:11px;">Lv.${item?.level ?? 0}</span>
-        </div>
-        <div style="font-size:10.5px; color:var(--text-3); line-height:1.4;">
-           ${item?.option1 ? `<div>- ${item.option1}</div>` : ''}
-           ${item?.option2 ? `<div>- ${item.option2}</div>` : ''}
-           ${item?.option3 ? `<div>- ${item.option3}</div>` : ''}
-        </div>
-    </div>
-  `).join('');
-
-  el.innerHTML = effectsHtml + crystalsHtml;
-}
 
 function getArtifactImagePath(name) {
     const mapping = {
@@ -407,4 +364,35 @@ function renderUnionArtifact(data) {
   `).join('');
 
   el.innerHTML = effectsHtml + crystalsHtml;
+}
+
+// 聯盟冠軍
+function renderUnionChampion(data) {
+  const el = document.getElementById('union-champion-grid');
+  if (!el) return;
+
+  // 支援陣列或物件 { champions: [...] } 兩種資料格式
+  const champions = Array.isArray(data) ? data : (data?.champions ?? []);
+
+  if (champions.length === 0) {
+    el.innerHTML = '<div class="empty">無資料</div>';
+    return;
+  }
+
+  el.innerHTML = champions.map(c => {
+    if (!c) return '';
+    return `
+      <div class="grid-item" style="flex-direction:row; justify-content:flex-start; padding:8px; gap:8px;">
+        ${c.icon ? `<img src="${c.icon}" style="width:28px; height:28px; border-radius:4px; flex-shrink:0" onerror="this.style.display='none'">` : ''}
+        <div style="text-align:left; min-width:0;">
+          <div style="font-size:11px; font-weight:bold; color:var(--text-1); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+            ${c.name ?? c.class ?? '冠軍'}
+          </div>
+          <div style="font-size:10px; color:var(--text-4);">
+            ${c.class ? `${c.class}` : ''}${c.level ? ` · Lv.${c.level}` : ''}
+          </div>
+          ${c.effect ? `<div style="font-size:10px; color:var(--accent-light); margin-top:2px;">${c.effect}</div>` : ''}
+        </div>
+      </div>`;
+  }).join('');
 }
