@@ -419,20 +419,23 @@ function renderUnionRaider(data) {
   const el = document.getElementById('union-raider-grid');
   if (!el) return;
 
-  // 【除錯關鍵】：直接把收到的東西印出來，看看是不是空的或是物件結構跑掉了
-  console.log("=== 戰地攻擊隊偵錯 ===");
-  console.log("收到的資料類型:", typeof data);
-  console.log("收到的資料內容:", data);
+  // --- 關鍵偵錯：印出這個物件到底有哪些屬性 ---
+  console.log("=== 戰地攻擊隊屬性名稱 ===");
+  console.log("物件屬性:", Object.keys(data)); 
+  console.log("完整物件內容:", data);
+  // ------------------------------------
 
-  // 讓我們手動指定陣列來源 (假設 API 資料是在 data 物件裡面的某個屬性)
-  // 如果你不知道屬性名，Console 會告訴你
   let raiders = [];
+  // 這裡先保持現狀，等你看完 Console 告訴我正確的屬性名
   if (Array.isArray(data)) {
-      raiders = data;
+    raiders = data;
   } else if (data && typeof data === 'object') {
-      // 這裡嘗試找出陣列，例如 data.raiders, data.list 等
-      raiders = data.raiders || data.list || Object.values(data); 
+    // 這一行先不要動，或者你可以根據你等下看到的屬性名手動填入
+    // 例如發現屬性名叫 'data' 或 'raider_list'，就填在這裡
+    raiders = data.raiders || data.list || Object.values(data)[0] || [];
   }
+  
+  // ... 後面代碼保持不變
   
   console.log("最終處理後的陣列:", raiders);
 
