@@ -142,19 +142,33 @@ function renderCharacter(data) {
     </div>`
   );
 
-  renderList('v-grid', data?.v_cores, c => 
-    `<div class="grid-item">
-        <div class="grid-item-text">${c?.name ?? '核心'}</div>
+  renderList('v-grid', data?.v_cores, c => {
+    const subSkills = Array.isArray(c?.skills) && c.skills.length > 1
+      ? `<div style="display:flex; gap:2px; margin-top:3px; justify-content:center;">
+           ${c.skills.map(sk => `<img src="${sk.icon}" title="${sk.name}" style="width:14px; height:14px; border-radius:2px; opacity:0.75;" onerror="this.style.display='none'">`).join('')}
+         </div>`
+      : '';
+    return `<div class="grid-item" title="${c?.name ?? ''}">
+        ${c?.icon ? `<img src="${c.icon}" style="width:32px; height:32px; object-fit:contain;" onerror="this.style.display='none'">` : ''}
+        <div class="grid-item-text" style="color:var(--text-2);">${c?.name ?? '核心'}</div>
         <div style="color:var(--text-4); font-size:10px;">Lv.${c?.level ?? 0}</div>
-    </div>`
-  );
+        ${subSkills}
+    </div>`;
+  });
 
-  renderList('hexa-grid', data?.hexa_cores, c => 
-    `<div class="grid-item">
+  renderList('hexa-grid', data?.hexa_cores, c => {
+    const subSkills = Array.isArray(c?.skills) && c.skills.length > 1
+      ? `<div style="display:flex; gap:2px; margin-top:3px; justify-content:center;">
+           ${c.skills.map(sk => `<img src="${sk.icon}" title="${sk.name}" style="width:14px; height:14px; border-radius:2px; opacity:0.75;" onerror="this.style.display='none'">`).join('')}
+         </div>`
+      : '';
+    return `<div class="grid-item" title="${c?.name ?? ''}">
+        ${c?.icon ? `<img src="${c.icon}" style="width:32px; height:32px; object-fit:contain;" onerror="this.style.display='none'">` : ''}
         <div class="grid-item-text" style="color:var(--text-1);">${c?.name ?? '核心'}</div>
         <div style="color:var(--accent-light); font-size:10px;">Lv.${c?.level ?? 0}</div>
-    </div>`
-  );
+        ${subSkills}
+    </div>`;
+  });
 
   renderList('link-grid', data?.link_skills, sk => 
     `<div class="grid-item" style="flex-direction:row; justify-content:flex-start; padding:8px;">
