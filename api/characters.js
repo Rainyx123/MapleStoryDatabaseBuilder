@@ -44,23 +44,34 @@ export default async function handler(req, res) {
 
    // 4. 每個角色只保留最高戰力那筆，並轉換資料格式
     const best = {};
+    
+    // 定義名稱對應表 (API Key -> 前端顯示名稱)
+    const keyMap = {
+        'str': 'STR', 'dex': 'DEX', 'int': 'INT', 'luk': 'LUK',
+        'max_hp': 'HP', 'max_mp': 'MP', 'combat_power': '戰鬥力',
+        'attack_power': '攻擊力', 'magic_power': '魔法攻擊力',
+        'damage': '傷害', 'boss_damage': 'BOSS怪物傷害', 'final_damage': '最終傷害',
+        'ignore_defense': '無視防禦率', 'critical_damage': '爆擊傷害',
+        'defense': '防禦力', 'speed': '移動速度', 'jump': '跳躍力',
+        'damage': '傷害', 'critical_damage': '爆擊傷害', 
+        // 這裡填入你的 SECTIONS 中出現的所有 Key
+    };
+
     for (const row of (snapshots || [])) {
       if (!best[row.character_name]) {
-        // 安全地取得原始資料
         const originalData = row.data || {};
         const statsObj = originalData.stats || {};
         
-        // 轉換：將 stats 物件轉為 final_stat 陣列
+        // 轉換：將 stats 物件轉為 final_stat 陣列，並將 key 轉為對應名稱
         const finalStatArray = Object.entries(statsObj).map(([key, value]) => ({
-            stat_name: key,
+            stat_name: keyMap[key] || key.toUpperCase(), // 優先用對應表，否則轉大寫
             stat_value: value
         }));
 
-        // 組裝並回傳給前端
         best[row.character_name] = {
-            ...originalData,           // 保留原始所有欄位
-            final_stat: finalStatArray, // 補上前端需要的陣列格式
-            remain_ap: originalData.remain_ap || 0 // 補上 remain_ap，若無則預設 0
+            ...originalData,
+            final_stat: finalStatArray,
+            remain_ap: originalData.remain_ap || 0 
         };
       }
     }
