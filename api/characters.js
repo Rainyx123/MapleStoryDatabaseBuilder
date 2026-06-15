@@ -47,13 +47,10 @@ export default async function handler(req, res) {
     
     // 定義名稱對應表 (API Key -> 前端顯示名稱)
     const keyMap = {
-        'str': 'STR', 'dex': 'DEX', 'int': 'INT', 'luk': 'LUK',
-        'max_hp': 'HP', 'max_mp': 'MP', 'combat_power': '戰鬥力',
-        'attack_power': '攻擊力', 'magic_power': '魔法攻擊力',
-        'damage': '傷害', 'boss_damage': 'BOSS怪物傷害', 'final_damage': '最終傷害',
-        'ignore_defense': '無視防禦率', 'critical_damage': '爆擊傷害',
-        'defense': '防禦力', 'speed': '移動速度', 'jump': '跳躍力',
-        'damage': '傷害', 'critical_damage': '爆擊傷害', 
+        'str': 'STR', 'dex': 'DEX', 'int': 'INT', 'luk': 'LUK', 'max_hp': 'HP', 'max_mp': 'MP', 'combat_power': '戰鬥力', 'max_damage': '最高屬性攻擊力', 'min_damage': '最低屬性攻擊力',
+        'attack_power': '攻擊力', 'magic_power': '魔法攻擊力', 'damage': '傷害', 'boss_damage': 'BOSS怪物傷害', 'final_damage': '最終傷害',
+        'ignore_defense': '無視防禦率', 'critical_damage': '爆擊傷害',  'defense': '防禦力', 'speed': '移動速度', 'jump': '跳躍力',
+        'damage': '傷害', 'critical_damage': '爆擊傷害', 'arc': '神秘力量', 'authentic': '真實之力', 
         // 這裡填入你的 SECTIONS 中出現的所有 Key
     };
 
