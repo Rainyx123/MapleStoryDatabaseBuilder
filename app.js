@@ -34,7 +34,7 @@ async function init() {
     document.getElementById('content')?.classList.remove('hidden');
     
     // 確保內容出現後綁定收合事件
-    initCollapsible();
+    restoreCollapsibleStates();
   } catch (err) {
     const loadEl = document.getElementById('loading');
     if (loadEl) loadEl.innerHTML = `<p style="color:var(--accent)">載入失敗：${err.message}</p>`;
