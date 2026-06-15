@@ -419,35 +419,18 @@ function renderUnionRaider(data) {
   const el = document.getElementById('union-raider-grid');
   if (!el) return;
 
-  // --- 關鍵偵錯：印出這個物件到底有哪些屬性 ---
-  console.log("=== 戰地攻擊隊屬性名稱 ===");
-  console.log("物件屬性:", Object.keys(data)); 
-  console.log("完整物件內容:", data);
-  // ------------------------------------
+  // 1. 從偵錯結果確認，正確的路徑是 data.raider_stats
+  const raiders = data.raider_stats || [];
 
-  let raiders = [];
-  // 這裡先保持現狀，等你看完 Console 告訴我正確的屬性名
-  if (Array.isArray(data)) {
-    raiders = data;
-  } else if (data && typeof data === 'object') {
-    // 這一行先不要動，或者你可以根據你等下看到的屬性名手動填入
-    // 例如發現屬性名叫 'data' 或 'raider_list'，就填在這裡
-    raiders = data.raiders || data.list || Object.values(data)[0] || [];
-  }
-  
-  // ... 後面代碼保持不變
-  
-  console.log("最終處理後的陣列:", raiders);
-
-  if (raiders.length === 0) {
+  if (!Array.isArray(raiders) || raiders.length === 0) {
     el.innerHTML = '<div class="empty">無戰地攻擊隊資料</div>';
     return;
   }
 
-  el.innerHTML = raiders.map(r => `
-    <div class="grid-item" style="aspect-ratio: auto; flex-direction: row; justify-content: flex-start; padding: 8px;">
-       <div style="font-weight:bold; width: 50%;">${r.name || '未知'}</div>
-       <div style="color:var(--highlight); text-align:right; width: 50%;">+${r.value || 0}%</div>
+  // 2. 渲染邏輯：因為 raiders 裡是字串，直接把 r 當作字串渲染即可
+  el.innerHTML = raiders.map(stat => `
+    <div class="grid-item" style="aspect-ratio: auto; justify-content: flex-start; padding: 8px;">
+       <div style="font-size: 0.85rem; color: var(--text-1);">${stat}</div>
     </div>
   `).join('');
 }
