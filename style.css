@@ -705,8 +705,8 @@ html, body {
 
 /* 手機版響應式調整 (手機螢幕較小時，自動變成 1 或 2 欄，避免過擠) */
 @media (max-width: 600px) {
-    .grid-vmatrix { grid-template-columns: repeat(3, 1fr); } /* 手機變 3 欄 */
-    .grid-hexa { grid-template-columns: repeat(2, 1fr); }  /* 手機變 2 欄 */
+    .grid-vmatrix, .grid-symbol { grid-template-columns: repeat(3, 1fr); } /* 手機變 3 欄 */
+    .grid-hexa, .grid-champion, .grid-pet, .grid-beauty, .grid-union, .grid-unionraider { grid-template-columns: repeat(2, 1fr); }  /* 手機變 2 欄 */
     .grid-artifact, .grid-stats, .grid-link { grid-template-columns: 1fr; } /* 手機變 1 欄 */
 }
 
