@@ -30,8 +30,9 @@
 <main id="main">
     <div id="loading"><div class="spinner"></div><p>讀取角色資料中...</p></div>
 
-    <div id="content" class="hidden container-stack">
-      <section class="section-card" id="section-header">
+    <div id="content" class="hidden container-stack">      
+      <div class="flex-row-layout">
+        <section class="section-card" id="section-header">
         <div class="section-header"><span>角色資訊</span><span class="toggle-icon">▼</span></div>
         <div class="section-body">
             <div id="char-header" style="display:flex; align-items:center; gap:20px;">
@@ -43,13 +44,12 @@
                 </div>
             </div>
         </div>
-      </section>
-      <div class="flex-row-layout">
-          <div class="flex-column-layout">
-            <section class="section-card" id="section-ability"><div class="section-header"><span>內在潛能</span><span class="toggle-icon">▼</span></div><div class="section-body"><div id="ability-list"></div></div></section>
-            <section class="section-card" id="section-hyper"><div class="section-header"><span>極限屬性</span><span class="toggle-icon">▼</span></div><div class="section-body"><div id="hyper-list"></div></div></section>
-          </div>
+        </section>
         <section class="section-card" id="section-stats"><div class="section-header"><span>核心屬性</span><span class="toggle-icon">▼</span></div><div class="section-body"><div id="stat-grid"class="grid-container grid-stats"></div></div></section>
+        <div class="flex-column-layout">
+          <section class="section-card" id="section-ability"><div class="section-header"><span>內在潛能</span><span class="toggle-icon">▼</span></div><div class="section-body"><div id="ability-list"></div></div></section>
+          <section class="section-card" id="section-hyper"><div class="section-header"><span>極限屬性</span><span class="toggle-icon">▼</span></div><div class="section-body"><div id="hyper-list"></div></div></section>
+        </div>        
       </div>
       <section class="section-card" id="section-equip"><div class="section-header"><span>裝備</span><span class="toggle-icon">▼</span></div><div class="section-body"><div id="equip-list"></div></div></section>
       <div class="flex-row-layout">
