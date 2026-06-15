@@ -675,7 +675,14 @@ html, body {
 .grid-stats { grid-template-columns: 1fr 1fr; }
 
 /* 5. 六轉Hexa矩陣: 4欄 */
-.grid-hexa { grid-template-columns: repeat(4, 1fr); }
+.grid-hexa { grid-template-columns: repeat(2, 1fr); }
+
+/* 2. 空方塊樣式 (當資料不足時，顯示灰色的底框) */
+.grid-item.empty-slot {
+    background: var(--bg-1); /* 使用比背景稍亮的顏色 */
+    border: 1px dashed var(--border); /* 用虛線表示這是空位 */
+    opacity: 0.5; /* 降低透明度 */
+}
 
 /* 6. 符文系統: 3欄 */
 .grid-symbol { grid-template-columns: repeat(6, 1fr); }
