@@ -43,25 +43,28 @@ async function init() {
 
 // 1. 事件委派：處理所有點擊 (不需要綁定在個別元素上)
 document.addEventListener('click', (e) => {
-    // 檢查點擊的是否為標頭
+    // 偵測點擊標頭
     const header = e.target.closest('.section-header');
     if (!header) return;
 
-    // 取得該卡片的 ID
+    // 找到該區塊的 body
     const card = header.closest('.section-card');
-    if (!card || !card.id) return;
+    const body = card ? card.querySelector('.section-body') : null;
 
-    const body = card.querySelector('.section-body');
-    if (!body) return;
+    if (body) {
+        // 切換 body 的狀態
+        body.classList.toggle('collapsed');
+        
+        // 切換卡片本身狀態 (方便你做樣式變化)
+        card.classList.toggle('collapsed');
 
-    // 切換類別
-    const isNowCollapsed = card.classList.toggle('collapsed');
-    body.classList.toggle('collapsed');
-
-    // 儲存狀態
-    const states = JSON.parse(localStorage.getItem('section-states') || '{}');
-    states[card.id] = !isNowCollapsed; // true 為展開，false 為收合
-    localStorage.setItem('section-states', JSON.stringify(states));
+        // 儲存狀態
+        const states = JSON.parse(localStorage.getItem('section-states') || '{}');
+        states[card.id] = !body.classList.contains('collapsed');
+        localStorage.setItem('section-states', JSON.stringify(states));
+        
+        console.log(`已切換 ${card.id} 狀態：`, body.classList.contains('collapsed') ? '收合' : '展開');
+    }
 });
 
 // 2. 狀態恢復：僅在頁面初始化時執行一次
