@@ -110,7 +110,6 @@ function renderList(containerId, dataArray, renderItemFn) {
 // 3. 核心資料分配
 // ================================================================
 function renderCharacter(data) {
-  console.log("Current Character Data:", data)
   if (!data) return;
 
   // 頂部角色資訊
@@ -131,7 +130,11 @@ function renderCharacter(data) {
   renderUnionRaider(data?.union_raider ?? []);
   renderCashItems(data?.cash_items ?? []);
 
-  // 使用「渲染工廠」一鍵生成的區塊 (超簡潔寫法)
+  // ▼▼▼ 正確呼叫底部的神器與冠軍函式 ▼▼▼
+  if (data.union_artifact) renderUnionArtifact(data.union_artifact);
+  if (data.union_champion) renderUnionChampion(data.union_champion);
+
+  // 使用「渲染工廠」一鍵生成的區塊
   renderList('hyper-list', data?.hyper_stats, hs => 
     `<div style="display:flex; justify-content:space-between; padding:4px 0; border-bottom:1px solid var(--border)">
         <span style="color:var(--text-1)">${hs?.type ?? '未知'}</span>
@@ -178,40 +181,6 @@ function renderCharacter(data) {
     </div>`
   );
 
- // 1. 聯盟神器渲染 (明確路徑)
-  const artifactData = data?.union?.union_artifact?.crystals || [];
-  console.log("偵錯：神器資料", artifactData); // 看這裡有沒有印出陣列
-  renderList('union-artifact-grid', artifactData, item => 
-    `<div class="grid-item">
-        <div class="grid-item-text" style="font-weight:bold">${item?.name ?? '水晶'}</div>
-        <div style="font-size:10px; color:var(--accent-light)">Lv.${item?.level ?? 0}</div>
-    </div>`
-  );
-
-  // 2. 聯盟冠軍渲染 (明確路徑)
-  const champGrid = document.getElementById('union-champion-grid');
-  if (champGrid) {
-    const champs = data?.union?.union_champion?.champions || [];
-    const badges = data?.union?.union_champion?.total_badge || [];
-    console.log("偵錯：冠軍資料", champs); // 看這裡有沒有印出陣列
-    
-    if (champs.length === 0 && badges.length === 0) {
-        champGrid.innerHTML = '<div class="empty">無資料</div>';
-    } else {
-        champGrid.innerHTML = `
-            <div style="font-size:10px; color:var(--text-4); margin-bottom:5px;">
-                獎章: ${badges.length > 0 ? badges.join(', ') : '無'}
-            </div>
-            ${champs.map(c => `
-                <div class="raider-row">
-                    <span style="color:var(--text-1)">${c.name} (${c.class})</span>
-                    <span style="margin-left:auto; color:var(--accent-light); font-weight:bold">${c.grade}</span>
-                </div>
-            `).join('')}
-        `;
-    }
-  }
-  
   // 簡單文字區塊
   const androidEl = document.getElementById('android-grid');
   if(androidEl) androidEl.innerHTML = data?.android?.name ? `<div class="raider-row">${data.android.name}</div>` : '<div class="empty">無資料</div>';
