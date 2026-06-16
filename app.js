@@ -614,13 +614,13 @@ function initQuery() {
         queryBtn.textContent = '查詢中...';
 
         try {
-            console.log(`[2] 準備發送 POST 請求至 /api/query，目標: ${charName}`);
-            const res = await fetch('/api/query', {
+            console.log(`[2] 準備發送 POST 請求 (網址帶參數) 至: /api/query?name=${charName}`);
+            const res = await fetch(`/api/query?name=${encodeURIComponent(charName)}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ name: charName })
+                body: JSON.stringify({ name: charName }) // 雙管齊下：Body 和網址都塞給它
             });
             
             if (!res.ok) {
