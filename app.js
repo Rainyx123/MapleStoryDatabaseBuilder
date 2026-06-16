@@ -593,11 +593,10 @@ function initSettings() {
     });
 }
 
-// 4. 搜尋功能框架
+// 4. 搜尋功能框架 (嚴謹除錯版)
 function initQuery() {
-    // 請核對你 HTML 中 modal-query 裡面的實際 ID
-    const queryBtn = document.getElementById('execute-query-btn'); // 執行查詢的按鈕
-    const queryInput = document.getElementById('query-char-name'); // 角色名稱輸入框
+    const queryBtn = document.getElementById('execute-query-btn'); 
+    const queryInput = document.getElementById('query-char-name'); 
 
     if (queryBtn && queryInput) {
         queryBtn.addEventListener('click', async () => {
@@ -607,16 +606,31 @@ function initQuery() {
             queryBtn.disabled = true;
             queryBtn.textContent = '查詢中...';
 
+            console.log(`[1] 準備發送請求至: /api/query?name=${encodeURIComponent(charName)}`);
+
             try {
-                // 發送請求給後端或爬蟲 (此處端點請確認是否符合你的 API 設計)
                 const res = await fetch(`/api/query?name=${encodeURIComponent(charName)}`);
-                if (!res.ok) throw new Error(`查詢失敗 (${res.status})`);
-                
+                console.log(`[2] API 回應狀態碼: ${res.status}`);
+
+                if (!res.ok) {
+                    const errText = await res.text();
+                    throw new Error(`伺服器錯誤 ${res.status}: ${errText}`);
+                }
+
+                // 假設 API 有回傳 JSON 格式的結果，印出來檢查
+                const data = await res.json().catch(() => ({ msg: "無 JSON 回傳值" }));
+                console.log(`[3] API 回傳內容:`, data);
+
                 alert('查詢成功，資料已更新！');
+                
+                // 關閉視窗並重整
+                console.log(`[4] 關閉視窗並準備重整頁面`);
                 closeModal('modal-query');
-                location.reload(); // 重整頁面以載入新資料
+                location.reload(); 
+                
             } catch (err) {
-                alert(err.message);
+                console.error('[例外錯誤]', err);
+                alert(`查詢發生異常：\n${err.message}`);
             } finally {
                 queryBtn.disabled = false;
                 queryBtn.textContent = '查詢';
