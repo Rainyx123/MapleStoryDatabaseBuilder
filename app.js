@@ -614,8 +614,8 @@ function initQuery() {
         queryBtn.textContent = '查詢中...';
 
         try {
-            console.log(`準備發送請求至: /api/query?name=${encodeURIComponent(charName)}`);
-            const res = await fetch(`/api/query`, {
+            console.log(`[2] 準備發送 POST 請求至 /api/query，目標: ${charName}`);
+            const res = await fetch('/api/query', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
