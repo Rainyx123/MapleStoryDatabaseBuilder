@@ -120,6 +120,28 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans TC
 @keyframes spin { to { transform: rotate(360deg); } }
 .hidden { display: none !important; }
 
+/* ---- 懸浮預覽 (Tooltip) ---- */
+#tooltip {
+    position: fixed;
+    z-index: 9999;
+    pointer-events: none; /* 關鍵防呆：讓游標穿透窗格，避免事件衝突閃爍 */
+    background: var(--bg-1);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    padding: 12px;
+    width: 260px;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.6);
+    color: var(--text-2);
+    font-size: var(--fs-sm);
+    line-height: 1.4;
+}
+
+.tt-header { font-size: var(--fs-md); font-weight: bold; color: var(--text-1); border-bottom: 1px solid var(--border); padding-bottom: 4px; margin-bottom: 8px; }
+.tt-section { margin-bottom: 6px; }
+.tt-title { color: var(--accent-light); font-weight: bold; font-size: var(--fs-xs); }
+.tt-line { display: block; margin-left: 8px; color: var(--text-3); }
+.tt-star { color: #facc15; } /* 星力顏色 */
+
 /* Modals */
 .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.75); display: flex; align-items: center; justify-content: center; z-index: 100; }
 .modal-box { background: var(--bg-2); border: 1px solid var(--border); border-radius: var(--r-lg); width: 400px; max-width: 90vw; max-height: 90vh; overflow-y: auto; }
