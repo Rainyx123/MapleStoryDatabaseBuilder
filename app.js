@@ -593,44 +593,55 @@ function initSettings() {
     });
 }
 
-// 4. 搜尋功能框架 (ID 修正版)
+// 4. 搜尋功能框架 (修正變數與渲染邏輯)
 function initQuery() {
-    // 改為對應你 HTML 裡的正確 ID
     const queryBtn = document.getElementById('btn-query-submit'); 
     const queryInput = document.getElementById('query-input'); 
 
     if (!queryBtn || !queryInput) {
-        console.error("❌ 致命錯誤：依然找不到搜尋按鈕或輸入框！");
+        console.error("❌ 致命錯誤：找不到搜尋按鈕或輸入框！");
         return; 
     }
 
     // 綁定點擊事件
     queryBtn.addEventListener('click', async () => {
         const charName = queryInput.value.trim();
-        
         if (!charName) return alert('請輸入角色名稱');
         
         queryBtn.disabled = true;
         queryBtn.textContent = '查詢中...';
 
         try {
-            console.log(`[2] 準備發送 POST 請求 (網址帶參數) 至: /api/query?name=${charName}`);
-            const res = await fetch(`/api/query?name=${encodeURIComponent(charName)}`, {
+            console.log(`[1] 發送請求查詢: ${charName}`);
+            
+            // 修正點 1：傳遞的變數名稱必須是 character_name
+            const res = await fetch('/api/query', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ name: charName }) // 雙管齊下：Body 和網址都塞給它
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ character_name: charName }) 
             });
             
             if (!res.ok) {
-                const errText = await res.text();
-                throw new Error(`伺服器錯誤 ${res.status}: ${errText}`);
+                const errObj = await res.json().catch(() => ({}));
+                throw new Error(errObj.error || `伺服器錯誤 ${res.status}`);
             }
 
-            alert('查詢成功，資料已更新！');
+            // 修正點 2：接住後端傳來的新資料
+            const newData = await res.json();
+            
+            // 修正點 3：直接更新畫面，不要重整網頁
+            const existingIndex = characters.findIndex(c => c.name === newData.name);
+            if (existingIndex !== -1) {
+                characters[existingIndex] = newData; // 更新舊有角色資料
+            } else {
+                characters.unshift(newData); // 若為新角色，塞入清單第一位
+                if (typeof buildTabs === 'function') buildTabs(); // 重建上方角色頁籤
+            }
+            
+            renderCharacter(newData); // 渲染該角色畫面
             closeModal('modal-query');
-            location.reload(); 
+            queryInput.value = ''; // 清空輸入框
+            alert(`查詢成功！已為您載入【${newData.name}】的即時資料。`);
             
         } catch (err) {
             console.error('[例外錯誤]', err);
