@@ -593,26 +593,20 @@ function initSettings() {
     });
 }
 
+// 4. 搜尋功能框架 (ID 修正版)
 function initQuery() {
-    console.log("[啟動偵測] 準備初始化搜尋功能...");
-    
-    // 抓取 HTML 元素
-    const queryBtn = document.getElementById('execute-query-btn'); 
-    const queryInput = document.getElementById('query-char-name'); 
+    // 改為對應你 HTML 裡的正確 ID
+    const queryBtn = document.getElementById('btn-query-submit'); 
+    const queryInput = document.getElementById('query-input'); 
 
-    console.log("[啟動偵測] 按鈕元素:", queryBtn);
-    console.log("[啟動偵測] 輸入框元素:", queryInput);
-
-    // 防呆檢查
     if (!queryBtn || !queryInput) {
-        console.error("❌ 致命錯誤：找不到搜尋按鈕或輸入框！請去 index.html 檢查你的 id 是不是拼錯了。");
+        console.error("❌ 致命錯誤：依然找不到搜尋按鈕或輸入框！");
         return; 
     }
 
     // 綁定點擊事件
     queryBtn.addEventListener('click', async () => {
         const charName = queryInput.value.trim();
-        console.log(`[1] 按鈕被點擊，準備搜尋: ${charName}`);
         
         if (!charName) return alert('請輸入角色名稱');
         
@@ -620,11 +614,13 @@ function initQuery() {
         queryBtn.textContent = '查詢中...';
 
         try {
-            console.log(`[2] 發送請求至: /api/query?name=${encodeURIComponent(charName)}`);
+            console.log(`準備發送請求至: /api/query?name=${encodeURIComponent(charName)}`);
             const res = await fetch(`/api/query?name=${encodeURIComponent(charName)}`);
             
-            console.log(`[3] 收到 API 回應狀態碼: ${res.status}`);
-            if (!res.ok) throw new Error(`伺服器錯誤 ${res.status}`);
+            if (!res.ok) {
+                const errText = await res.text();
+                throw new Error(`伺服器錯誤 ${res.status}: ${errText}`);
+            }
 
             alert('查詢成功，資料已更新！');
             closeModal('modal-query');
