@@ -594,32 +594,28 @@ function initSettings() {
 }
 
 // 4. 搜尋功能框架
+// 4. 搜尋功能框架 (純前端切換版)
 function initQuery() {
-    // 請核對你 HTML 中 modal-query 裡面的實際 ID
-    const queryBtn = document.getElementById('btn-query-submit'); // 執行查詢的按鈕
-    const queryInput = document.getElementById('query-input'); // 角色名稱輸入框
+    const queryBtn = document.getElementById('execute-query-btn'); 
+    const queryInput = document.getElementById('query-char-name'); 
 
     if (queryBtn && queryInput) {
-        queryBtn.addEventListener('click', async () => {
+        queryBtn.addEventListener('click', () => {
             const charName = queryInput.value.trim();
             if (!charName) return alert('請輸入角色名稱');
-            
-            queryBtn.disabled = true;
-            queryBtn.textContent = '查詢中...';
 
-            try {
-                // 發送請求給後端或爬蟲 (此處端點請確認是否符合你的 API 設計)
-                const res = await fetch(`/api/update?name=${encodeURIComponent(charName)}`);
-                if (!res.ok) throw new Error(`查詢失敗 (${res.status})`);
-                
-                alert('查詢成功，資料已更新！');
+            // 假設全域變數 characters 存放了所有角色資料
+            // 請確認 c.name 或是 c.character_name 符合你的資料結構
+            const targetChar = characters.find(c => 
+                (c.name === charName || c.character_name === charName)
+            );
+
+            if (targetChar) {
+                renderCharacter(targetChar); // 重新渲染該角色
                 closeModal('modal-query');
-                location.reload(); // 重整頁面以載入新資料
-            } catch (err) {
-                alert(err.message);
-            } finally {
-                queryBtn.disabled = false;
-                queryBtn.textContent = '查詢';
+                queryInput.value = ''; // 清空輸入框
+            } else {
+                alert(`找不到角色「${charName}」。請確認資料庫是否有該筆資料。`);
             }
         });
     }
