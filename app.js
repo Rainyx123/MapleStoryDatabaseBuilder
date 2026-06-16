@@ -593,48 +593,49 @@ function initSettings() {
     });
 }
 
-// 4. 搜尋功能框架 (嚴謹除錯版)
 function initQuery() {
+    console.log("[啟動偵測] 準備初始化搜尋功能...");
+    
+    // 抓取 HTML 元素
     const queryBtn = document.getElementById('execute-query-btn'); 
     const queryInput = document.getElementById('query-char-name'); 
 
-    if (queryBtn && queryInput) {
-        queryBtn.addEventListener('click', async () => {
-            const charName = queryInput.value.trim();
-            if (!charName) return alert('請輸入角色名稱');
-            
-            queryBtn.disabled = true;
-            queryBtn.textContent = '查詢中...';
+    console.log("[啟動偵測] 按鈕元素:", queryBtn);
+    console.log("[啟動偵測] 輸入框元素:", queryInput);
 
-            console.log(`[1] 準備發送請求至: /api/query?name=${encodeURIComponent(charName)}`);
-
-            try {
-                const res = await fetch(`/api/query?name=${encodeURIComponent(charName)}`);
-                console.log(`[2] API 回應狀態碼: ${res.status}`);
-
-                if (!res.ok) {
-                    const errText = await res.text();
-                    throw new Error(`伺服器錯誤 ${res.status}: ${errText}`);
-                }
-
-                // 假設 API 有回傳 JSON 格式的結果，印出來檢查
-                const data = await res.json().catch(() => ({ msg: "無 JSON 回傳值" }));
-                console.log(`[3] API 回傳內容:`, data);
-
-                alert('查詢成功，資料已更新！');
-                
-                // 關閉視窗並重整
-                console.log(`[4] 關閉視窗並準備重整頁面`);
-                closeModal('modal-query');
-                location.reload(); 
-                
-            } catch (err) {
-                console.error('[例外錯誤]', err);
-                alert(`查詢發生異常：\n${err.message}`);
-            } finally {
-                queryBtn.disabled = false;
-                queryBtn.textContent = '查詢';
-            }
-        });
+    // 防呆檢查
+    if (!queryBtn || !queryInput) {
+        console.error("❌ 致命錯誤：找不到搜尋按鈕或輸入框！請去 index.html 檢查你的 id 是不是拼錯了。");
+        return; 
     }
+
+    // 綁定點擊事件
+    queryBtn.addEventListener('click', async () => {
+        const charName = queryInput.value.trim();
+        console.log(`[1] 按鈕被點擊，準備搜尋: ${charName}`);
+        
+        if (!charName) return alert('請輸入角色名稱');
+        
+        queryBtn.disabled = true;
+        queryBtn.textContent = '查詢中...';
+
+        try {
+            console.log(`[2] 發送請求至: /api/query?name=${encodeURIComponent(charName)}`);
+            const res = await fetch(`/api/query?name=${encodeURIComponent(charName)}`);
+            
+            console.log(`[3] 收到 API 回應狀態碼: ${res.status}`);
+            if (!res.ok) throw new Error(`伺服器錯誤 ${res.status}`);
+
+            alert('查詢成功，資料已更新！');
+            closeModal('modal-query');
+            location.reload(); 
+            
+        } catch (err) {
+            console.error('[例外錯誤]', err);
+            alert(`查詢發生異常：\n${err.message}`);
+        } finally {
+            queryBtn.disabled = false;
+            queryBtn.textContent = '查詢';
+        }
+    });
 }
