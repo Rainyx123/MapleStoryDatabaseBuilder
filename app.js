@@ -615,7 +615,13 @@ function initQuery() {
 
         try {
             console.log(`準備發送請求至: /api/query?name=${encodeURIComponent(charName)}`);
-            const res = await fetch(`/api/query?name=${encodeURIComponent(charName)}`);
+            const res = await fetch(`/api/query`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ name: charName })
+            });
             
             if (!res.ok) {
                 const errText = await res.text();
