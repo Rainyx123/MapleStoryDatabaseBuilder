@@ -318,7 +318,7 @@ function renderEquipment(data) {
     const pColor = GRADE_COLOR[eq?.potential_grade] ?? 'var(--border)';
     
     return `
-      <div class="equip-card" style="border-left-color:${pColor}">
+      <div class="equip-card" data-item="${itemDataStr}" style="border-left-color:${pColor}">
         <div class="equip-top">
           ${eq?.icon ? `<img src="${eq.icon}" style="width:36px; height:36px; border-radius:4px" onerror="this.style.display='none'">` : ''}
           <div>
@@ -652,3 +652,83 @@ function initQuery() {
         }
     });
 }
+
+// ================================================================
+// 懸浮預覽 (Tooltip) 邏輯
+// ================================================================
+function initTooltip() {
+    const tooltip = document.getElementById('tooltip');
+    if (!tooltip) return;
+
+    // 1. 游標移入：解析資料並顯示
+    document.addEventListener('mouseover', (e) => {
+        const card = e.target.closest('.equip-card');
+        if (!card || !card.dataset.item) return;
+
+        try {
+            // 解碼並解析 JSON
+            const item = JSON.parse(decodeURIComponent(card.dataset.item));
+            
+            // 組裝內部 HTML
+            const starforce = item.starforce > 0 ? `<span class="tt-star">★ ${item.starforce}</span>` : '';
+            const scroll = item.scroll_upgrade !== '0' ? `(+${item.scroll_upgrade})` : '';
+            
+            let html = `<div class="tt-header">${item.name} ${scroll} ${starforce}</div>`;
+
+            // 星火 (附加屬性)
+            if (item.add_option && item.add_option.length > 0) {
+                html += `<div class="tt-section"><div class="tt-title">附加屬性</div>`;
+                item.add_option.forEach(opt => html += `<span class="tt-line">${opt}</span>`);
+                html += `</div>`;
+            }
+
+            // 主潛能
+            if (item.potential && item.potential.length > 0) {
+                html += `<div class="tt-section"><div class="tt-title">潛能 (${item.potential_grade})</div>`;
+                item.potential.forEach(opt => html += `<span class="tt-line">${opt}</span>`);
+                html += `</div>`;
+            }
+
+            // 附加潛能
+            if (item.additional && item.additional.length > 0) {
+                html += `<div class="tt-section"><div class="tt-title">附加潛能 (${item.additional_grade})</div>`;
+                item.additional.forEach(opt => html += `<span class="tt-line">${opt}</span>`);
+                html += `</div>`;
+            }
+
+            // 靈魂武器
+            if (item.soul_name) {
+                html += `<div class="tt-section"><div class="tt-title">${item.soul_name}</div><span class="tt-line">${item.soul_option}</span></div>`;
+            }
+
+            tooltip.innerHTML = html;
+            tooltip.classList.remove('hidden');
+        } catch (err) {
+            console.error('Tooltip 解析錯誤:', err);
+        }
+    });
+
+    // 2. 游標移動：追蹤座標 + 邊界防呆
+    document.addEventListener('mousemove', (e) => {
+        if (tooltip.classList.contains('hidden')) return;
+
+        let x = e.clientX + 15; // 偏移量，避免游標擋住內容
+        let y = e.clientY + 15;
+        const rect = tooltip.getBoundingClientRect();
+
+        // 潛在隱患：防呆，避免窗格超出螢幕右側或底部被裁切
+        if (x + rect.width > window.innerWidth) x = e.clientX - rect.width - 15;
+        if (y + rect.height > window.innerHeight) y = e.clientY - rect.height - 15;
+
+        tooltip.style.left = `${x}px`;
+        tooltip.style.top = `${y}px`;
+    });
+
+    // 3. 游標移出：隱藏窗格
+    document.addEventListener('mouseout', (e) => {
+        const card = e.target.closest('.equip-card');
+        if (card) tooltip.classList.add('hidden');
+    });
+}
+
+// 記得在主流程的 init() 中呼叫 initTooltip();
