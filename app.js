@@ -435,6 +435,8 @@ function renderCashItems(cashData) {
 }
 
 function showCashTooltip(event, item) {
+    console.log("滑鼠摸到現金道具了！", item.name); // 🚨 加入這行
+    
     const tooltip = document.getElementById('tooltip');
     if (!tooltip) return;
 
