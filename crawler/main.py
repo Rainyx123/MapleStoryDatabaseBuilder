@@ -191,6 +191,45 @@ def process_character(char_name):
         # 4. 把 data_to_store 存入 Supabase
         # 你的 supabase.from('snapshots').insert(...) 就會存入完整的屬性陣列
 
+        # --- 核心屬性 (Stats) ---
+        final_stats = (raw.get('s') or {}).get('final_stat') or []
+        
+        def gs(stat_name):
+            # 輔助函式：從 final_stats 陣列中快速找出對應的數值
+            return next((x['stat_value'] for x in final_stats if x['stat_name'] == stat_name), '0')
+
+        try:
+            combat_power_int = int(float(gs('戰鬥力')))
+        except:
+            combat_power_int = 0
+
+        # ▼▼▼ 這裡必須宣告 stats 變數，才能解決 NameError ▼▼▼
+        stats = {
+            "combat_power": gs('戰鬥力'),
+            "damage": gs('傷害'),
+            "final_damage": gs('最終傷害'),
+            "boss_damage": gs('BOSS怪物傷害'),
+            "ignore_defense": gs('無視防禦率'),
+            "critical_damage": gs('爆擊傷害'),
+            "arc": gs('神秘力量'),
+            "authentic": gs('真實之力'),
+            "max_damage": gs('最高屬性攻擊力'),
+            "min_damage": gs('最低屬性攻擊力'),
+            "str": gs('STR'),
+            "dex": gs('DEX'),
+            "int": gs('INT'),
+            "luk": gs('LUK'),
+            "max_hp": gs('最大HP'),
+            "max_mp": gs('最大MP'),
+            "attack_power": gs('物理攻擊力'),
+            "magic_power": gs('魔法攻擊力'),
+            "defense": gs('防禦力'),
+            "speed": gs('移動速度'),
+            "jump": gs('跳躍力'),
+            "all_stat": gs('全能力值加成'),
+        }
+        # ▲▲▲ 新增結束 ▲▲▲
+
         # --- 裝備（含三套預設）---
         i_raw = raw.get('i') or {}
         rings = []
