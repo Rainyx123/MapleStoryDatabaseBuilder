@@ -457,16 +457,21 @@ function showCashTooltip(event, item) {
     }
 
     tooltip.innerHTML = html;
+    tooltip.classList.remove('hidden');
     tooltip.style.display = 'block';
 
     // 定位邏輯：跟隨滑鼠並加上偏移量避免被游標遮擋
-    tooltip.style.left = (event.pageX + 15) + 'px';
-    tooltip.style.top = (event.pageY + 15) + 'px';
+    tooltip.style.left = (event.clientX + 15) + 'px';
+    tooltip.style.top = (event.clientY + 15) + 'px';
 }
 
 function hideTooltip() {
     const tooltip = document.getElementById('tooltip');
-    if (tooltip) tooltip.style.display = 'none';
+    if (!tooltip) return;
+    
+    // 關鍵修改：補回 hidden class，並隱藏
+    tooltip.classList.add('hidden');
+    tooltip.style.display = 'none';
 }
 // ================================================================
 // 聯盟神器與冠軍
