@@ -680,14 +680,7 @@ function initTooltip() {
             const starforce = item.starforce > 0 ? `<span class="tt-star">★ ${item.starforce}</span>` : '';
             const scroll = item.scroll_upgrade !== '0' ? `(+${item.scroll_upgrade})` : '';
             
-            let html = `<div class="tt-header">${item.name} ${scroll} ${starforce}</div>`;
-
-            // 星火 (附加屬性)
-            if (item.add_option && item.add_option.length > 0) {
-                html += `<div class="tt-section"><div class="tt-title">星火</div>`;
-                item.add_option.forEach(opt => html += `<span class="tt-line">${opt}</span>`);
-                html += `</div>`;
-            }
+            let html = `<div class="tt-header">${item.name} ${scroll} ${starforce}</div>`;            
 
             // 定義階級顏色對照表
             const gradeColorMap = {
@@ -713,10 +706,30 @@ function initTooltip() {
                 item.additional.forEach(opt => html += `<span class="tt-line">${opt}</span>`);
                 html += `</div>`;
             }
+
+            // 星火 (附加屬性)
+            if (item.add_option && item.add_option.length > 0) {
+                html += `<div class="tt-section"><div class="tt-title">星火</div>`;
+                item.add_option.forEach(opt => html += `<span class="tt-line">${opt}</span>`);
+                html += `</div>`;
+            }
+
+        
             // 靈魂武器
             if (item.soul_name) {
                 html += `<div class="tt-section"><div class="tt-title">${item.soul_name}</div><span class="tt-line">${item.soul_option}</span></div>`;
+            }            
+
+            // 卷軸
+            // ▼▼▼ 1. 新增這段來擷取卷軸屬性 ▼▼▼
+            const etcOpt   = item.item_etc_option || {};
+            const etcParts = [];
+            for (const [key, label] of Object.entries(ADD_STAT_LABELS)) {
+              const val = etcOpt[key];
+              if (val && String(val) !== '0')
+                etcParts.push(`${label}+${val}${ADD_PERCENT_KEYS.has(key) ? '%' : ''}`);
             }
+            // ▲▲▲ 新增結束 ▲▲▲
 
             tooltip.innerHTML = html;
             tooltip.classList.remove('hidden');
