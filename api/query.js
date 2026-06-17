@@ -73,6 +73,7 @@ function parseEquipList(items = []) {
       additional_grade: item.additional_potential_option_grade || '無',
       additional:       aOpts,
       add_option:       addParts,
+      etc_option:       etcParts,
       _order:           SLOT_ORDER[slot] || 99,
     };
   }).sort((a,b) => a._order - b._order).map(e => { delete e._order; return e; });
