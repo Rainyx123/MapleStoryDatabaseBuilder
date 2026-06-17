@@ -33,14 +33,18 @@ async function init() {
     document.getElementById('loading')?.classList.add('hidden');
     document.getElementById('content')?.classList.remove('hidden');
     
-    // 確保內容出現後綁定收合事件
+    // 確保內容出現後綁定所有事件與 UI 模組
     restoreCollapsibleStates();
+    initModals();     // 啟動彈窗功能
+    initSettings();   // 啟動設定功能
+    initQuery();      // 啟動查詢功能
+    initTooltip();    // 啟動裝備懸浮預覽 (關鍵)
+
   } catch (err) {
     const loadEl = document.getElementById('loading');
     if (loadEl) loadEl.innerHTML = `<p style="color:var(--accent)">載入失敗：${err.message}</p>`;
   }
 }
-
 // 1. 事件委派：處理所有點擊 (不需要綁定在個別元素上)
 document.addEventListener('click', (e) => {
     // 偵測點擊標頭
