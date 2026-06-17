@@ -316,6 +316,9 @@ function renderEquipment(data) {
   list.innerHTML = equips.map(eq => {
     if (!eq) return '';
     const pColor = GRADE_COLOR[eq?.potential_grade] ?? 'var(--border)';
+
+    // 新增這行：將當下的裝備資料 (eq) 轉為字串並編碼
+    const itemDataStr = encodeURIComponent(JSON.stringify(eq));
     
     return `
       <div class="equip-card" data-item="${itemDataStr}" style="border-left-color:${pColor}">
