@@ -28,7 +28,7 @@ export default async function handler(req, res) {
       .gte('snapshot_date', sinceStr)
       .order('combat_power', { ascending: false })
       .limit(1)
-      .single();
+      .maybeSingle(); 
 
     if (error) throw error;
     
