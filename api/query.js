@@ -53,6 +53,13 @@ function parseEquipList(items = []) {
       if (val && String(val) !== '0')
         addParts.push(`${label}+${val}${ADD_PERCENT_KEYS.has(key) ? '%' : ''}`);
     }
+    const etcOpt   = item.item_etc_option || {};
+    const etcParts = [];
+    for (const [key, label] of Object.entries(ADD_STAT_LABELS)) {
+      const val = etcOpt[key];
+      if (val && String(val) !== '0')
+        etcParts.push(`${label}+${val}${ADD_PERCENT_KEYS.has(key) ? '%' : ''}`);
+    }
     return {
       slot,
       name:             item.item_name || '',
