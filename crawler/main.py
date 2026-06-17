@@ -165,7 +165,7 @@ def process_character(char_name):
                 if sk.get('skill_name') and sk.get('skill_icon'):
                     skill_icon_map[sk['skill_name']] = sk['skill_icon']
 
-# ── Step 4: 解析各區塊 ────────────────────────────────
+        # ── Step 4: 解析各區塊 ────────────────────────────────
 
         # --- 核心屬性 (Stats) ---
         final_stats = (raw.get('s') or {}).get('final_stat') or []
@@ -212,6 +212,8 @@ def process_character(char_name):
             stat_value = item.get('stat_value')
             if stat_name:
                 stats[stat_name] = stat_value
+
+        # --- 裝備（含三套預設）---
 
         # --- 裝備（含三套預設）---
         i_raw = raw.get('i') or {}
