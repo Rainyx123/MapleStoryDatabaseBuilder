@@ -165,31 +165,7 @@ def process_character(char_name):
                 if sk.get('skill_name') and sk.get('skill_icon'):
                     skill_icon_map[sk['skill_name']] = sk['skill_icon']
 
-        # ── Step 4: 解析各區塊 ────────────────────────────────
-
-        # --- 修改後的爬蟲邏輯 ---
-
-        # 1. 直接獲取 Nexon 回傳的完整陣列 (不要做任何篩選)
-        final_stats = (raw.get('s') or {}).get('final_stat') or []
-        
-        # 2. 如果你需要用「戰鬥力」來排序或篩選，只處理戰鬥力就好
-        combat_power_val = next((x['stat_value'] for x in final_stats if x['stat_name'] == '戰鬥力'), '0')
-        try:
-            combat_power_int = int(float(combat_power_val))
-        except:
-            combat_power_int = 0
-        
-        # 3. 準備存入 Supabase 的 JSON 資料
-        # 這裡直接把整個 final_stats 陣列存進去，不要再手動篩選
-        data_to_store = {
-            'final_stat': final_stats,  # 存入完整的陣列，包含所有 Nexon 欄位
-            'remain_ap': (raw.get('s') or {}).get('remain_ap') or 0,
-            'combat_power': combat_power_int,
-            # 如果有其他非 final_stat 的基本資訊 (如等級、職業)，請保留在此
-        }
-        
-        # 4. 把 data_to_store 存入 Supabase
-        # 你的 supabase.from('snapshots').insert(...) 就會存入完整的屬性陣列
+# ── Step 4: 解析各區塊 ────────────────────────────────
 
         # --- 核心屬性 (Stats) ---
         final_stats = (raw.get('s') or {}).get('final_stat') or []
@@ -200,10 +176,10 @@ def process_character(char_name):
 
         try:
             combat_power_int = int(float(gs('戰鬥力')))
-        except:
+        except Exception:
             combat_power_int = 0
 
-        # ▼▼▼ 這裡必須宣告 stats 變數，才能解決 NameError ▼▼▼
+        # 1. 保留原本的英文 Key
         stats = {
             "combat_power": gs('戰鬥力'),
             "damage": gs('傷害'),
@@ -219,16 +195,23 @@ def process_character(char_name):
             "dex": gs('DEX'),
             "int": gs('INT'),
             "luk": gs('LUK'),
-            "max_hp": gs('最大HP'),
-            "max_mp": gs('最大MP'),
-            "attack_power": gs('物理攻擊力'),
+            "max_hp": gs('HP'),
+            "max_mp": gs('MP'),
+            "attack_power": gs('攻擊力'),
             "magic_power": gs('魔法攻擊力'),
             "defense": gs('防禦力'),
             "speed": gs('移動速度'),
             "jump": gs('跳躍力'),
             "all_stat": gs('全能力值加成'),
+            "remain_ap": (raw.get('s') or {}).get('remain_ap', 0)
         }
-        # ▲▲▲ 新增結束 ▲▲▲
+
+        # 2. 動態將 Nexon API 回傳的所有屬性，全部追加寫入 stats 字典中
+        for item in final_stats:
+            stat_name = item.get('stat_name')
+            stat_value = item.get('stat_value')
+            if stat_name:
+                stats[stat_name] = stat_value
 
         # --- 裝備（含三套預設）---
         i_raw = raw.get('i') or {}
