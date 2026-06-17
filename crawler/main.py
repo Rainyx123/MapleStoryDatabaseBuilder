@@ -79,6 +79,7 @@ def parse_equip_list(items: list) -> list:
         p_opts = [item.get(f'potential_option_{k}') for k in range(1,4) if item.get(f'potential_option_{k}')]
         a_opts = [item.get(f'additional_potential_option_{k}') for k in range(1,4) if item.get(f'additional_potential_option_{k}')]
 
+        # 處理星火 (add_option)
         add_opt = item.get('item_add_option') or {}
         add_parts = []
         for key, label in ADD_STAT_LABELS.items():
@@ -86,11 +87,20 @@ def parse_equip_list(items: list) -> list:
             if val and str(val) != '0':
                 suffix = '%' if key in ADD_PERCENT_KEYS else ''
                 add_parts.append(f"{label}+{val}{suffix}")
+                
+        # 處理卷軸 (etc_option)
+        etc_opt = item.get('item_etc_option') or {}
+        etc_parts = []
+        for key, label in ADD_STAT_LABELS.items():
+            val = etc_opt.get(key)
+            if val and str(val) != '0':
+                suffix = '%' if key in ADD_PERCENT_KEYS else ''
+                etc_parts.append(f"{label}+{val}{suffix}")
 
         parsed.append({
             "slot":             display_slot,
             "name":             raw_name,
-            "icon":             item.get('item_icon', ''),      # base64 圖標
+            "icon":             item.get('item_icon', ''),
             "starforce":        int(item.get('starforce', 0) or 0),
             "soul_name":        item.get('soul_name', ''),
             "soul_option":      item.get('soul_option', ''),
@@ -100,13 +110,14 @@ def parse_equip_list(items: list) -> list:
             "additional_grade": item.get('additional_potential_option_grade', '無') or '無',
             "additional":       a_opts,
             "add_option":       add_parts,
+            "etc_option":       etc_parts,  # 正確將屬性加進這裡
             "_order":           SLOT_ORDER.get(display_slot, 99)
         })
+        
     parsed.sort(key=lambda x: x['_order'])
     for eq in parsed:
         del eq['_order']
     return parsed
-
 # =================================================================
 # 3. 解析核心
 # =================================================================
