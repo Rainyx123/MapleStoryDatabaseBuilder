@@ -435,11 +435,10 @@ function renderCashItems(cashData) {
 }
 
 function showCashTooltip(event, item) {
-    console.log("滑鼠摸到現金道具了！", item.name); // 🚨 加入這行
-    
     const tooltip = document.getElementById('tooltip');
     if (!tooltip) return;
 
+    // 1. 生成 HTML (保持原樣)
     let html = `
         <div style="font-weight: bold; margin-bottom: 4px;">${item.name}</div>
         <div style="font-size: 12px; color: #aaa; margin-bottom: 8px;">部位：${item.slot}</div>
@@ -457,21 +456,22 @@ function showCashTooltip(event, item) {
     }
 
     tooltip.innerHTML = html;
-    tooltip.classList.remove('hidden');
-    tooltip.style.display = 'block';
 
-    // 定位邏輯：跟隨滑鼠並加上偏移量避免被游標遮擋
+    // 2. 顯示邏輯：只用 class 控制，移除 hidden
+    tooltip.classList.remove('hidden');
+
+    // 3. 定位 (使用 fixed 定位更穩)
     tooltip.style.left = (event.clientX + 15) + 'px';
     tooltip.style.top = (event.clientY + 15) + 'px';
 }
 
+// 統一的隱藏函數
 function hideTooltip() {
     const tooltip = document.getElementById('tooltip');
-    if (!tooltip) return;
-    
-    // 關鍵修改：補回 hidden class，並隱藏
-    tooltip.classList.add('hidden');
-    tooltip.style.display = 'none';
+    if (tooltip) {
+        // 隱藏邏輯：只用 class 控制，加上 hidden
+        tooltip.classList.add('hidden');
+    }
 }
 // ================================================================
 // 聯盟神器與冠軍
