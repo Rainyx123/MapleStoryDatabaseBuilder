@@ -1,599 +1,180 @@
 import requests
 import os
 import time
-from supabase import create_client
+import logging
+from supabase import create_client, Client
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone, timedelta
 
 # =================================================================
-# 1. 設定區
+# 1. 初始化與設定區
 # =================================================================
-API_KEY      = os.environ.get("NEXON_API_KEY")
+# 設定 Logging 格式
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+
+API_KEY = os.environ.get("NEXON_API_KEY")
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
 
-CHARACTER_LIST = [
-    "Rainyx09","Rainyx20","Rainyx27","Rainyx30","Rainyx39",
-    "Rainyx41","Rainyx46","Rainyx51","Rainyx52"
-]
-
 BASE_URL = "https://open.api.nexon.com/maplestorytw/v1"
-HEADERS  = {"x-nxopen-api-key": API_KEY, "accept": "application/json"}
+HEADERS = {"x-nxopen-api-key": API_KEY, "accept": "application/json"}
 
-# 裝備欄位對應
-SLOT_NAME_MAP = {
-    "武器": "武器", "輔助武器": "副武", "徽章": "徽章", "機器人心臟": "心臟",
-    "帽子": "帽子", "衣服(上)": "上衣", "褲子": "褲/裙", "鞋子": "鞋子",
-    "手套": "手套", "披風": "披風", "肩飾": "肩飾", "臉飾": "臉飾", "眼飾": "眼飾",
-    "戒指1": "戒指1", "戒指2": "戒指2", "戒指3": "戒指3", "戒指4": "戒指4",
-    "耳環": "耳環", "腰帶": "腰帶", "墜飾1": "墜飾1", "墜飾2": "墜飾2",
-    "口袋物品": "口袋", "胸章": "胸章", "勳章": "勳章",
-    "馴服的怪物": "圖騰1", "馬鞍": "圖騰2", "怪物裝備": "圖騰3", "寶玉": "寶玉"
-}
-SLOT_ORDER = {name: i for i, name in enumerate([
-    "武器","副武","徽章","心臟","帽子","上衣","褲/裙","鞋子","手套","披風",
-    "肩飾","臉飾","眼飾","戒指1","戒指2","戒指3","戒指4","耳環","腰帶",
-    "墜飾1","墜飾2","口袋","胸章","勳章","圖騰1","圖騰2","圖騰3","寶玉"
-], 1)}
-
-ADD_STAT_LABELS = {
-    'str':'STR','dex':'DEX','int':'INT','luk':'LUK',
-    'max_hp':'HP','max_mp':'MP','attack_power':'物攻','magic_power':'魔攻',
-    'armor':'防禦','speed':'移動','jump':'跳躍',
-    'boss_damage':'B傷','damage':'總傷','all_stat':'全屬'
-}
-ADD_PERCENT_KEYS = {'damage','all_stat','boss_damage'}
+# 初始化 Supabase
+db: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 # =================================================================
-# 2. 工具函式
+# 2. API 請求與資料處理
 # =================================================================
-def fetch(url):
-    """向 Nexon API 發出 GET，失敗回傳空 dict"""
+def fetch_endpoint(char_name, ocid, endpoint_key, endpoint_url, date_str):
+    """抓取單一 API 端點，並加入錯誤處理與節流"""
+    # 節流防護：每次請求微小延遲，避免瞬間併發超過 API Limit
+    time.sleep(0.1) 
+    
+    url = f"{BASE_URL}{endpoint_url}?ocid={ocid}&date={date_str}"
     try:
-        r = requests.get(url, headers=HEADERS, timeout=20)
-        return r.json() if r.status_code == 200 else {}
-    except:
-        return {}
-
-def fetch_parallel(url_map: dict) -> dict:
-    """平行抓取多個 URL，回傳 {key: json} 字典"""
-    results = {}
-    with ThreadPoolExecutor(max_workers=10) as ex:
-        futures = {ex.submit(fetch, url): key for key, url in url_map.items()}
-        for future in as_completed(futures):
-            key = futures[future]
-            try:
-                results[key] = future.result()
-            except:
-                results[key] = {}
-    return results
-
-def parse_equip_list(items: list) -> list:
-    """將裝備道具清單轉為統一格式（含圖標）"""
-    parsed = []
-    for item in items:
-        slot_raw = item.get('item_equipment_slot') or item.get('equipment_slot') or ''
-        display_slot = SLOT_NAME_MAP.get(slot_raw, slot_raw)
-        raw_name = item.get('item_name', '')
-
-        p_opts = [item.get(f'potential_option_{k}') for k in range(1,4) if item.get(f'potential_option_{k}')]
-        a_opts = [item.get(f'additional_potential_option_{k}') for k in range(1,4) if item.get(f'additional_potential_option_{k}')]
-
-        # 處理星火 (add_option)
-        add_opt = item.get('item_add_option') or {}
-        add_parts = []
-        for key, label in ADD_STAT_LABELS.items():
-            val = add_opt.get(key, 0)
-            if val and str(val) != '0':
-                suffix = '%' if key in ADD_PERCENT_KEYS else ''
-                add_parts.append(f"{label}+{val}{suffix}")
-                
-        # 處理卷軸 (etc_option)
-        etc_opt = item.get('item_etc_option') or {}
-        etc_parts = []
-        for key, label in ADD_STAT_LABELS.items():
-            val = etc_opt.get(key)
-            if val and str(val) != '0':
-                suffix = '%' if key in ADD_PERCENT_KEYS else ''
-                etc_parts.append(f"{label}+{val}{suffix}")
-
-        parsed.append({
-            "slot":             display_slot,
-            "name":             raw_name,
-            "icon":             item.get('item_icon', ''),
-            "starforce":        int(item.get('starforce', 0) or 0),
-            "soul_name":        item.get('soul_name', ''),
-            "soul_option":      item.get('soul_option', ''),
-            "scroll_upgrade":   item.get('scroll_upgrade', '0'),
-            "potential_grade":  item.get('potential_option_grade', '無') or '無',
-            "potential":        p_opts,
-            "additional_grade": item.get('additional_potential_option_grade', '無') or '無',
-            "additional":       a_opts,
-            "add_option":       add_parts,
-            "etc_option":       etc_parts,  # 正確將屬性加進這裡
-            "_order":           SLOT_ORDER.get(display_slot, 99)
-        })
-        
-    parsed.sort(key=lambda x: x['_order'])
-    for eq in parsed:
-        del eq['_order']
-    return parsed
-# =================================================================
-# 3. 解析核心
-# =================================================================
-def process_character(char_name):
-    try:
-        # ── Step 1: 取得 OCID ──────────────────────────────────
-        id_data = fetch(f"{BASE_URL}/id?character_name={char_name}")
-        if not id_data or 'ocid' not in id_data:
-            print(f"⚠️  找不到角色：{char_name}")
-            return None
-        ocid = id_data['ocid']
-        q = f"?ocid={ocid}"
-
-        # ── Step 2: 平行抓取所有端點 ───────────────────────────
-        url_map = {
-            'b':   f"{BASE_URL}/character/basic{q}",
-            's':   f"{BASE_URL}/character/stat{q}",
-            'a':   f"{BASE_URL}/character/ability{q}",
-            'h':   f"{BASE_URL}/character/hyper-stat{q}",
-            'i':   f"{BASE_URL}/character/item-equipment{q}",
-            'c':   f"{BASE_URL}/character/cashitem-equipment{q}",
-            'sy':  f"{BASE_URL}/character/symbol-equipment{q}",
-            'be':  f"{BASE_URL}/character/beauty-equipment{q}",
-            'an':  f"{BASE_URL}/character/android-equipment{q}",
-            'pe':  f"{BASE_URL}/character/pet-equipment{q}",
-            'l':   f"{BASE_URL}/character/link-skill{q}",
-            'v':   f"{BASE_URL}/character/vmatrix{q}",
-            'h6':  f"{BASE_URL}/character/hexamatrix{q}",
-            'hs':  f"{BASE_URL}/character/hexamatrix-stat{q}",
-            'u':   f"{BASE_URL}/user/union{q}",
-            'ua':  f"{BASE_URL}/user/union-artifact{q}",
-            'uch': f"{BASE_URL}/user/union-champion{q}",
-            'ur':  f"{BASE_URL}/user/union-raider{q}",
-            'sk5': f"{BASE_URL}/character/skill{q}&character_skill_grade=5",
-            'sk6': f"{BASE_URL}/character/skill{q}&character_skill_grade=6",
-        }
-        raw = fetch_parallel(url_map)
-
-        # ── Step 3: 技能圖標對照表 ────────────────────────────
-        # 合併 grade 5 和 grade 6 技能，建立名稱→圖標對照
-        skill_icon_map = {}
-        for grade_key in ('sk5', 'sk6'):
-            skills_data = (raw.get(grade_key) or {}).get('character_skill') or []
-            for sk in skills_data:
-                if sk.get('skill_name') and sk.get('skill_icon'):
-                    skill_icon_map[sk['skill_name']] = sk['skill_icon']
-
-        # ── Step 4: 解析各區塊 ────────────────────────────────
-
-        # --- 核心屬性 (Stats) ---
-        final_stats = (raw.get('s') or {}).get('final_stat') or []
-        
-        def gs(stat_name):
-            # 輔助函式：從 final_stats 陣列中快速找出對應的數值
-            return next((x['stat_value'] for x in final_stats if x['stat_name'] == stat_name), '0')
-
-        try:
-            combat_power_int = int(float(gs('戰鬥力')))
-        except Exception:
-            combat_power_int = 0
-
-        # 1. 保留原本的英文 Key
-        stats = {
-            "combat_power": gs('戰鬥力'),
-            "damage": gs('傷害'),
-            "final_damage": gs('最終傷害'),
-            "boss_damage": gs('BOSS怪物傷害'),
-            "ignore_defense": gs('無視防禦率'),
-            "critical_damage": gs('爆擊傷害'),
-            "arc": gs('神秘力量'),
-            "authentic": gs('真實之力'),
-            "max_damage": gs('最高屬性攻擊力'),
-            "min_damage": gs('最低屬性攻擊力'),
-            "str": gs('STR'),
-            "dex": gs('DEX'),
-            "int": gs('INT'),
-            "luk": gs('LUK'),
-            "max_hp": gs('HP'),
-            "max_mp": gs('MP'),
-            "attack_power": gs('攻擊力'),
-            "magic_power": gs('魔法攻擊力'),
-            "defense": gs('防禦力'),
-            "speed": gs('移動速度'),
-            "jump": gs('跳躍力'),
-            "all_stat": gs('全能力值加成'),
-            "remain_ap": (raw.get('s') or {}).get('remain_ap', 0)
-        }
-
-        # 2. 動態將 Nexon API 回傳的所有屬性，全部追加寫入 stats 字典中
-        for item in final_stats:
-            stat_name = item.get('stat_name')
-            stat_value = item.get('stat_value')
-            if stat_name:
-                stats[stat_name] = stat_value
-
-        # --- 裝備（含三套預設）---
-
-        # --- 裝備（含三套預設）---
-        i_raw = raw.get('i') or {}
-        rings = []
-        sf = 0
-        active_items = i_raw.get('item_equipment') or []
-        for item in active_items:
-            sf += int(item.get('starforce', 0) or 0)
-            raw_name = item.get('item_name', '')
-            lv = item.get('special_ring_level', 0)
-            if '規範' in raw_name:     rings.append(f"規範{lv}")
-            elif '永續' in raw_name:   rings.append(f"永續{lv}")
-            elif '武器泡泡' in raw_name:
-                for k in ['S','D','I','L']:
-                    if k in raw_name: rings.append(f"{k}{lv}")
-
-        equipment = {
-            "active_preset": i_raw.get('preset_no', 0),
-            "preset_0": parse_equip_list(active_items),
-            "preset_1": parse_equip_list(i_raw.get('item_equipment_preset_1') or []),
-            "preset_2": parse_equip_list(i_raw.get('item_equipment_preset_2') or []),
-            "preset_3": parse_equip_list(i_raw.get('item_equipment_preset_3') or []),
-            "dragon":   parse_equip_list(i_raw.get('dragon_equipment') or []),
-            "mechanic": parse_equip_list(i_raw.get('mechanic_equipment') or []),
-        }
-
-        # --- 現金道具 ---
-        c_raw = raw.get('c') or {}
-        cash_items = {
-            "active_preset": c_raw.get('preset_no', 0),
-            "preset_0": [
-                {
-                    "slot": x.get('cash_item_equipment_slot',''),
-                    "name": x.get('cash_item_name',''),
-                    "icon": x.get('cash_item_icon',''),
-                    "label": x.get('cash_item_label',''),
-                    "options": x.get('cash_item_option') or []
-                }
-                for x in (c_raw.get('cash_item_equipment_base') or [])
-            ],
-            "preset_1": [{"slot": x.get('cash_item_equipment_slot',''), "name": x.get('cash_item_name',''), "icon": x.get('cash_item_icon','')} for x in (c_raw.get('cash_item_equipment_preset_1') or [])],
-            "preset_2": [{"slot": x.get('cash_item_equipment_slot',''), "name": x.get('cash_item_name',''), "icon": x.get('cash_item_icon','')} for x in (c_raw.get('cash_item_equipment_preset_2') or [])],
-            "preset_3": [{"slot": x.get('cash_item_equipment_slot',''), "name": x.get('cash_item_name',''), "icon": x.get('cash_item_icon','')} for x in (c_raw.get('cash_item_equipment_preset_3') or [])],
-        }
-
-        # --- 符文（ARC/AUT）---
-        symbols = [
-            {
-                "name":           x.get('symbol_name',''),
-                "icon":           x.get('symbol_icon',''),
-                "force":          x.get('symbol_force','0'),
-                "level":          x.get('symbol_level', 0),
-                "growth_count":   x.get('symbol_growth_count', 0),
-                "require_growth": x.get('symbol_require_growth_count', 0),
-                "str":            x.get('symbol_str','0'),
-                "dex":            x.get('symbol_dex','0'),
-                "int":            x.get('symbol_int','0'),
-                "luk":            x.get('symbol_luk','0'),
-                "hp":             x.get('symbol_hp','0'),
-            }
-            for x in ((raw.get('sy') or {}).get('symbol') or [])
-        ]
-
-        # --- 美容（髮型/臉型/膚色）---
-        be_raw = raw.get('be') or {}
-        beauty = {
-            "hair":       (be_raw.get('character_hair') or {}).get('hair_name', ''),
-            "hair_color": (be_raw.get('character_hair') or {}).get('base_color', ''),
-            "face":       (be_raw.get('character_face') or {}).get('face_name', ''),
-            "face_color": (be_raw.get('character_face') or {}).get('base_color', ''),
-            "skin":       (be_raw.get('character_skin') or {}).get('skin_name', ''),
-        }
-
-        # --- 機器人 ---
-        an_raw = raw.get('an') or {}
-        android = {
-            "name":        an_raw.get('android_name', ''),
-            "nickname":    an_raw.get('android_nickname', ''),
-            "icon":        an_raw.get('android_icon', ''),
-            "grade":       an_raw.get('android_grade', ''),
-            "hair":        (an_raw.get('android_hair') or {}).get('hair_name', ''),
-            "face":        (an_raw.get('android_face') or {}).get('face_name', ''),
-            "cash_items":  [
-                {"slot": x.get('cash_item_equipment_slot',''), "name": x.get('cash_item_name',''), "icon": x.get('cash_item_icon','')}
-                for x in (an_raw.get('android_cash_item_equipment') or [])
-            ]
-        }
-
-        # --- 寵物 ---
-        pe_raw = raw.get('pe') or {}
-        pets = []
-        for i in range(1, 4):
-            name = pe_raw.get(f'pet_{i}_name')
-            if not name:
-                continue
-            equip = pe_raw.get(f'pet_{i}_equipment') or {}
-            auto  = pe_raw.get(f'pet_{i}_auto_skill') or {}
-            pets.append({
-                "name":            name,
-                "nickname":        pe_raw.get(f'pet_{i}_nickname', ''),
-                "icon":            pe_raw.get(f'pet_{i}_icon', ''),
-                "appearance_icon": pe_raw.get(f'pet_{i}_appearance_icon', ''),
-                "type":            pe_raw.get(f'pet_{i}_pet_type', ''),
-                "skills":          pe_raw.get(f'pet_{i}_skill') or [],
-                "date_expire":     pe_raw.get(f'pet_{i}_date_expire', ''),
-                "equipment": {
-                    "name": equip.get('item_name',''),
-                    "icon": equip.get('item_icon',''),
-                    "options": equip.get('item_option') or [],
-                    "scroll_upgrade": equip.get('scroll_upgrade', 0),
-                },
-                "auto_skill": {
-                    "skill_1":      auto.get('skill_1',''),
-                    "skill_1_icon": auto.get('skill_1_icon',''),
-                    "skill_2":      auto.get('skill_2',''),
-                    "skill_2_icon": auto.get('skill_2_icon',''),
-                }
-            })
-
-        # --- 連結技能（含圖標）---
-        l_raw = raw.get('l') or {}
-        link_skills_raw = l_raw.get('character_link_skill') or []
-        if not link_skills_raw:
-            preset_no = l_raw.get('use_preset_no', '1')
-            link_skills_raw = l_raw.get(f'character_link_skill_preset_{preset_no}') or []
-        link_skills = [
-            {
-                "name":  s.get('skill_name','—'),
-                "level": s.get('skill_level', 0),
-                "icon":  s.get('skill_icon',''),
-                "effect": s.get('skill_effect',''),
-            }
-            for s in link_skills_raw if s.get('skill_name')
-        ]
-
-        # --- V 矩陣（含技能圖標）---
-        v_cores = []
-        for c in ((raw.get('v') or {}).get('character_v_core_equipment') or []):
-            if not c.get('v_core_name'):
-                continue
-            skills = []
-            for k in ['v_core_skill_1','v_core_skill_2','v_core_skill_3']:
-                sname = c.get(k,'')
-                if sname:
-                    skills.append({
-                        "name": sname,
-                        "icon": skill_icon_map.get(sname, '')
-                    })
-            v_cores.append({
-                "name":   c.get('v_core_name',''),
-                "type":   c.get('v_core_type',''),
-                "level":  c.get('v_core_level', 0),
-                "skills": skills,
-                # 用第一個技能的圖標作為核心圖標（如有）
-                "icon":   skills[0]['icon'] if skills else '',
-            })
-
-        # 修改後的處理邏輯
-        hexa_cores = []
-        for c in ((raw.get('h6') or {}).get('character_hexa_core_equipment') or []):
-            if not c.get('hexa_core_name'):
-                continue
-        
-            # 這裡直接從 API 拿圖示，不再查對照表
-            # 如果欄位名稱不是 hexa_core_icon，請換成你 print 出來看到的正確名稱
-            icon_url = c.get('hexa_core_icon', '') 
-            
-            # 處理 Linked Skills (包含圖示)
-            linked_skills = []
-            for ls in (c.get('linked_skill') or []):
-                linked_skills.append({
-                    "name": ls.get('hexa_skill_name', ''),
-                    "icon": ls.get('hexa_skill_icon', '') # 直接抓取副技能的 icon
-                })
-        
-            hexa_cores.append({
-                "name": c.get('hexa_core_name', ''),
-                "level": c.get('hexa_core_level', 0),
-                "type": c.get('hexa_core_type', ''),
-                "icon": icon_url, 
-                "skills": linked_skills
-            })
-        # --- HEXA 屬性 ---
-        hs_raw = raw.get('hs') or {}
-        hexa_stat = [
-            {
-                "main_stat":       x.get('main_stat_name',''),
-                "main_level":      x.get('main_stat_level', 0),
-                "sub_stat_1":      x.get('sub_stat_name_1',''),
-                "sub_level_1":     x.get('sub_stat_level_1', 0),
-                "sub_stat_2":      x.get('sub_stat_name_2',''),
-                "sub_level_2":     x.get('sub_stat_level_2', 0),
-                "grade":           x.get('stat_grade', 0),
-            }
-            for x in (hs_raw.get('character_hexa_stat_core') or [])
-        ]
-
-        # --- 內潛 ---
-        a_raw = raw.get('a') or {}
-        inner_ability = {
-            "grade":     a_raw.get('ability_grade','無'),
-            "abilities": [ab.get('ability_value','') for ab in (a_raw.get('ability_info') or [])],
-            "popularity": a_raw.get('remain_fame', 0),  # 名聲在這裡！
-        }
-
-        # --- 極限屬性 ---
-        h_raw = raw.get('h') or {}
-        p_no = h_raw.get('use_preset_no','1')
-        hyper_stats = [
-            {"type": hs['stat_type'], "level": int(hs.get('stat_level', 0)), "increase": hs.get('stat_increase','')}
-            for hs in (h_raw.get(f'hyper_stat_preset_{p_no}') or [])
-            if int(hs.get('stat_level', 0)) > 0
-        ]
-
-        # --- 戰地聯盟 ---
-        u_raw = raw.get('u') or {}
-        union = {
-            "level":           u_raw.get('union_level', 0),
-            "grade":           u_raw.get('union_grade',''),
-            "artifact_level":  u_raw.get('union_artifact_level', 0),
-            "artifact_exp":    u_raw.get('union_artifact_exp', 0),
-            "artifact_point":  u_raw.get('union_artifact_point', 0),
-        }
-
-        # --- 戰地攻擊隊 ---
-        ur_raw = raw.get('ur') or {}
-        union_raider = {
-            "raider_stats":   ur_raw.get('union_raider_stat') or [],
-            "occupied_stats": ur_raw.get('union_occupied_stat') or [],
-            "inner_stats":    [
-                {"id": x.get('stat_field_id',''), "effect": x.get('stat_field_effect','')}
-                for x in (ur_raw.get('union_inner_stat') or [])
-            ],
-        }
-
-        # --- 戰地神器 ---
-        ua_raw = raw.get('ua') or {}
-        union_artifact = {
-            "effects":  [
-                {"name": x.get('name',''), "level": x.get('level', 0)}
-                for x in (ua_raw.get('union_artifact_effect') or [])
-            ],
-            "crystals": [
-                {
-                    "name":    x.get('name',''),
-                    "level":   x.get('level', 0),
-                    "option1": x.get('crystal_option_name_1',''),
-                    "option2": x.get('crystal_option_name_2',''),
-                    "option3": x.get('crystal_option_name_3',''),
-                    "valid":   x.get('validity_flag','') == '1',
-                }
-                for x in (ua_raw.get('union_artifact_crystal') or [])
-            ],
-            "remain_ap": ua_raw.get('union_artifact_remain_ap', 0),
-        }
-
-        # --- 聯盟冠軍 ---
-        uch_raw = raw.get('uch') or {}
-        union_champion = {
-            "champions": [
-                {
-                    "name":   x.get('champion_name',''),
-                    "slot":   x.get('champion_slot', 0),
-                    "grade":  x.get('champion_grade',''),
-                    "class":  x.get('champion_class',''),
-                    "badges": [b.get('stat','') for b in (x.get('champion_badge_info') or [])]
-                }
-                for x in (uch_raw.get('union_champion') or [])
-            ],
-            "total_badge": [b.get('stat','') for b in (uch_raw.get('champion_badge_total_info') or [])],
-        }
-
-        # --- 基本資訊 ---
-        b_raw = raw.get('b') or {}
-
-        # ── Step 5: 組裝最終 JSON ─────────────────────────────
-        return {
-            # 基本
-            "name":          char_name,
-            "class":         b_raw.get('character_class','未知'),
-            "level":         b_raw.get('character_level', 0),
-            "world_name":    b_raw.get('world_name',''),
-            "guild_name":    b_raw.get('character_guild_name',''),
-            "image_url":     b_raw.get('character_image',''),
-            "combat_power":  combat_power_int,
-            "popularity":    inner_ability['popularity'],
-
-            # 數值
-            "stats":         stats,
-            "hyper_stats":   hyper_stats,
-
-            # 裝備
-            "equipment":     equipment,
-            "starforce_total": sf,
-            "rings":         rings,
-
-            # 外觀
-            "cash_items":    cash_items,
-            "beauty":        beauty,
-            "android":       android,
-            "pets":          pets,
-
-            # 技能
-            "link_skills":   link_skills,
-            "v_cores":       v_cores,
-            "hexa_cores":    hexa_cores,
-            "hexa_stat":     hexa_stat,
-            "symbols":       symbols,
-
-            # 內潛
-            "inner_ability": {
-                "grade":      inner_ability['grade'],
-                "abilities":  inner_ability['abilities'],
-            },
-
-            # 戰地
-            "union":          union,
-            "union_raider":   union_raider,
-            "union_artifact": union_artifact,
-            "union_champion": union_champion,
-        }
-
+        res = requests.get(url, headers=HEADERS, timeout=10)
+        res.raise_for_status()
+        return endpoint_key, res.json()
     except Exception as e:
-        import traceback
-        print(f"❌ 解析 {char_name} 時出錯：{e}")
-        traceback.print_exc()
+        logger.error(f"❌ [API 錯誤] 角色: {char_name} | 端點: {endpoint_key} | 錯誤: {str(e)}")
+        return endpoint_key, {}
+
+def process_character(char_name, today_str):
+    """處理單一角色的所有 API 請求"""
+    logger.info(f"開始抓取: {char_name}")
+    
+    # 1. 取得 OCID
+    try:
+        res = requests.get(f"{BASE_URL}/id?character_name={char_name}", headers=HEADERS, timeout=10)
+        res.raise_for_status()
+        ocid = res.json().get("ocid")
+    except Exception as e:
+        logger.error(f"❌ 無法取得 {char_name} 的 OCID: {str(e)}")
         return None
 
+    if not ocid:
+        return None
+
+    # 2. 定義要抓取的端點清單
+    endpoints = {
+        "basic": "/character/basic",
+        "stat": "/character/stat",
+        "ability": "/character/ability",
+        "hyper_stat": "/character/hyper-stat",
+        "item_equipment": "/character/item-equipment",
+        "cashitem_equipment": "/character/cashitem-equipment",
+        "symbol_equipment": "/character/symbol-equipment",
+        "beauty_equipment": "/character/beauty-equipment",
+        "android_equipment": "/character/android-equipment",
+        "pet_equipment": "/character/pet-equipment",
+        "link_skill": "/character/link-skill",
+        "vmatrix": "/character/vmatrix",
+        "hexamatrix": "/character/hexamatrix",
+        "hexamatrix_stat": "/character/hexamatrix-stat",
+        "union": "/user/union",
+        "union_artifact": "/user/union-artifact",
+        "union_champion": "/user/union-champion",
+        "union_raider": "/user/union-raider",
+        "skill_5": "/character/skill", # 需額外處理 grade=5
+        "skill_6": "/character/skill"  # 需額外處理 grade=6
+    }
+
+    raw_data = {}
+    
+    # 3. 平行抓取所有端點
+    with ThreadPoolExecutor(max_workers=15) as executor:
+        futures = []
+        for key, ep in endpoints.items():
+            req_url = ep
+            if key == "skill_5":
+                req_url += "&character_skill_grade=5"
+            elif key == "skill_6":
+                req_url += "&character_skill_grade=6"
+                
+            futures.append(executor.submit(fetch_endpoint, char_name, ocid, key, req_url, today_str))
+
+        for future in as_completed(futures):
+            key, data = future.result()
+            raw_data[key] = data
+
+    # 取得戰鬥力 (若抓取失敗則為 0)
+    combat_power = 0
+    if raw_data.get("stat") and "final_stat" in raw_data["stat"]:
+        for s in raw_data["stat"]["final_stat"]:
+            if s.get("stat_name") == "戰鬥力":
+                combat_power = int(s.get("stat_value", 0))
+                break
+
+    return {
+        "name": char_name,
+        "combat_power": combat_power,
+        "data": raw_data
+    }
+
 # =================================================================
-# 4. 主流程
+# 3. 主流程
 # =================================================================
 def main():
-    print("🍁 開始抓取楓之谷角色資料...\n")
-
-    # 逐一處理角色（避免對 Nexon API 一次送出過多平行請求）
-    results = []
-    for char_name in CHARACTER_LIST:
-        result = process_character(char_name)
-        if result:
-            results.append(result)
-            cp = f"{result['combat_power']:,}"
-            print(f"  ✅ {char_name} — 戰鬥力 {cp}")
-        else:
-            print(f"  ❌ {char_name} — 抓取失敗")
-        time.sleep(1)  # 避免 API rate limit
-
-    if not results:
-        print("沒有抓取到任何資料。")
-        return
-
-    # 連線 Supabase
-    db = create_client(SUPABASE_URL, SUPABASE_KEY)
+    logger.info("🍁 開始抓取楓之谷角色資料...")
+    
     tz = timezone(timedelta(hours=8))
     today_str = datetime.now(tz).strftime("%Y-%m-%d")
 
-    success_count = 0
+    # 1. 從資料庫取得啟用中的角色名單
+    logger.info("📡 正在從 Supabase 取得動態角色清單...")
+    res = db.table('characters').select('name').eq('is_active', True).order('display_order').execute()
+    character_list = [c['name'] for c in res.data]
+    
+    if not character_list:
+        logger.warning("⚠️ 資料庫中沒有啟用的角色。")
+        return
+
+    # 2. 處理每一個角色
+    results = []
+    for char_name in character_list:
+        result = process_character(char_name, today_str)
+        if result:
+            results.append(result)
+            cp_formatted = f"{result['combat_power']:,}"
+            logger.info(f"✅ {char_name} — 戰鬥力 {cp_formatted}")
+        else:
+            logger.error(f"❌ {char_name} — 抓取失敗")
+        
+        # 角色切換時稍微暫停，確保 API 穩定
+        time.sleep(1)
+
+    # 3. 寫入 Supabase (執行資料瘦身與更新)
+    if not results:
+        logger.warning("沒有抓取到任何資料，結束程式。")
+        return
+
+    logger.info("💾 開始寫入資料庫...")
+    
     for data in results:
         char_name = data['name']
+        
         try:
-            # 確保角色存在於 characters 資料表
-            db.table("characters").upsert(
-                {"name": char_name, "is_active": True},
-                on_conflict="name"
-            ).execute()
-
-            # 寫入今日快照（若今天已跑過則覆蓋更新）
-            db.table("snapshots").upsert({
+            # 寫入今日的最新完整 JSON
+            db.table('snapshots').upsert({
                 "character_name": char_name,
-                "snapshot_date":  today_str,
-                "combat_power":   data['combat_power'],
-                "data":           data
-            }, on_conflict="character_name,snapshot_date").execute()
+                "snapshot_date": today_str,
+                "combat_power": data["combat_power"],
+                "data": data["data"]
+            }).execute()
+            
+            # 【資料瘦身】將該角色超過 3 天前的 "data" 欄位清空 (設為 null)，但保留戰鬥力數字供 7 日查詢！
+            three_days_ago = (datetime.now(tz) - timedelta(days=3)).strftime("%Y-%m-%d")
+            db.table('snapshots').update({"data": None}).eq("character_name", char_name).lt("snapshot_date", three_days_ago).execute()
+            
+            # 【資料清理】刪除超過 7 天前的紀錄
+            seven_days_ago = (datetime.now(tz) - timedelta(days=7)).strftime("%Y-%m-%d")
+            db.table('snapshots').delete().eq("character_name", char_name).lt("snapshot_date", seven_days_ago).execute()
 
-            print(f"  💾 {char_name} — 已存入 Supabase")
-            success_count += 1
         except Exception as e:
-            print(f"  ❌ 寫入 {char_name} 失敗：{e}")
-        time.sleep(0.3)
+            logger.error(f"❌ 寫入 {char_name} 資料時發生錯誤: {str(e)}")
 
-    print(f"\n✅ 完成！共 {success_count}/{len(CHARACTER_LIST)} 個角色，快照日期：{today_str}")
+    logger.info("🎉 所有作業完成！")
 
 if __name__ == "__main__":
     main()
