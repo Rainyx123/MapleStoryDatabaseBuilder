@@ -661,7 +661,7 @@ function initQuery() {
 }
 
 // ================================================================
-// 懸浮預覽 (Tooltip) 邏輯
+// 懸浮預覽 (Tooltip) 邏輯 (修正版)
 // ================================================================
 function initTooltip() {
     const tooltip = document.getElementById('tooltip');
@@ -677,8 +677,8 @@ function initTooltip() {
             const item = JSON.parse(decodeURIComponent(card.dataset.item));
             
             // 組裝內部 HTML
-            const starforce = item.starforce > 0 ? `<span class="tt-star">★ ${item.starforce}</span>` : '';
-            const scroll = item.scroll_upgrade !== '0' ? `(+${item.scroll_upgrade})` : '';
+            const starforce = item.starforce > 0 ? `<span class="tt-star" style="color:#facc15;">★ ${item.starforce}</span>` : '';
+            const scroll = item.scroll_upgrade !== '0' ? `<span style="color:#ffaa00;">(+${item.scroll_upgrade})</span>` : '';
             
             let html = `<div class="tt-header">${item.name} ${scroll} ${starforce}</div>`;            
 
@@ -688,7 +688,7 @@ function initTooltip() {
                 '唯一': '#E15AE8',
                 '稀有': '#a68ce8',
                 '罕見': '#e8c15a',
-                '特殊': '#62b5e8' // 補充台服常見的低階潛能名稱防呆
+                '特殊': '#62b5e8' 
             };
             
             // 主潛能
@@ -713,23 +713,18 @@ function initTooltip() {
                 item.add_option.forEach(opt => html += `<span class="tt-line">${opt}</span>`);
                 html += `</div>`;
             }
+            
+            // 卷軸 (前端正確讀取方式)
+            if (item.etc_option && item.etc_option.length > 0) {
+                html += `<div class="tt-section"><div class="tt-title" style="color: #ffaa00;">卷軸強化</div>`;
+                item.etc_option.forEach(opt => html += `<span class="tt-line">${opt}</span>`);
+                html += `</div>`;
+            }
 
-        
             // 靈魂武器
             if (item.soul_name) {
                 html += `<div class="tt-section"><div class="tt-title">${item.soul_name}</div><span class="tt-line">${item.soul_option}</span></div>`;
             }            
-
-            // 卷軸
-            // ▼▼▼ 1. 新增這段來擷取卷軸屬性 ▼▼▼
-            const etcOpt   = item.item_etc_option || {};
-            const etcParts = [];
-            for (const [key, label] of Object.entries(ADD_STAT_LABELS)) {
-              const val = etcOpt[key];
-              if (val && String(val) !== '0')
-                etcParts.push(`${label}+${val}${ADD_PERCENT_KEYS.has(key) ? '%' : ''}`);
-            }
-            // ▲▲▲ 新增結束 ▲▲▲
 
             tooltip.innerHTML = html;
             tooltip.classList.remove('hidden');
@@ -742,11 +737,10 @@ function initTooltip() {
     document.addEventListener('mousemove', (e) => {
         if (tooltip.classList.contains('hidden')) return;
 
-        let x = e.clientX + 15; // 偏移量，避免游標擋住內容
+        let x = e.clientX + 15; 
         let y = e.clientY + 15;
         const rect = tooltip.getBoundingClientRect();
 
-        // 潛在隱患：防呆，避免窗格超出螢幕右側或底部被裁切
         if (x + rect.width > window.innerWidth) x = e.clientX - rect.width - 15;
         if (y + rect.height > window.innerHeight) y = e.clientY - rect.height - 15;
 
@@ -754,11 +748,15 @@ function initTooltip() {
         tooltip.style.top = `${y}px`;
     });
 
-    // 3. 游標移出：隱藏窗格
+    // 3. 游標移出：隱藏窗格 (已恢復防閃爍機制)
     document.addEventListener('mouseout', (e) => {
         const card = e.target.closest('.equip-card');
-        if (card) tooltip.classList.add('hidden');
+        if (!card) return;
+
+        // 判斷滑鼠移出後，是否還在該卡片的內部
+        const related = e.relatedTarget;
+        if (card.contains(related)) return; 
+
+        tooltip.classList.add('hidden');
     });
 }
-
-// 記得在主流程的 init() 中呼叫 initTooltip();
