@@ -684,25 +684,35 @@ function initTooltip() {
 
             // 星火 (附加屬性)
             if (item.add_option && item.add_option.length > 0) {
-                html += `<div class="tt-section"><div class="tt-title">附加屬性</div>`;
+                html += `<div class="tt-section"><div class="tt-title">星火</div>`;
                 item.add_option.forEach(opt => html += `<span class="tt-line">${opt}</span>`);
                 html += `</div>`;
             }
 
+            // 定義階級顏色對照表
+            const gradeColorMap = {
+                '傳說': '#a3e877',
+                '唯一': '#e8c15a',
+                '稀有': '#a68ce8',
+                '罕見': '#62b5e8',
+                '特殊': '#e871c4' // 補充台服常見的低階潛能名稱防呆
+            };
+            
             // 主潛能
             if (item.potential && item.potential.length > 0) {
-                html += `<div class="tt-section"><div class="tt-title">潛能 (${item.potential_grade})</div>`;
+                const pColor = gradeColorMap[item.potential_grade] || 'var(--accent-light)';
+                html += `<div class="tt-section"><div class="tt-title" style="color: ${pColor};">潛能 (${item.potential_grade})</div>`;
                 item.potential.forEach(opt => html += `<span class="tt-line">${opt}</span>`);
                 html += `</div>`;
             }
-
+            
             // 附加潛能
             if (item.additional && item.additional.length > 0) {
-                html += `<div class="tt-section"><div class="tt-title">附加潛能 (${item.additional_grade})</div>`;
+                const aColor = gradeColorMap[item.additional_grade] || 'var(--accent-light)';
+                html += `<div class="tt-section"><div class="tt-title" style="color: ${aColor};">附加潛能 (${item.additional_grade})</div>`;
                 item.additional.forEach(opt => html += `<span class="tt-line">${opt}</span>`);
                 html += `</div>`;
             }
-
             // 靈魂武器
             if (item.soul_name) {
                 html += `<div class="tt-section"><div class="tt-title">${item.soul_name}</div><span class="tt-line">${item.soul_option}</span></div>`;
