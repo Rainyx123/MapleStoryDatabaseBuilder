@@ -384,22 +384,88 @@ function renderUnionRaider(data) {
 }
 
 // 現金道具
-function renderCashItems(data) {
-    const el = document.getElementById('cash-grid');
-    if (!el) return;
-    const activeIdx = data?.active_preset ?? 1;
-    const items = data?.[`preset_${activeIdx}`] ?? [];
+function renderCashItems(cashData) {
+    const container = document.getElementById('cash-grid');
+    if (!container) return;
     
-    if (!Array.isArray(items) || items.length === 0) { el.innerHTML = '<div class="empty">無資料</div>'; return; }
-  
-    el.innerHTML = items.map(i => 
-      `<div class="grid-item" style="flex-direction:row; justify-content:flex-start; padding:5px;">
-        ${i?.icon ? `<img src="${i.icon}" style="width:28px; height:28px; margin-right:8px" onerror="this.style.display='none'">` : ''}
-        <span style="font-size:11px; color:var(--text-2);">${i?.name ?? '未知'}</span>
-      </div>`
-    ).join('');
+    container.innerHTML = ''; 
+
+    const activeIndex = cashData.active_preset || 0;
+    const items = cashData[`preset_${activeIndex}`] || [];
+
+    items.forEach(item => {
+        if (!item.name) return; // 略過無道具的空槽位
+
+        const card = document.createElement('div');
+        card.className = 'equip-card';
+
+        // 處理特殊標籤 (如：大師標籤) -> 套用 equip-add-line 樣式並上色
+        let labelHtml = '';
+        if (item.label) {
+            labelHtml = `<div class="equip-add-line" style="color: #FFD700;">[${item.label}]</div>`;
+        }
+
+        // 處理附加屬性 (如：寵物裝備攻擊力) -> 套用 equip-pot-line 樣式
+        let optionsHtml = '';
+        if (item.options && item.options.length > 0) {
+            item.options.forEach(opt => {
+                optionsHtml += `<div class="equip-pot-line">${opt.option_type}: +${opt.option_value}</div>`;
+            });
+        }
+
+        // 組裝 HTML 結構，完全對齊裝備卡片
+        card.innerHTML = `
+            <div class="equip-top">
+                ${item.icon ? `<img src="${item.icon}" alt="${item.name}" style="width: 24px; height: 24px;">` : ''}
+                <div class="equip-slot">${item.slot}</div>
+                <div class="equip-name">${item.name}</div>
+            </div>
+            <div class="equip-details">
+                ${labelHtml}
+                ${optionsHtml}
+            </div>
+        `;
+
+        // 綁定懸浮視窗事件
+        card.addEventListener('mouseenter', (e) => showCashTooltip(e, item));
+        card.addEventListener('mouseleave', hideTooltip);
+
+        container.appendChild(card);
+    });
 }
 
+function showCashTooltip(event, item) {
+    const tooltip = document.getElementById('tooltip');
+    if (!tooltip) return;
+
+    let html = `
+        <div style="font-weight: bold; margin-bottom: 4px;">${item.name}</div>
+        <div style="font-size: 12px; color: #aaa; margin-bottom: 8px;">部位：${item.slot}</div>
+    `;
+
+    if (item.label) {
+        html += `<div style="color: #FFD700; font-size: 12px; margin-bottom: 4px;">[${item.label}]</div>`;
+    }
+
+    if (item.options && item.options.length > 0) {
+        html += `<hr style="border: 0; border-top: 1px solid var(--border); margin: 6px 0;">`;
+        item.options.forEach(opt => {
+            html += `<div style="font-size: 12px; color: var(--text-1);">${opt.option_type}: +${opt.option_value}</div>`;
+        });
+    }
+
+    tooltip.innerHTML = html;
+    tooltip.style.display = 'block';
+
+    // 定位邏輯：跟隨滑鼠並加上偏移量避免被游標遮擋
+    tooltip.style.left = (event.pageX + 15) + 'px';
+    tooltip.style.top = (event.pageY + 15) + 'px';
+}
+
+function hideTooltip() {
+    const tooltip = document.getElementById('tooltip');
+    if (tooltip) tooltip.style.display = 'none';
+}
 // ================================================================
 // 聯盟神器與冠軍
 // ================================================================
