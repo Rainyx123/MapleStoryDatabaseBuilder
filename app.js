@@ -397,7 +397,7 @@ function renderCashItems(cashData) {
         if (!item.name) return; // 略過無道具的空槽位
 
         const card = document.createElement('div');
-        card.className = 'equip-card';
+        card.className = 'equip-card cash-card'; // 新增 cash-card，排版依然吃 equip-card 的 CSS
 
         // 處理特殊標籤 (如：大師標籤) -> 套用 equip-add-line 樣式並上色
         let labelHtml = '';
@@ -737,6 +737,9 @@ function initTooltip() {
     document.addEventListener('mouseover', (e) => {
         const card = e.target.closest('.equip-card');
         if (!card || !card.dataset.item) return;
+
+        // 🚨 加入這行：如果這是現金道具的卡片，全域監聽器不介入！
+        if (card.classList.contains('cash-card')) return;
 
         try {
             // 解碼並解析 JSON
