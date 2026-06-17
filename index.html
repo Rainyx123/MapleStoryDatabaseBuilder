@@ -1,173 +1,78 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>🍁 楓之谷角色資料庫</title>
-  <link rel="stylesheet" href="style.css">
-  <link rel="icon" href="data:image/x-icon;base64,AAABAAEAEBAAAAEAIABoBAAAFgAAACgAAAAQAAAAIAAAAAEAIAAAAAAAAAAAABMLAAATCwAAAAAAAAAAAAD///8A8PDwAPDw8AD///8A">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>楓之谷角色資料庫</title>
+    <link rel="stylesheet" href="style.css">
 </head>
-<body>
-
-  <header id="header">
-    <div id="logo">🍁 楓之谷DB</div>
-    <div id="tab-bar"></div>
-    <div id="header-actions">
-      <button id="btn-query" title="即時查詢">🔍</button>
-      <button id="btn-settings" title="顯示設定">⚙️</button>
-    </div>
-  </header>
-
-  <main id="main">
-    <div id="loading"><div class="spinner"></div><p>讀取角色資料中...</p></div>
-
-    <div id="content" class="hidden container-stack">      
-      
-      <div class="grid-system">
-        <section class="section-card span-2" id="section-header">
-          <div class="section-header"><span>角色資訊</span><span class="toggle-icon">▼</span></div>
-          <div class="section-body char-info" id="char-header">
-            <img id="char-image" src="" alt="角色圖片">
-            <div class="char-meta">
-              <div id="char-name"></div>
-              <div id="char-class"></div>
-              <div id="char-level"></div>
+<body class="font-base">
+    <header class="header">
+        <div class="header-top">
+            <div class="logo">🍁 MSDB</div>
+            <div class="header-actions">
+                <button id="btn-search" class="icon-btn">🔍 查詢</button>
+                <button id="btn-settings" class="icon-btn">⚙️ 設定</button>
             </div>
-          </div>
-        </section>        
-        
-        <section class="section-card span-6" id="section-stats">
-          <div class="section-header"><span>核心屬性</span><span class="toggle-icon">▼</span></div>
-          <div class="section-body grid-stats" id="stat-grid"></div>
-        </section>
-        
-        <div class="flex-column-layout span-4">
-          <section class="section-card" id="section-ability">
-            <div class="section-header"><span>內在潛能</span><span class="toggle-icon">▼</span></div>
-            <div class="section-body" id="ability-list"></div>
-          </section>
-          <section class="section-card" id="section-hyper">
-            <div class="section-header"><span>極限屬性</span><span class="toggle-icon">▼</span></div>
-            <div class="section-body" id="hyper-list"></div>
-          </section>
         </div>
-      </div>
-      
-      <div class="grid-system">
-        <section class="section-card span-12" id="section-equip">
-          <div class="section-header"><span>裝備</span><span class="toggle-icon">▼</span></div>
-          <div class="section-body" id="equip-list"></div>
-        </section>
-      </div>
+        <div id="tabs-container" class="tabs">
+            <span class="loading-text">讀取角色資料中...</span>
+        </div>
+    </header>
 
-      <div class="grid-system">
-        <div class="flex-column-layout span-4">
-          <section class="section-card" id="section-symbol">
-            <div class="section-header"><span>符文系統 (ARC/AUT)</span><span class="toggle-icon">▼</span></div>
-            <div class="section-body grid-symbol" id="symbol-grid"></div>
-          </section>
-          <section class="section-card" id="section-artifact">
-            <div class="section-header"><span>聯盟神器</span><span class="toggle-icon">▼</span></div>
-            <div class="section-body grid-artifact" id="union-artifact-grid"></div>
-          </section>
-        </div>
-        
-        <div class="flex-column-layout span-3">
-          <section class="section-card" id="section-union">
-            <div class="section-header"><span>戰地聯盟</span><span class="toggle-icon">▼</span></div>
-            <div class="section-body grid-union" id="union-grid"></div>
-          </section>
-          <section class="section-card" id="section-raider">
-            <div class="section-header"><span>戰地攻擊隊</span><span class="toggle-icon">▼</span></div>
-            <div class="section-body grid-unionraider" id="union-raider-grid"></div>
-          </section>
-          <section class="section-card" id="section-champion">
-            <div class="section-header"><span>聯盟冠軍</span><span class="toggle-icon">▼</span></div>
-            <div class="section-body grid-champion" id="union-champion-grid"></div>
-          </section>
-          <section class="section-card" id="section-link">
-            <div class="section-header"><span>傳授技能</span><span class="toggle-icon">▼</span></div>
-            <div class="section-body grid-link" id="link-grid"></div>
-          </section>        
-        </div>
-        
-        <div class="flex-column-layout span-5">
-          <section class="section-card" id="section-hexa">
-            <div class="section-header"><span>六轉 HEXA</span><span class="toggle-icon">▼</span></div>
-            <div class="section-body grid-hexa" id="hexa-grid"></div>
-          </section>
-          <section class="section-card" id="section-v">
-            <div class="section-header"><span>五轉 V-Matrix</span><span class="toggle-icon">▼</span></div>
-            <div class="section-body grid-vmatrix" id="v-grid"></div>
-          </section>
-        </div>
-      </div>
-      
-      <div class="grid-system">
-        <section class="section-card span-8" id="section-cash">
-          <div class="section-header"><span>外觀與現金道具</span><span class="toggle-icon">▼</span></div>
-          <div class="section-body" id="cash-grid"></div>
-        </section>
-        
-        <div class="flex-column-layout span-4">
-          <section class="section-card" id="section-pets">
-            <div class="section-header"><span>寵物</span><span class="toggle-icon">▼</span></div>
-            <div class="section-body grid-pet" id="pets-grid"></div>
-          </section>
-          <section class="section-card" id="section-android">
-            <div class="section-header"><span>機器人</span><span class="toggle-icon">▼</span></div>
-            <div class="section-body" id="android-grid"></div>
-          </section>
-          <section class="section-card" id="section-beauty">
-            <div class="section-header"><span>美容美髮</span><span class="toggle-icon">▼</span></div>
-            <div class="section-body grid-beauty" id="beauty-grid"></div>
-          </section>
-        </div>
-      </div>
+    <main id="character-content" class="container">
+        </main>
 
+    <div id="tooltip" class="tooltip hidden"></div>
+
+    <div id="settings-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>顯示設定</h3>
+                <button id="close-settings" class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="settings-group">
+                    <span class="settings-group-title">進階功能</span>
+                    <label>
+                        <input type="checkbox" id="toggle-peak-power"> 
+                        <span class="highlight-text">顯示 7 日最高戰力</span>
+                    </label>
+                </div>
+                <hr>
+                <div class="settings-group">
+                    <span class="settings-group-title">顯示區塊開關</span>
+                    <div id="section-toggles" class="toggle-grid">
+                        <label><input type="checkbox" value="stat" checked> 核心屬性</label>
+                        <label><input type="checkbox" value="hyper_stat" checked> 極限屬性</label>
+                        <label><input type="checkbox" value="ability" checked> 內在潛能</label>
+                        <label><input type="checkbox" value="equipment" checked> 裝備</label>
+                        <label><input type="checkbox" value="symbol" checked> 符文系統</label>
+                        <label><input type="checkbox" value="vmatrix" checked> 五轉 V-Matrix</label>
+                        <label><input type="checkbox" value="hexamatrix" checked> 六轉 HEXA</label>
+                        <label><input type="checkbox" value="link_skill" checked> 傳授技能</label>
+                        <label><input type="checkbox" value="union" checked> 戰地聯盟</label>
+                        <label><input type="checkbox" value="artifact" checked> 聯盟神器</label>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
-  </main>
-  
-  <div id="tooltip" class="hidden"></div>
 
-  <div id="modal-settings" class="modal hidden">
-    <div class="modal-box">
-      <div class="modal-header"><h2>⚙️ 設定</h2><button onclick="closeModal('modal-settings')">✕</button></div>
-      <div class="modal-body">
-        <div class="settings-group-title">顯示區塊</div>
-        <label><input type="checkbox" data-section="section-stats" checked> 核心屬性</label>
-        <label><input type="checkbox" data-section="section-hyper" checked> 極限屬性</label>
-        <label><input type="checkbox" data-section="section-equip" checked> 裝備</label>
-        <label><input type="checkbox" data-section="section-v" checked> 五轉 V-Matrix</label>
-        <label><input type="checkbox" data-section="section-hexa" checked> 六轉 HEXA</label>
-        <label><input type="checkbox" data-section="section-link" checked> 傳授技能</label>
-        <label><input type="checkbox" data-section="section-ability" checked> 內在潛能</label>
-        <label><input type="checkbox" data-section="section-symbol" checked> 符文系統</label>
-        <label><input type="checkbox" data-section="section-artifact" checked> 聯盟神器</label>
-        <label><input type="checkbox" data-section="section-champion" checked> 聯盟冠軍</label>
-        <label><input type="checkbox" data-section="section-cash" checked> 外觀與現金道具</label>
-        <label><input type="checkbox" data-section="section-union" checked> 戰地聯盟</label>
-        <label><input type="checkbox" data-section="section-raider" checked> 戰地攻擊隊</label>
-        <label><input type="checkbox" data-section="section-pets" checked> 寵物</label>
-        <label><input type="checkbox" data-section="section-android" checked> 機器人</label>
-        <label><input type="checkbox" data-section="section-beauty" checked> 美容美髮</label>
-        <hr>
-        <label><input type="checkbox" id="toggle-peak"> 顯示 7 日最高戰力</label>
-      </div>    
+    <div id="query-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>即時查詢</h3>
+                <button id="close-query" class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="text" id="query-input" placeholder="輸入角色名稱...">
+                <button id="btn-submit-query">查詢</button>
+                <div id="query-result-msg" class="msg-box hidden"></div>
+            </div>
+        </div>
     </div>
-  </div>
 
-  <div id="modal-query" class="modal hidden">
-    <div class="modal-box">
-      <div class="modal-header"><h2>🔍 查詢</h2><button onclick="closeModal('modal-query')">✕</button></div>
-      <div class="modal-body">
-        <input type="text" id="query-input" placeholder="角色名稱...">
-        <button id="btn-query-submit">查詢</button>
-        <div id="query-status"></div>
-      </div>
-    </div>
-  </div>
-
-  <script src="app.js" defer></script>
+    <script type="module" src="app.js"></script>
 </body>
 </html>
