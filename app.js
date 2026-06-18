@@ -13,14 +13,14 @@ const state = {
 };
 // 新增一個顯示名稱對照表
 const UI_LABELS = {
-    "str": "力量", "dex": "敏捷", "int": "智力", "luk": "幸運",
-    "max_hp": "最大 HP", "max_mp": "最大 MP",
-    "critical_probability": "爆擊機率", 
-    "critical_damage": "爆擊傷害",
-    "damage": "傷害",
-    "boss_damage": "BOSS 傷害",
-    "ignore_defense": "無視防禦率"
-    // 如有其他屬性可依此類推新增
+    "str": "STR", "dex": "DEX", "int": "INT", "luk": "LUK", "max_hp": "HP", "max_mp": "MP",
+    "critical_probability": "爆擊機率", "critical_damage": "爆擊傷害", "damage": "傷害", "boss_damage": "Boss傷害", "ignore_defense": "無視防禦"
+    "jump": "跳躍力", "defense": "防禦力", "authentic": "AUT", "arc":"ARC", "max_damage": "最高屬性攻擊力", "min_damage": "最低屬性攻擊力", 
+    "magic_power": "魔法攻擊力", "attack_power": "攻擊力", "speed": "移動速度",  "combat_power": "戰鬥力", "final_damage": "最終傷害",
+    "星力": "星力", "格擋": "格擋", "all_stat": "all_stat", "攻擊速度": "攻擊速度", "神秘力量": "神秘力量", "楓幣獲得量": "楓幣獲得量", 
+    "武器熟練度": "武器熟練度", "道具掉落率": "道具掉落率", "Buff持續時間": "Buff持續時間", "一般怪物傷害": "一般怪物傷害",
+    "無視屬性耐性": "無視屬性耐性", "狀態異常耐性": "狀態異常耐性", "未套用冷卻時間": "未套用冷卻時間", "獲得額外經驗值": "獲得額外經驗值",
+    "冷卻時間減少(秒)": "冷卻時間減少(秒)", "冷卻時間減少(％)": "冷卻時間減少(％)", "狀態異常追加傷害": "狀態異常追加傷害", "召喚獸持續時間增加": "召喚獸持續時間增加"
 };
 
 // 渲染輔助函式
