@@ -155,6 +155,7 @@ function renderCharacter(charData) {
     
     // 套用區塊顯示/隱藏設定
     if (typeof applySectionToggles === 'function') applySectionToggles();
+}
 /**
  * 渲染屬性用 (動態欄位數 + 白名單過濾)
  * @param {Object} statsObj - 屬性資料物件
