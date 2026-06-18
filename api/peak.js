@@ -1,26 +1,28 @@
-// api/peak.js
+// =====================================================
+// GET /api/peak?character_name=XXX
+// 查詢角色「7 日內最高戰力」（只回傳數字，不含完整 JSON）
+//
+// 變更摘要：
+//   B5：原本沒有被前端呼叫，現在配合 app.js 的「顯示7日最高戰力」設定接上。
+//   B10/B11：main.py 只把最新一筆的 data 設為完整 JSON，其餘 7 天內的紀錄
+//       data 為 null、但 combat_power 仍保留，所以這裡只查 combat_power 欄位即可。
+// =====================================================
 import { createClient } from '@supabase/supabase-js';
 
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_ANON_KEY
-);
+const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   const { character_name } = req.query;
-  if (!character_name) return res.status(400).json({ error: 'Missing character_name' });
+  if (!character_name) return res.status(400).json({ error: '請提供 character_name' });
 
   try {
-    // 計算 7 天前的日期
     const since = new Date();
     since.setDate(since.getDate() - 7);
     const sinceStr = since.toISOString().split('T')[0];
 
-    // 查詢 7 天內 combat_power 最高的那一筆 (不抓 data，節省頻寬)
     const { data, error } = await supabase
       .from('snapshots')
       .select('combat_power, snapshot_date')
@@ -28,15 +30,10 @@ export default async function handler(req, res) {
       .gte('snapshot_date', sinceStr)
       .order('combat_power', { ascending: false })
       .limit(1)
-      .maybeSingle(); 
+      .single();
 
     if (error) throw error;
-    
-    // 只回傳最高戰力數值與達成日期
-    return res.status(200).json({
-      peak_power: data.combat_power,
-      date: data.snapshot_date
-    });
+    return res.status(200).json({ combat_power: data.combat_power, snapshot_date: data.snapshot_date });
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }
