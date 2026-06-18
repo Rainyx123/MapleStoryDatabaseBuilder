@@ -100,56 +100,52 @@ function renderCharacter(charData) {
     // --- 既有渲染 ---
     html += safeBuild('stat', '核心屬性', () => renderStats(data.stats));
     
-    // 2. 極限屬性 (精簡版渲染)
+   // 2. 極限屬性 (修正 undefined)
     html += safeBuild('hyper_stat', '極限屬性', () => {
         const list = data.hyper_stats || data.hyper_stat?.hyper_stat_preset_1;
-        if (!list) return '';
-        
-        return list.map(item => {
-            const statName = UI_LABELS[item.stat_type] || item.stat_type;
-            return `
-                <div class="stat-cell" style="width: 100%; padding: 8px 0; border-bottom: 1px solid var(--bg-3);">
-                    <div style="font-weight: bold; color: var(--text-1);">${statName}</div>
-                    <div style="font-size: 11px; color: var(--accent-light);">Lv ${item.stat_level}</div>
-                    <div style="font-size: 12px; color: var(--text-3);">${statName}增加 ${item.stat_increase}</div>
-                </div>
-            `;
-        }).join('');
+        if (!list || !Array.isArray(list)) return '';
+        return list.map(item => `
+            <div class="stat-cell" style="width: 100%; padding: 6px 0; border-bottom: 1px solid var(--bg-3);">
+                <div style="font-weight: bold;">${UI_LABELS[item.stat_type] || item.stat_type}</div>
+                <div style="font-size: 11px;">Lv.${item.stat_level}</div>
+                <div style="font-size: 12px; color: var(--text-3);">${item.stat_increase}</div>
+            </div>
+        `).join('');
     });
     
-    // 內在潛能 (加入標籤轉換)
+    // 3. 內在潛能 (修正 undefined)
     html += safeBuild('ability', '內在潛能', () => {
         const list = data.inner_ability?.abilities || data.ability?.ability_info;
-        if (!list) return '';
+        if (!list || !Array.isArray(list)) return '';
         return list.map(item => `
-            <div class="stat-cell">
-                <div class="stat-label">${getLabel(item.ability_grade + ' 潛能')}</div>
+            <div class="stat-cell" style="width: 100%; padding: 6px 0; border-bottom: 1px solid var(--bg-3);">
                 <div class="stat-value">${item.ability_value}</div>
             </div>
         `).join('');
     });
-    
-    html += safeBuild('equipment', '裝備', () => renderEquipment(data.equipment?.preset_0 || data.item_equipment?.item_equipment));
-    html += safeBuild('symbol', '符文系統', () => renderEquipment(data.symbols || data.symbol_equipment?.symbol));
 
-    // 6. 聯盟神器 (已移除圖片，並精簡顯示格式)
+    // 6. 聯盟神器 (保持上次精簡過的樣式)
     html += safeBuild('union_artifact', '聯盟神器', () => {
         const effects = data.union_artifact?.union_artifact_effect;
-        if (!effects) return '';
+        if (!effects || !Array.isArray(effects)) return '';
         return effects.map(item => `
             <div class="stat-cell" style="width: 100%; padding: 6px 0; border-bottom: 1px solid var(--bg-3);">
                 <div class="stat-value" style="font-size: 13px;">${item.name}</div>
+                <div class="stat-label" style="font-size: 10px; color: var(--text-4);">等級: ${item.level}</div>
             </div>
         `).join('');
     });
+
+    // 7. 聯盟冠軍 (現在使用定義好的 renderSimpleList)
+    html += safeBuild('union_champion', '聯盟冠軍', () => renderSimpleList(data.union_champion));
+    
+    // 8. 戰地攻擊隊 (現在使用定義好的 renderSimpleList)
+    html += safeBuild('union_raider', '戰地攻擊隊', () => renderSimpleList(data.union_raider));
 
     // --- 補回：戰地聯盟相關 ---
     html += safeBuild('union', '戰地聯盟', () => `
         <div class="stat-cell"><div class="stat-label">聯盟等級</div><div class="stat-value">${data.union?.grade || '無'} (Lv.${data.union?.level || 0})</div></div>
     `);
-
-    html += safeBuild('union_champion', '聯盟冠軍', () => renderSimpleList(data.union_champion));
-    html += safeBuild('union_raider', '戰地攻擊隊', () => renderSimpleList(data.union_raider));
 
     // --- 其餘渲染 ---
     html += safeBuild('link_skill', '傳授技能', () => renderEquipment(data.link_skills || data.link_skill));
@@ -179,6 +175,16 @@ function renderStats(statsObj) {
         <div class="stat-cell">
             <div class="stat-label">${key}</div>
             <div class="stat-value">${value || '-'}</div>
+        </div>
+    `).join('');
+}
+
+// 渲染通用陣列列表 (用於聯盟冠軍、戰地攻擊隊等)
+function renderSimpleList(list) {
+    if (!list || !Array.isArray(list) || list.length === 0) return '';
+    return list.map(item => `
+        <div class="stat-cell" style="width: 100%; padding: 6px 0; border-bottom: 1px solid var(--bg-3);">
+            <div class="stat-value">${item.name || item.value || JSON.stringify(item)}</div>
         </div>
     `).join('');
 }
