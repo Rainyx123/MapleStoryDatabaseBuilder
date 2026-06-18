@@ -194,15 +194,18 @@ button:hover { background: var(--bg-hover); }
 .cols-5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
 .cols-6 { grid-template-columns: repeat(6, minmax(0, 1fr)); }
 
-/* 關鍵3：把原本漂亮的外框、背景色與間距補回來 */
+/* 關鍵3：修改 stat-cell 為 Flex 水平排列 */
 .stat-container .stat-cell {
     background: var(--bg-2);
     border: 1px solid var(--border);
     border-radius: var(--r-sm);
     padding: 8px 10px;
+    
+    /* 這裡改為水平排列 */
     display: flex;
-    flex-direction: column;
-    justify-content: center;
+    align-items: center;    /* 垂直置中 */
+    justify-content: space-between; /* 標籤靠左，數值靠右 */
+    gap: 8px;
     width: 100%;
     box-sizing: border-box;
 }
@@ -211,7 +214,8 @@ button:hover { background: var(--bg-hover); }
 .stat-container .stat-label {
     font-size: var(--fs-xs, 11px);
     color: var(--text-4);
-    margin-bottom: 4px;
+    margin-bottom: 0; /* 移除原本的 margin */
+    white-space: nowrap; /* 防止名稱換行 */
 }
 
 .stat-container .stat-value {
@@ -219,6 +223,7 @@ button:hover { background: var(--bg-hover); }
     font-weight: bold;
     color: var(--text-2);
     word-break: break-all;
+    text-align: right;
 }
 
 /* RWD：手機版自動變 2 欄 */
