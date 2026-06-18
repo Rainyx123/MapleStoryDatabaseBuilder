@@ -22,18 +22,7 @@ const UI_LABELS = {
     "ignore_defense": "無視防禦率"
     // 如有其他屬性可依此類推新增
 };
-const CORE_STAT_CONFIG = {
-    "combat_power": "戰鬥力",
-    "str": "力量 (STR)",         // 您可以自由修改後面的中文標籤
-    "dex": "敏捷 (DEX)",
-    "int": "智力 (INT)",
-    "luk": "幸運 (LUK)",
-    "max_hp": "最大生命值",
-    "critical_probability": "爆擊率",
-    "boss_damage": "BOSS 傷害",
-    "ignore_defense": "無視防禦率"
-    // 如果有不想顯示的項目（例如 max_mp 或 damage），直接不寫在這裡即可！
-};
+
 // 渲染輔助函式
 function getLabel(key) {
     return UI_LABELS[key] || key; // 如果找不到對應名稱，預設顯示原本的 key
@@ -197,34 +186,15 @@ function renderCharacter(charData) {
     if (state.isPeakMode) fetchPeakPower(charData.name);
     applySectionToggles();
 }
-// 渲染屬性用（套用白名單過濾與自訂標籤版）
+// 渲染屬性用 (應對 Object 格式)
 function renderStats(statsObj) {
     if (!statsObj || Object.keys(statsObj).length === 0) return '';
-    
-    let html = '';
-    
-    // 改用 CORE_STAT_CONFIG 的 Key 來循環，這樣只會跑我們想顯示的項目，且順序完全固定
-    for (const [key, customLabel] of Object.entries(CORE_STAT_CONFIG)) {
-        // 確保 API 資料裡有這個屬性才印出
-        if (statsObj[key] !== undefined) {
-            let val = statsObj[key];
-            
-            // 格式化數字（例如戰鬥力加上千分位）
-            if (typeof val === 'number') {
-                val = val.toLocaleString();
-            }
-            
-            // 組合您的屬性網格 HTML (這裡維持您原本的 class 命名結構即可)
-            html += `
-                <div class="stat-cell">
-                    <div class="stat-label">${customLabel}</div>
-                    <div class="stat-value">${val}</div>
-                </div>
-            `;
-        }
-    }
-    
-    return html;
+    return Object.entries(statsObj).map(([key, value]) => `
+        <div class="stat-cell">
+            <div class="stat-label">${key}</div>
+            <div class="stat-value">${value || '-'}</div>
+        </div>
+    `).join('');
 }
 
 // 渲染通用陣列列表 (用於聯盟冠軍、戰地攻擊隊等)
