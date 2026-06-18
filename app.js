@@ -13,12 +13,14 @@ const state = {
 };
 // 新增一個顯示名稱對照表
 const UI_LABELS = {
-    // 極限屬性 (根據 Nexon API key)
-    "str": "力量 (STR)", "dex": "敏捷 (DEX)", "int": "智力 (INT)", "luk": "幸運 (LUK)",
-    "max_hp": "最大 HP", "max_mp": "最大 MP", "critical_damage": "暴擊傷害",
-    "damage": "傷害", "boss_damage": "BOSS 傷害", "ignore_defense": "無視防禦",
-    // 內在潛能 (請填入您需要的常用名稱)
-    "ability_stat_1": "潛能 1", "ability_stat_2": "潛能 2", "ability_stat_3": "潛能 3"
+    "str": "力量", "dex": "敏捷", "int": "智力", "luk": "幸運",
+    "max_hp": "最大 HP", "max_mp": "最大 MP",
+    "critical_probability": "爆擊機率", 
+    "critical_damage": "爆擊傷害",
+    "damage": "傷害",
+    "boss_damage": "BOSS 傷害",
+    "ignore_defense": "無視防禦率"
+    // 如有其他屬性可依此類推新增
 };
 
 // 渲染輔助函式
@@ -98,16 +100,21 @@ function renderCharacter(charData) {
     // --- 既有渲染 ---
     html += safeBuild('stat', '核心屬性', () => renderStats(data.stats));
     
-    // 極限屬性 (加入標籤轉換)
+    // 2. 極限屬性 (精簡版渲染)
     html += safeBuild('hyper_stat', '極限屬性', () => {
         const list = data.hyper_stats || data.hyper_stat?.hyper_stat_preset_1;
         if (!list) return '';
-        return list.map(item => `
-            <div class="stat-cell">
-                <div class="stat-label">${getLabel(item.stat_type)}</div>
-                <div class="stat-value">Lv.${item.stat_level}</div>
-            </div>
-        `).join('');
+        
+        return list.map(item => {
+            const statName = UI_LABELS[item.stat_type] || item.stat_type;
+            return `
+                <div class="stat-cell" style="width: 100%; padding: 8px 0; border-bottom: 1px solid var(--bg-3);">
+                    <div style="font-weight: bold; color: var(--text-1);">${statName}</div>
+                    <div style="font-size: 11px; color: var(--accent-light);">Lv ${item.stat_level}</div>
+                    <div style="font-size: 12px; color: var(--text-3);">${statName}增加 ${item.stat_increase}</div>
+                </div>
+            `;
+        }).join('');
     });
     
     // 內在潛能 (加入標籤轉換)
@@ -125,15 +132,13 @@ function renderCharacter(charData) {
     html += safeBuild('equipment', '裝備', () => renderEquipment(data.equipment?.preset_0 || data.item_equipment?.item_equipment));
     html += safeBuild('symbol', '符文系統', () => renderEquipment(data.symbols || data.symbol_equipment?.symbol));
 
-    // 聯盟神器 (加入圖片顯示邏輯)
+    // 6. 聯盟神器 (已移除圖片，並精簡顯示格式)
     html += safeBuild('union_artifact', '聯盟神器', () => {
         const effects = data.union_artifact?.union_artifact_effect;
         if (!effects) return '';
         return effects.map(item => `
-            <div class="stat-cell">
-                <img src="images/crystals/Artifact${item.level || 1}.png" style="width:30px; height:30px;" onerror="this.style.display='none'">
-                <div class="stat-label">${item.name}</div>
-                <div class="stat-value">Lv.${item.level}</div>
+            <div class="stat-cell" style="width: 100%; padding: 6px 0; border-bottom: 1px solid var(--bg-3);">
+                <div class="stat-value" style="font-size: 13px;">${item.name}</div>
             </div>
         `).join('');
     });
