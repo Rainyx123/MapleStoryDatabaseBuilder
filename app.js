@@ -11,6 +11,20 @@ const state = {
     currentData: null,   // 當前正在渲染的角色資料
     isPeakMode: false    // 是否處於「7日最高戰力」模式
 };
+// 新增一個顯示名稱對照表
+const UI_LABELS = {
+    // 極限屬性 (根據 Nexon API key)
+    "str": "力量 (STR)", "dex": "敏捷 (DEX)", "int": "智力 (INT)", "luk": "幸運 (LUK)",
+    "max_hp": "最大 HP", "max_mp": "最大 MP", "critical_damage": "暴擊傷害",
+    "damage": "傷害", "boss_damage": "BOSS 傷害", "ignore_defense": "無視防禦",
+    // 內在潛能 (請填入您需要的常用名稱)
+    "ability_stat_1": "潛能 1", "ability_stat_2": "潛能 2", "ability_stat_3": "潛能 3"
+};
+
+// 渲染輔助函式
+function getLabel(key) {
+    return UI_LABELS[key] || key; // 如果找不到對應名稱，預設顯示原本的 key
+}
 
 // ================================================================
 // 1. 系統初始化
@@ -65,7 +79,6 @@ function renderCharacter(charData) {
         </div>
     `;
 
-    // 【升級1】防護罩：確保單一區塊出錯時，不會拖垮整個網頁
     const safeBuild = (id, title, renderFn) => {
         try {
             const content = renderFn();
@@ -78,72 +91,75 @@ function renderCharacter(charData) {
             `;
         } catch (err) {
             console.error(`渲染 [${title}] 時發生錯誤:`, err);
-            return `
-                <div id="sec-${id}" class="section" data-section="${id}">
-                    <div class="section-title">${title}</div>
-                    <div style="color:#ff7a50; font-size:12px; padding:10px;">資料格式異常，跳過渲染</div>
-                </div>
-            `;
+            return `<div id="sec-${id}" class="section" data-section="${id}"><div class="section-title">${title}</div><div style="color:#ff7a50; font-size:12px; padding:10px;">資料格式異常</div></div>`;
         }
     };
 
-    // 1. 核心屬性
+    // --- 既有渲染 ---
     html += safeBuild('stat', '核心屬性', () => renderStats(data.stats));
     
-    // 2. 極限屬性 (改用智能渲染，自動印出所有欄位)
-    html += safeBuild('hyper_stat', '極限屬性', () => renderSmartList(data.hyper_stats || data.hyper_stat?.hyper_stat_preset_1));
+    // 極限屬性 (加入標籤轉換)
+    html += safeBuild('hyper_stat', '極限屬性', () => {
+        const list = data.hyper_stats || data.hyper_stat?.hyper_stat_preset_1;
+        if (!list) return '';
+        return list.map(item => `
+            <div class="stat-cell">
+                <div class="stat-label">${getLabel(item.stat_type)}</div>
+                <div class="stat-value">Lv.${item.stat_level}</div>
+            </div>
+        `).join('');
+    });
     
-    // 3. 內在潛能 (改用智能渲染，自動印出所有欄位)
-    html += safeBuild('ability', '內在潛能', () => renderSmartList(data.inner_ability?.abilities || data.ability?.ability_info || data.inner_ability));
+    // 內在潛能 (加入標籤轉換)
+    html += safeBuild('ability', '內在潛能', () => {
+        const list = data.inner_ability?.abilities || data.ability?.ability_info;
+        if (!list) return '';
+        return list.map(item => `
+            <div class="stat-cell">
+                <div class="stat-label">${getLabel(item.ability_grade + ' 潛能')}</div>
+                <div class="stat-value">${item.ability_value}</div>
+            </div>
+        `).join('');
+    });
     
-    // 4. 裝備
     html += safeBuild('equipment', '裝備', () => renderEquipment(data.equipment?.preset_0 || data.item_equipment?.item_equipment));
-    
-    // 5. 符文系統
     html += safeBuild('symbol', '符文系統', () => renderEquipment(data.symbols || data.symbol_equipment?.symbol));
 
-    // 6. 聯盟神器
-    html += safeBuild('union_artifact', '聯盟神器', () => renderSmartList(data.union_artifact?.effects || data.union_artifact?.union_artifact_effect));
-
-    // 7. 戰地聯盟
-    html += safeBuild('union', '戰地聯盟', () => {
-        if (!data.union) return '';
-        return `
+    // 聯盟神器 (加入圖片顯示邏輯)
+    html += safeBuild('union_artifact', '聯盟神器', () => {
+        const effects = data.union_artifact?.union_artifact_effect;
+        if (!effects) return '';
+        return effects.map(item => `
             <div class="stat-cell">
-                <div class="stat-label">聯盟等級</div>
-                <div class="stat-value" style="font-size:14px;">
-                    ${data.union.grade || ''} (Lv.${data.union.level || 0})
-                </div>
+                <img src="images/crystals/Artifact${item.level || 1}.png" style="width:30px; height:30px;" onerror="this.style.display='none'">
+                <div class="stat-label">${item.name}</div>
+                <div class="stat-value">Lv.${item.level}</div>
             </div>
-        `;
+        `).join('');
     });
 
-    // 8. 傳授技能
+    // --- 補回：戰地聯盟相關 ---
+    html += safeBuild('union', '戰地聯盟', () => `
+        <div class="stat-cell"><div class="stat-label">聯盟等級</div><div class="stat-value">${data.union?.grade || '無'} (Lv.${data.union?.level || 0})</div></div>
+    `);
+
+    html += safeBuild('union_champion', '聯盟冠軍', () => renderSimpleList(data.union_champion));
+    html += safeBuild('union_raider', '戰地攻擊隊', () => renderSimpleList(data.union_raider));
+
+    // --- 其餘渲染 ---
     html += safeBuild('link_skill', '傳授技能', () => renderEquipment(data.link_skills || data.link_skill));
-
-    // 9. 六轉 HEXA
     html += safeBuild('hexamatrix', '六轉 HEXA', () => renderEquipment(data.hexa_cores || data.hexamatrix?.character_hexa_core_equipment));
-
-    // 10. 五轉 V-Matrix
     html += safeBuild('vmatrix', '五轉 V-Matrix', () => renderEquipment(data.v_cores || data.vmatrix?.character_v_core_equipment));
-
-    // 11. 外觀與現金道具
     html += safeBuild('cashitem_equipment', '外觀與現金道具', () => {
         const cashObj = data.cash_items || data.cashitem_equipment;
         const presetNo = cashObj?.active_preset || 1;
         return renderEquipment(cashObj?.[`preset_${presetNo}`] || cashObj?.cash_item_equipment_preset_1);
     });
-
-    // 12. 寵物
     html += safeBuild('pet_equipment', '寵物', () => renderEquipment(data.pets || data.pet_equipment));
-
-    // 13. 機器人
     html += safeBuild('android_equipment', '機器人', () => {
         const androidData = data.android || data.android_equipment;
         return androidData && Object.keys(androidData).length > 0 ? renderEquipment([androidData]) : '';
     });
-
-    // 14. 美容美髮
     html += safeBuild('beauty_equipment', '美容美髮', () => renderStats(data.beauty || data.beauty_equipment));
     
     document.getElementById('character-content').innerHTML = html;
@@ -151,7 +167,6 @@ function renderCharacter(charData) {
     if (state.isPeakMode) fetchPeakPower(charData.name);
     applySectionToggles();
 }
-
 // 渲染屬性用 (應對 Object 格式)
 function renderStats(statsObj) {
     if (!statsObj || Object.keys(statsObj).length === 0) return '';
