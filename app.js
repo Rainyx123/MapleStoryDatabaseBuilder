@@ -47,7 +47,7 @@ function buildTabs() {
 }
 
 // ================================================================
-// 2. 核心渲染引擎 (修正資料路徑版本)
+// 2. 核心渲染引擎 (全區塊 + 404防禦版本)
 // ================================================================
 
 function renderCharacter(charData) {
@@ -66,21 +66,61 @@ function renderCharacter(charData) {
         </div>
     `;
 
-    // 【修正重點1】這裡的路徑已完全對應您 Console 印出的結構
-    // 1. 核心屬性：傳入 data.stats (Object)
+    // 1. 核心屬性 (Object)
     html += buildSection('stat', '核心屬性', renderStats(data.stats));
     
-    // 2. 極限屬性：傳入 data.hyper_stats (Array)
+    // 2. 極限屬性 (Array)
     html += buildSection('hyper_stat', '極限屬性', renderSimpleList(data.hyper_stats, 'stat_type', 'stat_point', '等級'));
     
-    // 3. 內在潛能：傳入 data.inner_ability.abilities (Array)
+    // 3. 內在潛能 (Array)
     html += buildSection('ability', '內在潛能', renderSimpleList(data.inner_ability?.abilities, 'ability_value', 'ability_grade', ''));
     
-    // 4. 裝備：傳入 data.equipment.preset_0 (Array，預設讀取第一盤裝備)
+    // 4. 裝備 (讀取 preset_0 第一套裝備)
     html += buildSection('equipment', '裝備', renderEquipment(data.equipment?.preset_0));
     
-    // 5. 符文系統：傳入 data.symbols (Array)
+    // 5. 符文系統
     html += buildSection('symbol', '符文系統', renderEquipment(data.symbols));
+
+    // --- 以下為補回的遺失區塊 ---
+
+    // 6. 聯盟神器
+    html += buildSection('union_artifact', '聯盟神器', renderSimpleList(data.union_artifact?.effects, 'name', 'level', 'Lv.'));
+
+    // 7. 戰地聯盟 (單一物件，改用自訂 HTML 渲染)
+    if (data.union) {
+        html += buildSection('union', '戰地聯盟', `
+            <div class="stat-cell">
+                <div class="stat-label">聯盟等級</div>
+                <div class="stat-value" style="font-size:14px;">
+                    ${data.union.grade || ''} (Lv.${data.union.level || 0})
+                </div>
+            </div>
+        `);
+    }
+
+    // 8. 傳授技能
+    html += buildSection('link_skill', '傳授技能', renderEquipment(data.link_skills));
+
+    // 9. 六轉 HEXA
+    html += buildSection('hexamatrix', '六轉 HEXA', renderEquipment(data.hexa_cores));
+
+    // 10. 五轉 V-Matrix
+    html += buildSection('vmatrix', '五轉 V-Matrix', renderEquipment(data.v_cores));
+
+    // 11. 外觀與現金道具 (通常看 preset_1 或 active_preset)
+    const activeCash = data.cash_items?.[`preset_${data.cash_items?.active_preset || 1}`] || data.cash_items?.preset_1;
+    html += buildSection('cashitem_equipment', '外觀與現金道具', renderEquipment(activeCash));
+
+    // 12. 寵物
+    html += buildSection('pet_equipment', '寵物', renderEquipment(data.pets));
+
+    // 13. 機器人 (因為機器人是單一物件不是陣列，需包成陣列傳入)
+    if (data.android && Object.keys(data.android).length > 0) {
+        html += buildSection('android_equipment', '機器人', renderEquipment([data.android]));
+    }
+
+    // 14. 美容美髮 (直接用 renderStats 來渲染 Object)
+    html += buildSection('beauty_equipment', '美容美髮', renderStats(data.beauty));
     
     document.getElementById('character-content').innerHTML = html;
     
@@ -99,37 +139,55 @@ function buildSection(id, title, contentHtml) {
     `;
 }
 
-// 【修正重點2】因為現在的 data.stats 是一個 Object (如 {HP: '70326', DEX: '2453'}),
-// 而不是 Array，所以我們必須用 Object.entries 來將它轉為迴圈渲染。
+// 渲染屬性用 (應對 Object 格式)
 function renderStats(statsObj) {
     if (!statsObj || Object.keys(statsObj).length === 0) return '';
     return Object.entries(statsObj).map(([key, value]) => `
         <div class="stat-cell">
             <div class="stat-label">${key}</div>
-            <div class="stat-value">${value}</div>
+            <div class="stat-value">${value || '-'}</div>
         </div>
     `).join('');
 }
 
+// 渲染陣列清單用
 function renderSimpleList(list, nameKey, valKey, valPrefix) {
     if (!list) return '';
     return list.map(item => `
         <div class="stat-cell">
-            <div class="stat-label">${item[nameKey]}</div>
+            <div class="stat-label">${item[nameKey] || '未知名稱'}</div>
             <div class="stat-value">${valPrefix} ${item[valKey] || ''}</div>
         </div>
     `).join('');
 }
 
-function renderEquipment(equipArray) {
-    if (!equipArray) return '';
-    return equipArray.map((item, idx) => `
-        <div class="item-slot" data-type="equipment" data-idx="${idx}">
-            <div class="stat-label">${item.item_equipment_part || item.symbol_name || '裝備'}</div>
-            <img src="${item.item_icon || item.symbol_icon}" alt="icon" onerror="this.style.display='none'">
-            <div class="stat-value" style="font-size:10px;">${item.item_name || ''}</div>
-        </div>
-    `).join('');
+// 【修復核心】渲染圖片與裝備 (防禦 404 與 Undefined)
+function renderEquipment(equipData) {
+    if (!equipData) return '';
+    // 防呆：如果傳入的是單一物件而不是陣列，自動轉成陣列
+    const equipArray = Array.isArray(equipData) ? equipData : [equipData];
+
+    return equipArray.map((item, idx) => {
+        if (!item) return '';
+
+        // 1. 廣泛抓取各種可能的圖示 Key
+        const iconSrc = item.item_icon || item.symbol_icon || item.icon || item.pet_icon || item.skill_icon || item.core_icon;
+        
+        // 2. 只有在 iconSrc 真的有網址時，才產生 <img> 標籤，徹底根除 404 錯誤
+        const imgHtml = iconSrc ? `<img src="${iconSrc}" alt="icon" onerror="this.style.display='none'">` : '';
+
+        // 3. 廣泛抓取名稱與部位 Key
+        const partName = item.item_equipment_part || item.symbol_name || item.part || item.slot || item.skill_name || item.core_name || '裝備/技能';
+        const itemName = item.item_name || item.name || item.pet_name || '';
+
+        return `
+            <div class="item-slot" data-type="equipment" data-idx="${idx}">
+                <div class="stat-label">${partName}</div>
+                ${imgHtml}
+                <div class="stat-value" style="font-size:10px; margin-top:4px;">${itemName}</div>
+            </div>
+        `;
+    }).join('');
 }
 
 // ================================================================
