@@ -109,28 +109,30 @@ function renderCharacter(charData) {
     // --- 渲染區塊 (按順序排列) ---
     html += safeBuild('stat', '核心屬性', () => renderStats(data.stats));
     
-    // 極限屬性 (修正版)
+    // --- 診斷用渲染：極限屬性 ---
     html += safeBuild('hyper_stats', '極限屬性', () => {
-        if (!hyper_stats || !Array.isArray(hyper_stats)) return '<div class="stat-cell">無資料</div>';
+        if (!hyper_stats || !Array.isArray(hyper_stats)) return '無資料';
+        console.log("極限屬性原始資料範例:", hyper_stats[0]); // <--- 點開 Console 查看這行
         return hyper_stats.map(item => `
-            <div class="stat-cell" style="width: 100%; padding: 6px 0; border-bottom: 1px solid var(--bg-3);">
-                <div style="font-weight: bold;">${item.stat_type || '未知屬性'}</div>
+            <div class="stat-cell">
+                <div style="font-weight: bold;">${item.stat_type || '未知'}</div>
                 <div style="font-size: 11px;">Lv.${item.stat_level || 0}</div>
-                <div style="font-size: 12px; color: var(--text-3);">${item.stat_increase || ''}</div>
             </div>
         `).join('');
     });
-
-    // 內在潛能 (修正版)
+    
+    // --- 診斷用渲染：內在潛能 ---
     html += safeBuild('inner_ability', '內在潛能', () => {
-        if (!inner_ability || !inner_ability.ability_info) return '<div class="stat-cell">無資料</div>';
-        let content = `<div style="margin-bottom: 5px; font-size: 12px; color: var(--accent);">等級: ${inner_ability.ability_grade || '未知'}</div>`;
-        content += inner_ability.ability_info.map(val => `
-            <div class="stat-cell" style="width: 100%; padding: 6px 0; border-bottom: 1px solid var(--bg-3);">
-                <div class="stat-value">${val.ability_value || '無說明'}</div>
-            </div>
-        `).join('');
-        return content;
+        if (!inner_ability) return '無資料';
+        console.log("內在潛能原始資料:", inner_ability); // <--- 點開 Console 查看這行
+        return `<div>${JSON.stringify(inner_ability)}</div>`;
+    });
+    
+    // --- 診斷用渲染：戰地聯盟 ---
+    html += safeBuild('union', '戰地聯盟', () => {
+        if (!data.union) return '無資料';
+        console.log("戰地聯盟原始資料:", data.union); // <--- 點開 Console 查看這行
+        return `<div>${JSON.stringify(data.union)}</div>`;
     });
 
     // 聯盟相關區塊
@@ -147,9 +149,6 @@ function renderCharacter(charData) {
 
     html += safeBuild('union_champion', '聯盟冠軍', () => renderSimpleList(data.union_champion));
     html += safeBuild('union_raider', '戰地攻擊隊', () => renderSimpleList(data.union_raider));
-    html += safeBuild('union', '戰地聯盟', () => `
-        <div class="stat-cell"><div class="stat-label">聯盟等級</div><div class="stat-value">${data.union?.union_level || '無'} (Lv.${data.union?.union_level || 0})</div></div>
-    `);
 
     // 其他系統
     html += safeBuild('link_skill', '傳授技能', () => renderEquipment(data.link_skills || data.link_skill));
