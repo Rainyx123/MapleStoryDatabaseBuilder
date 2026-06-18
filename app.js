@@ -18,7 +18,7 @@ const UI_LABELS = {
     "max_hp": "HP", "max_mp": "MP", "critical_probability": "爆擊機率", 
     "critical_damage": "爆擊傷害", "damage": "傷害", 
     "boss_damage": "Boss傷害", "ignore_defense": "無視防禦", // <-- 這裡原本少了一個逗號
-    "jump": "跳躍力", "defense": "防禦力", "authentic": "AUT", "arc": "ARC", 
+    "jump": "跳躍力", "defense": "防禦力", "authentic": "AUT", 
     "max_damage": "最高屬性攻擊力", "min_damage": "最低屬性攻擊力", 
     "magic_power": "魔法攻擊力", "attack_power": "攻擊力", 
     "speed": "移動速度", "combat_power": "戰鬥力", "final_damage": "最終傷害",
