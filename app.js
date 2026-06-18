@@ -69,27 +69,15 @@ function buildTabs() {
 function renderCharacter(charData) {
     state.currentData = charData;
     const data = charData.data || {};
-    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    console.log("當前角色完整資料結構:", charData); // 重要：打開 F12 查看 Console
-    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // 定義資料來源
-    const innerData = charData.data || {}; // 這是原本的 data 層
     
-    // 關鍵修正：同時尋找根層級與 data 層級
-    const hyper_stats = charData.hyper_stats || innerData.hyper_stats;
-    const inner_ability = charData.inner_ability || innerData.inner_ability;
-    
-    let html = `
-        <div class="section">
-            <div class="section-title">${charData.name} - 角色資訊</div>
-            <div style="display:flex; gap: 20px; align-items:baseline;">
-                <h2 id="display-cp" style="color:var(--accent-light); margin:0;">
-                    戰鬥力: ${charData.combat_power?.toLocaleString() || 0}
-                </h2>
-            </div>
-        </div>
-    `;
+    // 關鍵修正：確保 hyper_stats 與 inner_ability 能從根目錄或 data 層抓取
+    const hyper_stats = charData.hyper_stats || data.hyper_stats;
+    const inner_ability = charData.inner_ability || data.inner_ability;
 
+    // 1. 初始化容器
+    const container = document.getElementById('character-content');
+    
+    // 2. 區塊產生器工具 (防禦性)
     const safeBuild = (id, title, renderFn) => {
         try {
             const content = renderFn();
@@ -106,43 +94,46 @@ function renderCharacter(charData) {
         }
     };
 
-    // --- 既有渲染 ---
+    // 3. 組合 HTML
+    let html = `
+        <div class="section">
+            <div class="section-title">${charData.name || '角色'} - 角色資訊</div>
+            <div style="display:flex; gap: 20px; align-items:baseline;">
+                <h2 id="display-cp" style="color:var(--accent-light); margin:0;">
+                    戰鬥力: ${charData.combat_power?.toLocaleString() || 0}
+                </h2>
+            </div>
+        </div>
+    `;
+
+    // --- 渲染區塊 (按順序排列) ---
     html += safeBuild('stat', '核心屬性', () => renderStats(data.stats));
-        
-    // 2. 極限屬性 (修正版)
+    
+    // 極限屬性 (修正版)
     html += safeBuild('hyper_stats', '極限屬性', () => {
-        // 使用剛才定義好的 hyper_stats 變數
-        const list = hyper_stats; 
-        
-        if (!list || !Array.isArray(list)) return '<div class="stat-cell">無極限屬性資料</div>';
-        
-        return list.map(item => `
+        if (!hyper_stats || !Array.isArray(hyper_stats)) return '<div class="stat-cell">無資料</div>';
+        return hyper_stats.map(item => `
             <div class="stat-cell" style="width: 100%; padding: 6px 0; border-bottom: 1px solid var(--bg-3);">
-                <div style="font-weight: bold;">${item.type || '未知屬性'}</div>
-                <div style="font-size: 11px;">Lv.${item.level || 0}</div>
-                <div style="font-size: 12px; color: var(--text-3);">${item.increase || ''}</div>
+                <div style="font-weight: bold;">${item.stat_type || '未知屬性'}</div>
+                <div style="font-size: 11px;">Lv.${item.stat_level || 0}</div>
+                <div style="font-size: 12px; color: var(--text-3);">${item.stat_increase || ''}</div>
             </div>
         `).join('');
     });
-    
-    // 3. 內在潛能 (修正版)
+
+    // 內在潛能 (修正版)
     html += safeBuild('inner_ability', '內在潛能', () => {
-        // 使用剛才定義好的 inner_ability 變數
-        const ab = inner_ability;
-        if (!ab || !ab.abilities) return '<div class="stat-cell">無內在潛能資料</div>';
-        
-        let content = `<div style="margin-bottom: 5px; font-size: 12px; color: var(--accent);">等級: ${ab.grade || '未知'}</div>`;
-        
-        content += ab.abilities.map(val => `
+        if (!inner_ability || !inner_ability.ability_info) return '<div class="stat-cell">無資料</div>';
+        let content = `<div style="margin-bottom: 5px; font-size: 12px; color: var(--accent);">等級: ${inner_ability.ability_grade || '未知'}</div>`;
+        content += inner_ability.ability_info.map(val => `
             <div class="stat-cell" style="width: 100%; padding: 6px 0; border-bottom: 1px solid var(--bg-3);">
-                <div class="stat-value">${val || '無說明'}</div>
+                <div class="stat-value">${val.ability_value || '無說明'}</div>
             </div>
         `).join('');
-        
         return content;
     });
 
-    // 6. 聯盟神器 (保持上次精簡過的樣式)
+    // 聯盟相關區塊
     html += safeBuild('union_artifact', '聯盟神器', () => {
         const effects = data.union_artifact?.union_artifact_effect;
         if (!effects || !Array.isArray(effects)) return '';
@@ -154,18 +145,13 @@ function renderCharacter(charData) {
         `).join('');
     });
 
-    // 7. 聯盟冠軍 (現在使用定義好的 renderSimpleList)
     html += safeBuild('union_champion', '聯盟冠軍', () => renderSimpleList(data.union_champion));
-    
-    // 8. 戰地攻擊隊 (現在使用定義好的 renderSimpleList)
     html += safeBuild('union_raider', '戰地攻擊隊', () => renderSimpleList(data.union_raider));
-
-    // --- 補回：戰地聯盟相關 ---
     html += safeBuild('union', '戰地聯盟', () => `
-        <div class="stat-cell"><div class="stat-label">聯盟等級</div><div class="stat-value">${data.union?.grade || '無'} (Lv.${data.union?.level || 0})</div></div>
+        <div class="stat-cell"><div class="stat-label">聯盟等級</div><div class="stat-value">${data.union?.union_level || '無'} (Lv.${data.union?.union_level || 0})</div></div>
     `);
 
-    // --- 其餘渲染 ---
+    // 其他系統
     html += safeBuild('link_skill', '傳授技能', () => renderEquipment(data.link_skills || data.link_skill));
     html += safeBuild('hexamatrix', '六轉 HEXA', () => renderEquipment(data.hexa_cores || data.hexamatrix?.character_hexa_core_equipment));
     html += safeBuild('vmatrix', '五轉 V-Matrix', () => renderEquipment(data.v_cores || data.vmatrix?.character_v_core_equipment));
@@ -180,9 +166,11 @@ function renderCharacter(charData) {
         return androidData && Object.keys(androidData).length > 0 ? renderEquipment([androidData]) : '';
     });
     html += safeBuild('beauty_equipment', '美容美髮', () => renderStats(data.beauty || data.beauty_equipment));
+
+    // 4. 輸出到畫面
+    container.innerHTML = html;
     
-    document.getElementById('character-content').innerHTML = html;
-    
+    // 5. 觸發後續功能
     if (state.isPeakMode) fetchPeakPower(charData.name);
     applySectionToggles();
 }
@@ -257,6 +245,38 @@ function renderEquipment(equipData) {
             </div>
         `;
     }).join('');
+}
+
+// ================================================================
+// 補充：聯盟系列渲染模組
+// ================================================================
+
+function renderUnionArtifact(data) {
+    if (!data.union_artifact || !data.union_artifact.union_artifact_list) return '';
+    let html = `<div class="section-title">聯盟神器</div><div class="grid-system">`;
+    // 簡單渲染邏輯
+    data.union_artifact.union_artifact_list.forEach(item => {
+        html += `<div class="stat-cell"><div class="stat-label">${item.name}</div><div class="stat-value">Lv.${item.level}</div></div>`;
+    });
+    return html + `</div>`;
+}
+
+function renderUnionChampion(data) {
+    if (!data.union_champion || !data.union_champion.union_champion_list) return '';
+    let html = `<div class="section-title">聯盟冠軍</div><div class="grid-system">`;
+    data.union_champion.union_champion_list.forEach(item => {
+        html += `<div class="stat-cell"><div class="stat-label">${item.name}</div><div class="stat-value">${item.level}</div></div>`;
+    });
+    return html + `</div>`;
+}
+
+function renderUnionRaider(data) {
+    if (!data.union_raider || !data.union_raider.union_raider_list) return '';
+    let html = `<div class="section-title">戰地攻擊隊</div><div class="grid-system">`;
+    data.union_raider.union_raider_list.forEach(item => {
+        html += `<div class="stat-cell"><div class="stat-label">${item.name}</div><div class="stat-value">${item.level}</div></div>`;
+    });
+    return html + `</div>`;
 }
 
 // ================================================================
