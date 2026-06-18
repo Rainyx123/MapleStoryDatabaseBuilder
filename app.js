@@ -190,24 +190,30 @@ function renderCharacter(charData) {
     if (state.isPeakMode) fetchPeakPower(charData.name);
     applySectionToggles();
 }
-// 渲染屬性用 (白名單過濾 + 中文標籤替換版)
-function renderStats(statsObj) {
+/**
+ * 渲染屬性用 (動態欄位數 + 白名單過濾)
+ * @param {Object} statsObj - 屬性資料物件
+ * @param {number} colCount - 設定顯示幾欄 (預設 4 欄)
+ */
+function renderStats(statsObj, colCount = 4) {
     if (!statsObj || Object.keys(statsObj).length === 0) return '';
     
-    // 改為只跑 UI_LABELS 裡面有定義的項目 (這就是您的白名單)
-    return Object.keys(UI_LABELS).map(key => {
+    // 產生 HTML 字串
+    const contentHtml = Object.keys(UI_LABELS).map(key => {
         const value = statsObj[key];
-        
-        // 如果 API 資料裡沒有這個項目，就跳過不渲染
+        // 若該屬性在 API 資料中不存在，則不渲染
         if (value === undefined) return ''; 
 
         return `
         <div class="stat-cell">
-            <div class="stat-label">${getLabel(key)}</div>
+            <div class="stat-label">${UI_LABELS[key]}</div>
             <div class="stat-value">${value || '-'}</div>
         </div>
         `;
     }).join('');
+
+    // 將內容包入容器，並加上欄位數 Class
+    return `<div class="stat-container cols-${colCount}">${contentHtml}</div>`;
 }
 
 // 渲染通用陣列列表 (用於聯盟冠軍、戰地攻擊隊等)
