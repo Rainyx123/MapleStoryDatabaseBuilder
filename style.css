@@ -179,35 +179,49 @@ button:hover { background: var(--bg-hover); }
 /* ---- 7. 工具類 (Utilities) ---- */
 .hidden { display: none !important; }
 
-.stat-container {
+/* --- 核心屬性動態多欄位佈局 --- */
+
+/* 關鍵1：突破外層 grid-system 的單格限制，強制佔滿整寬 */
+.grid-system .stat-container {
+    grid-column: 1 / -1; 
     display: grid;
-    /* 強制設定 4 等分，且忽略內容寬度 */
-    grid-template-columns: repeat(4, minmax(0, 1fr)); 
-    gap: 10px;
-    width: 100%;       /* 確保容器寬度填滿 */
-    box-sizing: border-box; /* 避免 padding 撐開寬度 */
-    margin-top: 10px;
+    gap: 8px;
+    width: 100%;
 }
 
-/* 確保每個 cell 填滿 Grid 欄位 */
-.stat-cell {
-    width: 100%;
-    min-width: 0; /* 關鍵：防止內容（如長名稱）撐開欄位 */
+/* 關鍵2：指定四欄均分 */
+.cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.cols-5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.cols-6 { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+
+/* 關鍵3：把原本漂亮的外框、背景色與間距補回來 */
+.stat-container .stat-cell {
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: var(--r-sm);
+    padding: 8px 10px;
     display: flex;
     flex-direction: column;
-    align-items: center; /* 如果想要置中，這裡設定 center */
-    text-align: center;
+    justify-content: center;
+    width: 100%;
+    box-sizing: border-box;
 }
 
-/* 欄位數量設定 */
-.cols-4 { grid-template-columns: repeat(4, 1fr); }
-.cols-5 { grid-template-columns: repeat(5, 1fr); }
-.cols-6 { grid-template-columns: repeat(6, 1fr); }
-
-/* RWD 回應式調整：在小螢幕時自動降級，避免跑版 */
-@media (max-width: 900px) {
-    .cols-5, .cols-6 { grid-template-columns: repeat(3, 1fr); }
+/* 確保內部文字樣式正常 */
+.stat-container .stat-label {
+    font-size: var(--fs-xs, 11px);
+    color: var(--text-4);
+    margin-bottom: 4px;
 }
+
+.stat-container .stat-value {
+    font-size: var(--fs-sm, 13px);
+    font-weight: bold;
+    color: var(--text-2);
+    word-break: break-all;
+}
+
+/* RWD：手機版自動變 2 欄 */
 @media (max-width: 600px) {
-    .stat-container { grid-template-columns: repeat(2, 1fr) !important; }
+    .stat-container { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
 }
