@@ -207,8 +207,7 @@ function renderStats(statsObj, colCount = 4) {
 
         return `
         <div class="stat-cell">
-            <div class="stat-label">${UI_LABELS[key]}</div>
-            <div class="stat-value">${value || '-'}</div>
+            <div class="stat-label">${UI_LABELS[key]}</div><div class="stat-value">${value || '-'}</div>
         </div>
         `;
     }).join('');
