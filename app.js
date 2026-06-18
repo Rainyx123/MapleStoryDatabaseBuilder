@@ -195,13 +195,14 @@ function renderCharacter(charData) {
  * @param {Object} statsObj - 屬性資料物件
  * @param {number} colCount - 設定顯示幾欄 (預設 4 欄)
  */
+// 渲染屬性用 (動態欄位數 + 白名單過濾)
 function renderStats(statsObj, colCount = 4) {
     if (!statsObj || Object.keys(statsObj).length === 0) return '';
     
-    // 產生 HTML 字串
+    // 透過 UI_LABELS 順序產出每一格
     const contentHtml = Object.keys(UI_LABELS).map(key => {
         const value = statsObj[key];
-        // 若該屬性在 API 資料中不存在，則不渲染
+        // 遇到 API 沒給的屬性就跳過
         if (value === undefined) return ''; 
 
         return `
@@ -212,10 +213,9 @@ function renderStats(statsObj, colCount = 4) {
         `;
     }).join('');
 
-    // 將內容包入容器，並加上欄位數 Class
+    // 包上外層容器，這個容器會突破 grid-system 佔滿整行
     return `<div class="stat-container cols-${colCount}">${contentHtml}</div>`;
 }
-
 // 渲染通用陣列列表 (用於聯盟冠軍、戰地攻擊隊等)
 function renderSimpleList(list) {
     if (!list || !Array.isArray(list) || list.length === 0) return '';
