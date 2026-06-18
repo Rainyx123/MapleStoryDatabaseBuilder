@@ -144,10 +144,9 @@ function renderCharacter(charData) {
     
     // --- 診斷用渲染：戰地聯盟 ---
     html += safeBuild('union', '戰地聯盟', () => {
-        if (!data.union) return '無資料';
-        console.log("戰地聯盟原始資料:", data.union); // <--- 點開 Console 查看這行
-        return `<div>${JSON.stringify(data.union)}</div>`;
-    });
+        if (!data.union || !data.union.grade) return '';
+        return `${data.union.grade.split(' ')[0]} ${data.union.level}`;
+}),
 
     // 聯盟相關區塊
     html += safeBuild('union_artifact', '聯盟神器', () => {
