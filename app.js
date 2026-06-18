@@ -101,27 +101,32 @@ function renderCharacter(charData) {
     const artifactHtml = typeof renderArtifact === 'function' ? renderArtifact(data.union_artifact) : '';
 
    // ================================================================
-    // 開始依照 12 欄網格系統組裝畫面 (已修復 ID 對應)
+    // 開始依照 12 欄網格系統組裝畫面 (已修復 ID 對應與變數名稱衝突)
     // ================================================================
     
-    // 💡 修正 1：對齊 HTML 的正確 ID 'character-content'
-    const container = document.getElementById('character-content'); 
-    if (!container) return;
+    // 💡 修正 1：換成不會衝突的變數名稱 charContainer
+    const charContainer = document.getElementById('character-content'); 
+    if (!charContainer) return;
 
-    // 💡 修正 2：對齊設定面板的 Checkbox Value，這樣開關才會生效！
     let html = `
         <div class="row-12" style="margin-bottom: 20px;">
             <div class="col-3">${buildSection('basic', '角色資訊', basicHtml)}</div>
-            <div class="col-5">${buildSection('stat', '核心屬性', statsHtml)}</div> <div class="col-2">${buildSection('hyper_stat', '極限屬性', hyperHtml)}</div> <div class="col-2">${buildSection('ability', '內在潛能', abilityHtml)}</div> </div>
+            <div class="col-5">${buildSection('stat', '核心屬性', statsHtml)}</div>
+            <div class="col-2">${buildSection('hyper_stat', '極限屬性', hyperHtml)}</div>
+            <div class="col-2">${buildSection('ability', '內在潛能', abilityHtml)}</div>
+        </div>
 
         <div class="row-12" style="margin-bottom: 20px;">
             <div class="col-6">
-                ${buildSection('vmatrix', '五轉 V-Matrix', vmatrixHtml)} </div>
+                ${buildSection('vmatrix', '五轉 V-Matrix', vmatrixHtml)}
+            </div>
             <div class="col-6" style="display: flex; flex-direction: column; gap: 15px;">
                 <div style="flex: 1;">
-                    ${buildSection('link_skill', '傳授技能', linkHtml)} </div>
+                    ${buildSection('link_skill', '傳授技能', linkHtml)}
+                </div>
                 <div style="flex: 1;">
-                    ${buildSection('hexamatrix', '六轉 HEXA', hexamatrixHtml)} </div>
+                    ${buildSection('hexamatrix', '六轉 HEXA', hexamatrixHtml)}
+                </div>
             </div>
         </div>
 
@@ -133,15 +138,20 @@ function renderCharacter(charData) {
         </div>
 
         <div class="row-12" style="margin-bottom: 20px;">
-            <div class="col-6">${buildSection('equipment', '裝備系統', equipHtml)}</div> <div class="col-6">${buildSection('symbol', '符文系統 (ARC/AUT)', symbolHtml)}</div> </div>
+            <div class="col-6">${buildSection('equipment', '裝備系統', equipHtml)}</div>
+            <div class="col-6">${buildSection('symbol', '符文系統 (ARC/AUT)', symbolHtml)}</div>
+        </div>
         
         <div class="row-12" style="margin-bottom: 20px;">
-            <div class="col-3">${buildSection('union', '戰地聯盟', unionHtml)}</div> <div class="col-3">${buildSection('union_raider', '戰地攻擊隊', raiderHtml)}</div>
+            <div class="col-3">${buildSection('union', '戰地聯盟', unionHtml)}</div>
+            <div class="col-3">${buildSection('union_raider', '戰地攻擊隊', raiderHtml)}</div>
             <div class="col-3">${buildSection('union_champion', '聯盟冠軍', championHtml)}</div>
-            <div class="col-3">${buildSection('artifact', '聯盟神器', artifactHtml)}</div> </div>
+            <div class="col-3">${buildSection('artifact', '聯盟神器', artifactHtml)}</div>
+        </div>
     `;
 
-    container.innerHTML = html;
+    // 💡 修正 2：將 html 寫入 charContainer
+    charContainer.innerHTML = html;
     
     // 套用區塊顯示/隱藏設定
     if (typeof applySectionToggles === 'function') applySectionToggles();
