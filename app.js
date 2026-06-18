@@ -145,7 +145,7 @@ function renderCharacter(charData) {
     // --- 診斷用渲染：戰地聯盟 ---
     html += safeBuild('union', '戰地聯盟', () => {
         if (!data.union || !data.union.grade) return '';
-        return `${data.union.grade.split(' ')[0]} ${data.union.level}`;
+        return `${data.union.level}`;
 }),
 
     // 聯盟相關區塊
