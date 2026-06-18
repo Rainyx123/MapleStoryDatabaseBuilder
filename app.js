@@ -22,7 +22,18 @@ const UI_LABELS = {
     "ignore_defense": "無視防禦率"
     // 如有其他屬性可依此類推新增
 };
-
+const CORE_STAT_CONFIG = {
+    "combat_power": "戰鬥力",
+    "str": "力量 (STR)",         // 您可以自由修改後面的中文標籤
+    "dex": "敏捷 (DEX)",
+    "int": "智力 (INT)",
+    "luk": "幸運 (LUK)",
+    "max_hp": "最大生命值",
+    "critical_probability": "爆擊率",
+    "boss_damage": "BOSS 傷害",
+    "ignore_defense": "無視防禦率"
+    // 如果有不想顯示的項目（例如 max_mp 或 damage），直接不寫在這裡即可！
+};
 // 渲染輔助函式
 function getLabel(key) {
     return UI_LABELS[key] || key; // 如果找不到對應名稱，預設顯示原本的 key
