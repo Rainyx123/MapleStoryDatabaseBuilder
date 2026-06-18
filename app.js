@@ -20,7 +20,6 @@ const UI_LABELS = {
     "damage": "傷害",
     "boss_damage": "BOSS 傷害",
     "ignore_defense": "無視防禦率"
-    "arc": "ARC"
     // 如有其他屬性可依此類推新增
 };
 
