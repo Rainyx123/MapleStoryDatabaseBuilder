@@ -395,14 +395,45 @@ function applySectionToggles() {
 
 function showTooltip(itemData, event) {
     const tooltip = document.getElementById('tooltip');
-    // 簡易 Tooltip 渲染範例 (可依需求擴充潛能、星火等)
-    tooltip.innerHTML = `
-        <div style="font-weight:bold; color:var(--accent-light); margin-bottom:5px;">${itemData.item_name || itemData.symbol_name}</div>
-        <div style="font-size:11px; color:var(--text-3);">${itemData.potential_option_1 || ''}</div>
-        <div style="font-size:11px; color:var(--text-3);">${itemData.potential_option_2 || ''}</div>
-        <div style="font-size:11px; color:var(--text-3);">${itemData.potential_option_3 || ''}</div>
+    if (!tooltip) return;
+
+    // 1. 建立 Tooltip 內容
+    let html = `
+        <div style="font-weight:bold; color:var(--accent-light); margin-bottom:5px;">
+            ${itemData.item_name || itemData.symbol_name || '未知物品'}
+        </div>
     `;
-    tooltip.style.left = `${event.clientX + 15}px`;
-    tooltip.style.top = `${event.clientY + 15}px`;
+
+    // 2. 防禦性渲染潛能 (如果有潛能才加入)
+    if (itemData.potential_option_1) {
+        html += `<div style="font-size:11px; color:#fff;">潛能：${itemData.potential_option_1}</div>`;
+    }
+    if (itemData.potential_option_2) {
+        html += `<div style="font-size:11px; color:#fff;">${itemData.potential_option_2}</div>`;
+    }
+    if (itemData.potential_option_3) {
+        html += `<div style="font-size:11px; color:#fff;">${itemData.potential_option_3}</div>`;
+    }
+
+    // 3. 渲染
+    tooltip.innerHTML = html;
+
+    // 4. 定位 (增加邊界判斷，避免 Tooltip 跑出螢幕外)
+    let x = event.clientX + 15;
+    let y = event.clientY + 15;
+    
+    // 簡單的邊界防呆
+    if (x + tooltip.offsetWidth > window.innerWidth) x = event.clientX - tooltip.offsetWidth - 15;
+    if (y + tooltip.offsetHeight > window.innerHeight) y = event.clientY - tooltip.offsetHeight - 15;
+
+    tooltip.style.left = `${x}px`;
+    tooltip.style.top = `${y}px`;
     tooltip.classList.remove('hidden');
 }
+
+// 別忘了加上隱藏 Tooltip 的事件
+document.addEventListener('mouseout', (e) => {
+    if (e.target.classList.contains('item-icon')) { // 假設您的物品都有這個 class
+        document.getElementById('tooltip').classList.add('hidden');
+    }
+});
