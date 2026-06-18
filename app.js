@@ -47,14 +47,13 @@ function buildTabs() {
 }
 
 // ================================================================
-// 2. 核心渲染引擎 (全區塊 + 404防禦版本)
+// 2. 核心渲染引擎 (究極防禦 + 智能解讀版)
 // ================================================================
 
 function renderCharacter(charData) {
     state.currentData = charData;
     const data = charData.data || {};
     
-    // 渲染上方基本資訊與戰力
     let html = `
         <div class="section">
             <div class="section-title">${charData.name} - 角色資訊</div>
@@ -66,77 +65,91 @@ function renderCharacter(charData) {
         </div>
     `;
 
-    // 1. 核心屬性 (Object)
-    html += buildSection('stat', '核心屬性', renderStats(data.stats));
+    // 【升級1】防護罩：確保單一區塊出錯時，不會拖垮整個網頁
+    const safeBuild = (id, title, renderFn) => {
+        try {
+            const content = renderFn();
+            if (!content) return '';
+            return `
+                <div id="sec-${id}" class="section" data-section="${id}">
+                    <div class="section-title">${title}</div>
+                    <div class="grid-system">${content}</div>
+                </div>
+            `;
+        } catch (err) {
+            console.error(`渲染 [${title}] 時發生錯誤:`, err);
+            return `
+                <div id="sec-${id}" class="section" data-section="${id}">
+                    <div class="section-title">${title}</div>
+                    <div style="color:#ff7a50; font-size:12px; padding:10px;">資料格式異常，跳過渲染</div>
+                </div>
+            `;
+        }
+    };
+
+    // 1. 核心屬性
+    html += safeBuild('stat', '核心屬性', () => renderStats(data.stats));
     
-    // 2. 極限屬性 (Array)
-    html += buildSection('hyper_stat', '極限屬性', renderSimpleList(data.hyper_stats, 'stat_type', 'stat_point', '等級'));
+    // 2. 極限屬性 (改用智能渲染，自動印出所有欄位)
+    html += safeBuild('hyper_stat', '極限屬性', () => renderSmartList(data.hyper_stats || data.hyper_stat?.hyper_stat_preset_1));
     
-    // 3. 內在潛能 (Array)
-    html += buildSection('ability', '內在潛能', renderSimpleList(data.inner_ability?.abilities, 'ability_value', 'ability_grade', ''));
+    // 3. 內在潛能 (改用智能渲染，自動印出所有欄位)
+    html += safeBuild('ability', '內在潛能', () => renderSmartList(data.inner_ability?.abilities || data.ability?.ability_info || data.inner_ability));
     
-    // 4. 裝備 (讀取 preset_0 第一套裝備)
-    html += buildSection('equipment', '裝備', renderEquipment(data.equipment?.preset_0));
+    // 4. 裝備
+    html += safeBuild('equipment', '裝備', () => renderEquipment(data.equipment?.preset_0 || data.item_equipment?.item_equipment));
     
     // 5. 符文系統
-    html += buildSection('symbol', '符文系統', renderEquipment(data.symbols));
-
-    // --- 以下為補回的遺失區塊 ---
+    html += safeBuild('symbol', '符文系統', () => renderEquipment(data.symbols || data.symbol_equipment?.symbol));
 
     // 6. 聯盟神器
-    html += buildSection('union_artifact', '聯盟神器', renderSimpleList(data.union_artifact?.effects, 'name', 'level', 'Lv.'));
+    html += safeBuild('union_artifact', '聯盟神器', () => renderSmartList(data.union_artifact?.effects || data.union_artifact?.union_artifact_effect));
 
-    // 7. 戰地聯盟 (單一物件，改用自訂 HTML 渲染)
-    if (data.union) {
-        html += buildSection('union', '戰地聯盟', `
+    // 7. 戰地聯盟
+    html += safeBuild('union', '戰地聯盟', () => {
+        if (!data.union) return '';
+        return `
             <div class="stat-cell">
                 <div class="stat-label">聯盟等級</div>
                 <div class="stat-value" style="font-size:14px;">
                     ${data.union.grade || ''} (Lv.${data.union.level || 0})
                 </div>
             </div>
-        `);
-    }
+        `;
+    });
 
     // 8. 傳授技能
-    html += buildSection('link_skill', '傳授技能', renderEquipment(data.link_skills));
+    html += safeBuild('link_skill', '傳授技能', () => renderEquipment(data.link_skills || data.link_skill));
 
     // 9. 六轉 HEXA
-    html += buildSection('hexamatrix', '六轉 HEXA', renderEquipment(data.hexa_cores));
+    html += safeBuild('hexamatrix', '六轉 HEXA', () => renderEquipment(data.hexa_cores || data.hexamatrix?.character_hexa_core_equipment));
 
     // 10. 五轉 V-Matrix
-    html += buildSection('vmatrix', '五轉 V-Matrix', renderEquipment(data.v_cores));
+    html += safeBuild('vmatrix', '五轉 V-Matrix', () => renderEquipment(data.v_cores || data.vmatrix?.character_v_core_equipment));
 
-    // 11. 外觀與現金道具 (通常看 preset_1 或 active_preset)
-    const activeCash = data.cash_items?.[`preset_${data.cash_items?.active_preset || 1}`] || data.cash_items?.preset_1;
-    html += buildSection('cashitem_equipment', '外觀與現金道具', renderEquipment(activeCash));
+    // 11. 外觀與現金道具
+    html += safeBuild('cashitem_equipment', '外觀與現金道具', () => {
+        const cashObj = data.cash_items || data.cashitem_equipment;
+        const presetNo = cashObj?.active_preset || 1;
+        return renderEquipment(cashObj?.[`preset_${presetNo}`] || cashObj?.cash_item_equipment_preset_1);
+    });
 
     // 12. 寵物
-    html += buildSection('pet_equipment', '寵物', renderEquipment(data.pets));
+    html += safeBuild('pet_equipment', '寵物', () => renderEquipment(data.pets || data.pet_equipment));
 
-    // 13. 機器人 (因為機器人是單一物件不是陣列，需包成陣列傳入)
-    if (data.android && Object.keys(data.android).length > 0) {
-        html += buildSection('android_equipment', '機器人', renderEquipment([data.android]));
-    }
+    // 13. 機器人
+    html += safeBuild('android_equipment', '機器人', () => {
+        const androidData = data.android || data.android_equipment;
+        return androidData && Object.keys(androidData).length > 0 ? renderEquipment([androidData]) : '';
+    });
 
-    // 14. 美容美髮 (直接用 renderStats 來渲染 Object)
-    html += buildSection('beauty_equipment', '美容美髮', renderStats(data.beauty));
+    // 14. 美容美髮
+    html += safeBuild('beauty_equipment', '美容美髮', () => renderStats(data.beauty || data.beauty_equipment));
     
     document.getElementById('character-content').innerHTML = html;
     
     if (state.isPeakMode) fetchPeakPower(charData.name);
     applySectionToggles();
-}
-
-// --- 區塊產生器工具 ---
-function buildSection(id, title, contentHtml) {
-    if (!contentHtml) return '';
-    return `
-        <div id="sec-${id}" class="section" data-section="${id}">
-            <div class="section-title">${title}</div>
-            <div class="grid-system">${contentHtml}</div>
-        </div>
-    `;
 }
 
 // 渲染屬性用 (應對 Object 格式)
@@ -150,34 +163,46 @@ function renderStats(statsObj) {
     `).join('');
 }
 
-// 渲染陣列清單用
-function renderSimpleList(list, nameKey, valKey, valPrefix) {
+// 【升級2】智能陣列渲染器：無視 Key 叫什麼，自動印出所有非空值的內容！
+function renderSmartList(list) {
     if (!list) return '';
-    return list.map(item => `
-        <div class="stat-cell">
-            <div class="stat-label">${item[nameKey] || '未知名稱'}</div>
-            <div class="stat-value">${valPrefix} ${item[valKey] || ''}</div>
-        </div>
-    `).join('');
+    const array = Array.isArray(list) ? list : [list]; // 防呆轉成陣列
+    if (array.length === 0) return '';
+
+    return array.map(item => {
+        if (!item || typeof item !== 'object') return `<div class="stat-cell"><div class="stat-value">${item || ''}</div></div>`;
+        
+        let itemHtml = '';
+        for (const [key, val] of Object.entries(item)) {
+            // 略過空值、圖片網址等不適合當文字顯示的東西
+            if (val && typeof val !== 'object' && !key.includes('icon') && !key.includes('url')) {
+                itemHtml += `<div style="font-size:10px; color:var(--text-4); margin-bottom:2px;">
+                                ${key}: <span style="font-size:12px; color:var(--text-1); font-weight:bold;">${val}</span>
+                             </div>`;
+            }
+        }
+        return `<div class="stat-cell" style="flex-direction:column; align-items:flex-start; padding:10px;">${itemHtml}</div>`;
+    }).join('');
 }
 
-// 【修復核心】渲染圖片與裝備 (防禦 404 與 Undefined)
+// 【升級3】究極防禦版裝備渲染：100% 根除 404 錯誤
 function renderEquipment(equipData) {
     if (!equipData) return '';
-    // 防呆：如果傳入的是單一物件而不是陣列，自動轉成陣列
     const equipArray = Array.isArray(equipData) ? equipData : [equipData];
 
     return equipArray.map((item, idx) => {
         if (!item) return '';
 
-        // 1. 廣泛抓取各種可能的圖示 Key
-        const iconSrc = item.item_icon || item.symbol_icon || item.icon || item.pet_icon || item.skill_icon || item.core_icon;
+        // 廣泛抓取圖示 Key
+        let iconSrc = item.item_icon || item.symbol_icon || item.icon || item.pet_icon || item.skill_icon || item.core_icon;
         
-        // 2. 只有在 iconSrc 真的有網址時，才產生 <img> 標籤，徹底根除 404 錯誤
-        const imgHtml = iconSrc ? `<img src="${iconSrc}" alt="icon" onerror="this.style.display='none'">` : '';
+        // 【嚴格審查】必須以 http 開頭，絕對拒絕字串 "undefined"
+        const imgHtml = (iconSrc && typeof iconSrc === 'string' && iconSrc.startsWith('http')) 
+            ? `<img src="${iconSrc}" alt="icon" onerror="this.style.display='none'">` 
+            : '';
 
-        // 3. 廣泛抓取名稱與部位 Key
-        const partName = item.item_equipment_part || item.symbol_name || item.part || item.slot || item.skill_name || item.core_name || '裝備/技能';
+        // 廣泛抓取名稱 Key
+        const partName = item.item_equipment_part || item.symbol_name || item.part || item.slot || item.skill_name || item.core_name || item.hexa_core_name || item.v_core_name || '裝備/技能';
         const itemName = item.item_name || item.name || item.pet_name || '';
 
         return `
