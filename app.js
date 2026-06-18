@@ -109,23 +109,34 @@ function renderCharacter(charData) {
     // --- 渲染區塊 (按順序排列) ---
     html += safeBuild('stat', '核心屬性', () => renderStats(data.stats));
     
-    // --- 診斷用渲染：極限屬性 ---
+    // --- 1. 極限屬性 (修正版) ---
     html += safeBuild('hyper_stats', '極限屬性', () => {
-        if (!hyper_stats || !Array.isArray(hyper_stats)) return '無資料';
-        console.log("極限屬性原始資料範例:", hyper_stats[0]); // <--- 點開 Console 查看這行
+        // 確保使用陣列，若無資料則顯示無資料
+        if (!hyper_stats || !Array.isArray(hyper_stats)) return '<div class="stat-cell">無資料</div>';
+        
         return hyper_stats.map(item => `
-            <div class="stat-cell">
-                <div style="font-weight: bold;">${item.stat_type || '未知'}</div>
-                <div style="font-size: 11px;">Lv.${item.stat_level || 0}</div>
+            <div class="stat-cell" style="width: 100%; padding: 6px 0; border-bottom: 1px solid var(--bg-3);">
+                <div style="font-weight: bold;">${item.type || '未知屬性'}</div>
+                <div style="font-size: 11px;">Lv.${item.level || 0}</div>
+                <div style="font-size: 12px; color: var(--text-3);">${item.increase || ''}</div>
             </div>
         `).join('');
     });
     
-    // --- 診斷用渲染：內在潛能 ---
+    // --- 2. 內在潛能 (修正版) ---
     html += safeBuild('inner_ability', '內在潛能', () => {
-        if (!inner_ability) return '無資料';
-        console.log("內在潛能原始資料:", inner_ability); // <--- 點開 Console 查看這行
-        return `<div>${JSON.stringify(inner_ability)}</div>`;
+        // 修正 Key：grade 與 abilities
+        if (!inner_ability || !inner_ability.abilities) return '<div class="stat-cell">無資料</div>';
+        
+        let content = `<div style="margin-bottom: 5px; font-size: 12px; color: var(--accent);">等級: ${inner_ability.grade || '未知'}</div>`;
+        
+        content += inner_ability.abilities.map(val => `
+            <div class="stat-cell" style="width: 100%; padding: 6px 0; border-bottom: 1px solid var(--bg-3);">
+                <div class="stat-value">${val || '無說明'}</div>
+            </div>
+        `).join('');
+        
+        return content;
     });
     
     // --- 診斷用渲染：戰地聯盟 ---
