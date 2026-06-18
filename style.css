@@ -72,6 +72,39 @@ body {
     border-color: var(--accent);
 }
 
+/* ================================================================
+   12欄網格系統 (12-Column Grid System)
+================================================================ */
+/* 網格容器 */
+.row-12 {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr); /* 將畫面均分為 12 等分 */
+    gap: 15px; /* 區塊之間的間距，可依照您的需求微調 */
+    width: 100%;
+}
+
+/* 欄寬工具類別 (Col Spans) */
+.col-1  { grid-column: span 1; }
+.col-2  { grid-column: span 2; }
+.col-3  { grid-column: span 3; }
+.col-4  { grid-column: span 4; }
+.col-5  { grid-column: span 5; }
+.col-6  { grid-column: span 6; }
+.col-7  { grid-column: span 7; }
+.col-8  { grid-column: span 8; }
+.col-9  { grid-column: span 9; }
+.col-10 { grid-column: span 10; }
+.col-11 { grid-column: span 11; }
+.col-12 { grid-column: span 12; }
+
+/* ---- 響應式佈局 (RWD) 處理 ---- */
+/* 當螢幕寬度小於平板/手機 (例如 768px) 時，強制所有區塊變成 12 欄寬 (即 100% 寬度) */
+@media (max-width: 768px) {
+    .row-12 > [class*="col-"] {
+        grid-column: span 12;
+    }
+}
+
 /* ---- 3. 區塊與元素 (Cards & Sections) ---- */
 .section {
     background: var(--bg-1);
