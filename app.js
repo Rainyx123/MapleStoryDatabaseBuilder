@@ -109,12 +109,14 @@ function renderCharacter(charData) {
     // --- 渲染區塊 (按順序排列) ---
     html += safeBuild('stat', '核心屬性', () => renderStats(data.stats));
     
-    // --- 1. 極限屬性 (修正版) ---
+    // 2. 極限屬性 (修正版)
     html += safeBuild('hyper_stats', '極限屬性', () => {
-        // 確保使用陣列，若無資料則顯示無資料
-        if (!hyper_stats || !Array.isArray(hyper_stats)) return '<div class="stat-cell">無資料</div>';
+        // 使用剛才定義好的 hyper_stats 變數
+        const list = hyper_stats; 
         
-        return hyper_stats.map(item => `
+        if (!list || !Array.isArray(list)) return '<div class="stat-cell">無極限屬性資料</div>';
+        
+        return list.map(item => `
             <div class="stat-cell" style="width: 100%; padding: 6px 0; border-bottom: 1px solid var(--bg-3);">
                 <div style="font-weight: bold;">${item.type || '未知屬性'}</div>
                 <div style="font-size: 11px;">Lv.${item.level || 0}</div>
@@ -123,14 +125,15 @@ function renderCharacter(charData) {
         `).join('');
     });
     
-    // --- 2. 內在潛能 (修正版) ---
+    // 3. 內在潛能 (修正版)
     html += safeBuild('inner_ability', '內在潛能', () => {
-        // 修正 Key：grade 與 abilities
-        if (!inner_ability || !inner_ability.abilities) return '<div class="stat-cell">無資料</div>';
+        // 使用剛才定義好的 inner_ability 變數
+        const ab = inner_ability;
+        if (!ab || !ab.abilities) return '<div class="stat-cell">無內在潛能資料</div>';
         
-        let content = `<div style="margin-bottom: 5px; font-size: 12px; color: var(--accent);">等級: ${inner_ability.grade || '未知'}</div>`;
+        let content = `<div style="margin-bottom: 5px; font-size: 12px; color: var(--accent);">等級: ${ab.grade || '未知'}</div>`;
         
-        content += inner_ability.abilities.map(val => `
+        content += ab.abilities.map(val => `
             <div class="stat-cell" style="width: 100%; padding: 6px 0; border-bottom: 1px solid var(--bg-3);">
                 <div class="stat-value">${val || '無說明'}</div>
             </div>
