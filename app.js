@@ -101,29 +101,37 @@ function renderCharacter(charData) {
 
     // --- 既有渲染 ---
     html += safeBuild('stat', '核心屬性', () => renderStats(data.stats));
-    
-   // 2. 極限屬性 (修正 undefined)
-    html += safeBuild('hyper_stat', '極限屬性', () => {
-        const list = data.hyper_stats || data.hyper_stat?.hyper_stat_preset_1;
+        
+    // 2. 極限屬性 (修正版)
+    html += safeBuild('hyper_stats', '極限屬性', () => {
+        const list = data.hyper_stats; 
         if (!list || !Array.isArray(list)) return '';
+        
         return list.map(item => `
             <div class="stat-cell" style="width: 100%; padding: 6px 0; border-bottom: 1px solid var(--bg-3);">
-                <div style="font-weight: bold;">${UI_LABELS[item.stat_type] || item.stat_type}</div>
-                <div style="font-size: 11px;">Lv.${item.stat_level}</div>
-                <div style="font-size: 12px; color: var(--text-3);">${item.stat_increase}</div>
+                <div style="font-weight: bold;">${item.type}</div>
+                <div style="font-size: 11px;">Lv.${item.level}</div>
+                <div style="font-size: 12px; color: var(--text-3);">${item.increase}</div>
             </div>
         `).join('');
     });
     
-    // 3. 內在潛能 (修正 undefined)
-    html += safeBuild('ability', '內在潛能', () => {
-        const list = data.inner_ability?.abilities || data.ability?.ability_info;
-        if (!list || !Array.isArray(list)) return '';
-        return list.map(item => `
+    // 3. 內在潛能 (修正版)
+    html += safeBuild('inner_ability', '內在潛能', () => {
+        const ab = data.inner_ability; // 物件層級
+        if (!ab || !ab.abilities) return '';
+        
+        // 顯示等級
+        let content = `<div style="margin-bottom: 5px; font-size: 12px; color: var(--accent);">等級: ${ab.grade || '未知'}</div>`;
+        
+        // 顯示潛能清單
+        content += ab.abilities.map(val => `
             <div class="stat-cell" style="width: 100%; padding: 6px 0; border-bottom: 1px solid var(--bg-3);">
-                <div class="stat-value">${item.ability_value}</div>
+                <div class="stat-value">${val}</div>
             </div>
         `).join('');
+        
+        return content;
     });
 
     // 6. 聯盟神器 (保持上次精簡過的樣式)
