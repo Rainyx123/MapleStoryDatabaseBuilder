@@ -46,10 +46,11 @@ function buildTabs() {
     ).join('');
 }
 
+// ================================================================
+// 2. 核心渲染引擎 (修正資料路徑版本)
+// ================================================================
+
 function renderCharacter(charData) {
-    /////////////////////////////////////測試後請刪除此行下方/////////////////////////////////////
-    console.log("當前渲染的角色資料:", charData); /////////////////////////////////////測試行/////////////////////////////////////
-    /////////////////////////////////////測試後請刪除此行上方/////////////////////////////////////
     state.currentData = charData;
     const data = charData.data || {};
     
@@ -65,19 +66,25 @@ function renderCharacter(charData) {
         </div>
     `;
 
-    // 動態組裝各大區塊 (使用 Template Literals 與 Optional Chaining)
-    html += buildSection('stat', '核心屬性', renderStats(data.stat?.final_stat));
-    html += buildSection('hyper_stat', '極限屬性', renderSimpleList(data.hyper_stat?.hyper_stat_preset_1, 'stat_type', 'stat_point', '等級'));
-    html += buildSection('ability', '內在潛能', renderSimpleList(data.ability?.ability_info, 'ability_value', 'ability_grade', ''));
-    html += buildSection('equipment', '裝備', renderEquipment(data.item_equipment?.item_equipment));
-    html += buildSection('symbol', '符文系統', renderEquipment(data.symbol_equipment?.symbol));
+    // 【修正重點1】這裡的路徑已完全對應您 Console 印出的結構
+    // 1. 核心屬性：傳入 data.stats (Object)
+    html += buildSection('stat', '核心屬性', renderStats(data.stats));
+    
+    // 2. 極限屬性：傳入 data.hyper_stats (Array)
+    html += buildSection('hyper_stat', '極限屬性', renderSimpleList(data.hyper_stats, 'stat_type', 'stat_point', '等級'));
+    
+    // 3. 內在潛能：傳入 data.inner_ability.abilities (Array)
+    html += buildSection('ability', '內在潛能', renderSimpleList(data.inner_ability?.abilities, 'ability_value', 'ability_grade', ''));
+    
+    // 4. 裝備：傳入 data.equipment.preset_0 (Array，預設讀取第一盤裝備)
+    html += buildSection('equipment', '裝備', renderEquipment(data.equipment?.preset_0));
+    
+    // 5. 符文系統：傳入 data.symbols (Array)
+    html += buildSection('symbol', '符文系統', renderEquipment(data.symbols));
     
     document.getElementById('character-content').innerHTML = html;
     
-    // 恢復 Peak Toggle 狀態（若切換角色時仍打勾，自動查詢）
     if (state.isPeakMode) fetchPeakPower(charData.name);
-    
-    // 套用區塊顯示/隱藏設定
     applySectionToggles();
 }
 
@@ -92,12 +99,14 @@ function buildSection(id, title, contentHtml) {
     `;
 }
 
-function renderStats(statsArray) {
-    if (!statsArray) return '';
-    return statsArray.map(s => `
+// 【修正重點2】因為現在的 data.stats 是一個 Object (如 {HP: '70326', DEX: '2453'}),
+// 而不是 Array，所以我們必須用 Object.entries 來將它轉為迴圈渲染。
+function renderStats(statsObj) {
+    if (!statsObj || Object.keys(statsObj).length === 0) return '';
+    return Object.entries(statsObj).map(([key, value]) => `
         <div class="stat-cell">
-            <div class="stat-label">${s.stat_name}</div>
-            <div class="stat-value">${s.stat_value}</div>
+            <div class="stat-label">${key}</div>
+            <div class="stat-value">${value}</div>
         </div>
     `).join('');
 }
