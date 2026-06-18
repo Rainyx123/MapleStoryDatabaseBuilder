@@ -96,14 +96,6 @@ body {
     gap: 10px;
 }
 
-.stat-cell {
-    background: var(--bg-2);
-    padding: 8px;
-    border-radius: var(--r-sm);
-    display: flex;
-    flex-direction: column;
-}
-
 .stat-label { font-size: var(--fs-xs); color: var(--text-4); }
 .stat-value { font-size: var(--fs-sm); color: var(--text-1); font-weight: bold; }
 
@@ -187,11 +179,24 @@ button:hover { background: var(--bg-hover); }
 /* ---- 7. 工具類 (Utilities) ---- */
 .hidden { display: none !important; }
 
-/* 核心屬性佈局容器 */
 .stat-container {
     display: grid;
-    gap: 8px; /* 統一欄位間距 */
+    /* 強制設定 4 等分，且忽略內容寬度 */
+    grid-template-columns: repeat(4, minmax(0, 1fr)); 
+    gap: 10px;
+    width: 100%;       /* 確保容器寬度填滿 */
+    box-sizing: border-box; /* 避免 padding 撐開寬度 */
     margin-top: 10px;
+}
+
+/* 確保每個 cell 填滿 Grid 欄位 */
+.stat-cell {
+    width: 100%;
+    min-width: 0; /* 關鍵：防止內容（如長名稱）撐開欄位 */
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* 如果想要置中，這裡設定 center */
+    text-align: center;
 }
 
 /* 欄位數量設定 */
