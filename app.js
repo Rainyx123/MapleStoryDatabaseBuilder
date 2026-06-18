@@ -70,8 +70,15 @@ function renderCharacter(charData) {
     state.currentData = charData;
     const data = charData.data || {};
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    console.log("當前角色完整資料結構:", data); // 重要：打開 F12 查看 Console
+    console.log("當前角色完整資料結構:", charData); // 重要：打開 F12 查看 Console
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // 定義資料來源
+    const innerData = charData.data || {}; // 這是原本的 data 層
+    
+    // 關鍵修正：同時尋找根層級與 data 層級
+    const hyper_stats = charData.hyper_stats || innerData.hyper_stats;
+    const inner_ability = charData.inner_ability || innerData.inner_ability;
+    
     let html = `
         <div class="section">
             <div class="section-title">${charData.name} - 角色資訊</div>
@@ -104,30 +111,31 @@ function renderCharacter(charData) {
         
     // 2. 極限屬性 (修正版)
     html += safeBuild('hyper_stats', '極限屬性', () => {
-        const list = data.hyper_stats; 
-        if (!list || !Array.isArray(list)) return '';
+        // 使用剛才定義好的 hyper_stats 變數
+        const list = hyper_stats; 
+        
+        if (!list || !Array.isArray(list)) return '<div class="stat-cell">無極限屬性資料</div>';
         
         return list.map(item => `
             <div class="stat-cell" style="width: 100%; padding: 6px 0; border-bottom: 1px solid var(--bg-3);">
-                <div style="font-weight: bold;">${item.type}</div>
-                <div style="font-size: 11px;">Lv.${item.level}</div>
-                <div style="font-size: 12px; color: var(--text-3);">${item.increase}</div>
+                <div style="font-weight: bold;">${item.type || '未知屬性'}</div>
+                <div style="font-size: 11px;">Lv.${item.level || 0}</div>
+                <div style="font-size: 12px; color: var(--text-3);">${item.increase || ''}</div>
             </div>
         `).join('');
     });
     
     // 3. 內在潛能 (修正版)
     html += safeBuild('inner_ability', '內在潛能', () => {
-        const ab = data.inner_ability; // 物件層級
-        if (!ab || !ab.abilities) return '';
+        // 使用剛才定義好的 inner_ability 變數
+        const ab = inner_ability;
+        if (!ab || !ab.abilities) return '<div class="stat-cell">無內在潛能資料</div>';
         
-        // 顯示等級
         let content = `<div style="margin-bottom: 5px; font-size: 12px; color: var(--accent);">等級: ${ab.grade || '未知'}</div>`;
         
-        // 顯示潛能清單
         content += ab.abilities.map(val => `
             <div class="stat-cell" style="width: 100%; padding: 6px 0; border-bottom: 1px solid var(--bg-3);">
-                <div class="stat-value">${val}</div>
+                <div class="stat-value">${val || '無說明'}</div>
             </div>
         `).join('');
         
