@@ -1,14 +1,17 @@
 // ================================================================
-// 楓之谷角色資料庫 — 前端主程式 v4（瘦身重構版）
+// 楓之谷角色資料庫 — 前端主程式 v5（角色與裝備棋盤排版版）
 //
-// 變更摘要（對應 reply06170858.md 決議）：
-//   A1：三段重複的 section-header 收合監聽器，整併為單一版本
-//   A2：initModals / initSettings / initQuery 只在 init() 內呼叫一次
-//   B5：「顯示7日最高戰力」checkbox 接上 /api/peak，顯示在戰鬥力格旁
-//   C12：裝備資料不再塞進 data-item 屬性，改用記憶體 Map 對照
-//   C14：alert() 全部換成右上角 toast
-//   C15：移除除錯用 console.log，只保留必要的 console.error
-//   C16：移除沒被呼叫的 statCell()
+// 本次變更摘要：
+//   - 「角色資訊」「裝備」「內在潛能」「極限屬性」4 個獨立卡片，
+//     整併為「角色與裝備｜極限屬性｜內在潛能」三欄並排的角色總覽區塊
+//     （HTML 結構變更見 index.html，三者仍各自保留獨立收合功能）。
+//   - 「核心屬性」整個移到角色總覽下方，渲染邏輯（renderStats）完全不變。
+//   - renderEquipment() 改寫：裝備不再用「有資料才顯示」的流動清單，
+//     而是固定 30 格棋盤式版位（DOLL_SLOTS），角色圖直接置中顯示在
+//     裝備尚未填滿的中央 12 格區域；沒有資料的格位顯示空格（沿用既有
+//     .empty-slot 樣式），「拼圖」格為 Nexon API 尚未提供的保留版位。
+//   - initTooltip() 的卡片判斷選擇器，由舊的 .equip-card 改成新的
+//     .doll-slot（現金道具區塊仍使用 .equip-card，彼此不衝突）。
 // ================================================================
 
 const API_BASE = 'https://maple-story-database-builder.vercel.app'; // ★ 換成你的 Vercel 網址
@@ -24,6 +27,37 @@ let currentIdx = 0;
 // 裝備資料對照表：DOM 只放 data-eq-id，實際資料存在這裡（取代塞進 data-item 屬性）
 const equipDataStore = new Map();
 let equipIdCounter = 0;
+
+// ----------------------------------------------------------------
+// 裝備棋盤格位定義（對應 排版.md 的版面規劃）
+//   area：CSS grid-area 名稱（見 style.css 的 .equip-doll-grid）
+//   slot：對應 parseEquipList() 產出的中文 slot 名稱，用來在裝備陣列中查找資料
+//   slot 為 '__android__'：機器人格位，資料來源是 data.android（機器人本體），
+//                          而非裝備陣列（裝備陣列裡的「心臟」是另一個獨立格位）
+//   slot 為 null：「拼圖」— Nexon API 目前尚未提供對應資料，先保留版位與功能
+// ----------------------------------------------------------------
+const DOLL_SLOTS = [
+  { area: 'ring1',     slot: '戒指1' }, { area: 'face',  slot: '臉飾' },
+  { area: 'ring2',     slot: '戒指2' }, { area: 'eye',   slot: '眼飾' },
+  { area: 'ring3',     slot: '戒指3' }, { area: 'ear',   slot: '耳環' },
+  { area: 'ring4',     slot: '戒指4' }, { area: 'neck1', slot: '墜飾1' },
+  { area: 'belt',      slot: '腰帶' },  { area: 'neck2', slot: '墜飾2' },
+  { area: 'pocket',    slot: '口袋' },  { area: 'puzzle', slot: null },
+  { area: 'hat',       slot: '帽子' },  { area: 'cape',  slot: '披風' },
+  { area: 'top',       slot: '上衣' },  { area: 'glove', slot: '手套' },
+  { area: 'pants',     slot: '褲/裙' }, { area: 'shoe',  slot: '鞋子' },
+  { area: 'shoulder',  slot: '肩飾' },  { area: 'medal', slot: '勳章' },
+  { area: 'weapon',    slot: '武器' },
+  { area: 'subweapon', slot: '副武' },
+  { area: 'badge',     slot: '徽章' },
+  { area: 'totem1',    slot: '圖騰1' },
+  { area: 'totem2',    slot: '圖騰2' },
+  { area: 'totem3',    slot: '圖騰3' },
+  { area: 'mecha',     slot: '__android__' },
+  { area: 'heart',     slot: '心臟' },
+  { area: 'gem',       slot: '寶玉' },
+  { area: 'chest',     slot: '胸章' },
+];
 
 // ================================================================
 // 1. 系統初始化
@@ -98,18 +132,16 @@ function renderList(containerId, dataArray, renderItemFn) {
 function renderCharacter(data) {
   if (!data) return;
 
-  const img = document.getElementById('char-image');
-  if (img) {
-    img.src = data?.image_url || '';
-    img.style.display = data?.image_url ? '' : 'none';
-    img.onerror = () => img.style.display = 'none';
-  }
+  // 頂部資訊列：角色名稱／職業／等級／戰鬥力／伺服器
   document.getElementById('char-name').textContent = data?.name ?? '—';
   document.getElementById('char-class').textContent = data?.class ?? '—';
   document.getElementById('char-level').textContent = data?.level ? `Lv. ${data.level}` : '—';
+  document.getElementById('char-combat-power').textContent =
+    data?.combat_power != null ? Number(data.combat_power).toLocaleString() : '—';
+  document.getElementById('char-server').textContent = data?.world_name ? `🌍 ${data.world_name}` : '—';
 
   renderStats(data);
-  renderEquipment(data?.equipment ?? []);
+  renderEquipment(data);   // 裝備棋盤＋角色圖（角色圖的 #char-image 在此函式內動態建立）
   renderInnerAbility(data?.inner_ability ?? {});
   renderUnionRaider(data?.union_raider ?? []);
   renderCashItems(data?.cash_items ?? []);
@@ -262,39 +294,48 @@ function renderStats(data) {
   grid.innerHTML = html;
 }
 
-// 裝備
+// 裝備（棋盤版位 + 中央角色圖，對應 排版.md 的版面規劃）
 function renderEquipment(data) {
-  const list = document.getElementById('equip-list');
-  if (!list) return;
-
-  const equips = Array.isArray(data) ? data : (data?.preset_0 ?? []);
-  if (equips.length === 0) { list.innerHTML = '<div class="empty">無裝備資料</div>'; return; }
+  const grid = document.getElementById('equip-doll-grid');
+  if (!grid) return;
 
   equipDataStore.clear(); // 切換角色時清空舊資料，避免 Map 無限累積
 
-  list.innerHTML = equips.map(eq => {
-    if (!eq) return '';
-    const pColor = GRADE_COLOR[eq?.potential_grade] ?? 'var(--border)';
+  const items = data?.equipment?.preset_0 ?? [];
+  const bySlot = {};
+  items.forEach(eq => { if (eq?.slot) bySlot[eq.slot] = eq; });
 
-    // 改用 Map 對照（取代直接把整包 JSON 塞進 data-item 屬性）
+  const cells = DOLL_SLOTS.map(({ area, slot }) => {
+    // 機器人格位：資料來源是 data.android（機器人本體），不是裝備陣列
+    if (slot === '__android__') {
+      const an = data?.android;
+      if (!an?.icon) return `<div class="doll-slot empty-slot" style="grid-area:${area}" title="機器人"></div>`;
+      return `<div class="doll-slot" style="grid-area:${area}" title="${an.name || '機器人'}">
+                <img src="${an.icon}" onerror="this.style.display='none'">
+              </div>`;
+    }
+
+    // 拼圖：Nexon API 目前尚未提供對應資料，先保留版位與功能
+    if (slot === null) {
+      return `<div class="doll-slot empty-slot" style="grid-area:${area}" title="拼圖（功能保留中，尚無資料）"></div>`;
+    }
+
+    const eq = bySlot[slot];
+    if (!eq) return `<div class="doll-slot empty-slot" style="grid-area:${area}" title="${slot}"></div>`;
+
     const eqId = `eq-${equipIdCounter++}`;
     equipDataStore.set(eqId, eq);
-
-    return `
-      <div class="equip-card" data-eq-id="${eqId}" style="border-left-color:${pColor}">
-        <div class="equip-top">
-          ${eq?.icon ? `<img src="${eq.icon}" style="width:36px; height:36px; border-radius:4px" onerror="this.style.display='none'">` : ''}
-          <div>
-            <div class="equip-slot">${eq?.slot ?? '未知'}</div>
-            <div class="equip-name">${eq?.name ?? '空'} ${eq?.starforce > 0 ? `<span style="color:var(--legendary)">★${eq.starforce}</span>` : ''}</div>
-          </div>
-        </div>
-        ${(eq?.potential_grade && eq.potential_grade !== '無') ? `
-          <div class="equip-details">
-            <div class="equip-pot-line"><span style="color:${pColor}">[${eq.potential_grade}]</span> ${eq?.potential?.join(' / ') ?? ''}</div>
-          </div>` : ''}
-      </div>`;
+    return `<div class="doll-slot" data-eq-id="${eqId}" style="grid-area:${area}">
+              ${eq.icon ? `<img src="${eq.icon}" onerror="this.style.display='none'">` : ''}
+            </div>`;
   }).join('');
+
+  // 中央角色圖：佔據裝備棋盤格未填滿的中間 12 格區域
+  const imgCell = `<div class="doll-img-cell" style="grid-area:img">
+      <img id="char-image" src="${data?.image_url || ''}" alt="角色圖片" onerror="this.style.display='none'">
+    </div>`;
+
+  grid.innerHTML = cells + imgCell;
 }
 
 // 內在潛能
@@ -694,9 +735,8 @@ function initTooltip() {
   if (!tooltip) return;
 
   document.addEventListener('mouseover', (e) => {
-    const card = e.target.closest('.equip-card');
-    if (!card || !card.dataset.eqId) return;
-    if (card.classList.contains('cash-card')) return; // 現金道具走自己的 showCashTooltip
+    const card = e.target.closest('.doll-slot');
+    if (!card || !card.dataset.eqId) return; // 空格位 / 拼圖 / 機器人 沒有 data-eq-id，自然略過
 
     const item = equipDataStore.get(card.dataset.eqId);
     if (!item) return;
@@ -759,7 +799,7 @@ function initTooltip() {
   });
 
   document.addEventListener('mouseout', (e) => {
-    const card = e.target.closest('.equip-card');
+    const card = e.target.closest('.doll-slot');
     if (!card) return;
     const related = e.relatedTarget;
     if (card.contains(related)) return;
