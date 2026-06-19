@@ -108,25 +108,14 @@ function renderCharacter(data) {
   document.getElementById('char-class').textContent = data?.class ?? '—';
   document.getElementById('char-level').textContent = data?.level ? `Lv. ${data.level}` : '—';
 
-  // 取得三個區塊的 HTML
-  const hyperStatsHtml = typeof renderHyperStats === 'function' ? renderHyperStats(data) : '';
-  const equipCharHtml  = renderEquipAndChar(data); // 呼叫我們剛剛寫的新函式
-  const abilityHtml    = typeof renderInnerAbility === 'function' ? renderInnerAbility(data) : '';
+  // 🎯 1. 取得我們剛寫好的裝備與角色排版 HTML
+  const equipCharHtml = renderEquipAndChar(data);
   
-  // 使用 12 欄網格將它們左右並排 (3:6:3 比例)
-  const combinedSectionHtml = `
-      <div class="row-12" style="margin-top: 16px; align-items: stretch;">
-          <div class="col-3">
-              ${buildSection('hyper_stat', '極限屬性', hyperStatsHtml)}
-          </div>
-          <div class="col-6" style="display: flex; justify-content: center;">
-              ${buildSection('equip', '裝備與角色', equipCharHtml)}
-          </div>
-          <div class="col-3">
-              ${buildSection('ability', '內在潛能', abilityHtml)}
-          </div>
-      </div>
-  `;
+  // 🎯 2. 直接寫入 HTML 中專屬裝備的容器裡 (假設您的 ID 是 equip-grid，請確認您的 html 實際 ID 名稱)
+  const equipContainer = document.getElementById('equip-grid'); // 或 'equip-container'
+  if (equipContainer) {
+      equipContainer.innerHTML = equipCharHtml;
+  }
   
   renderStats(data);
   renderInnerAbility(data?.inner_ability ?? {});
@@ -281,40 +270,6 @@ function renderStats(data) {
   grid.innerHTML = html;
 }
 
-// 裝備
-function renderEquipment(data) {
-  const list = document.getElementById('equip-list');
-  if (!list) return;
-
-  const equips = Array.isArray(data) ? data : (data?.preset_0 ?? []);
-  if (equips.length === 0) { list.innerHTML = '<div class="empty">無裝備資料</div>'; return; }
-
-  equipDataStore.clear(); // 切換角色時清空舊資料，避免 Map 無限累積
-
-  list.innerHTML = equips.map(eq => {
-    if (!eq) return '';
-    const pColor = GRADE_COLOR[eq?.potential_grade] ?? 'var(--border)';
-
-    // 改用 Map 對照（取代直接把整包 JSON 塞進 data-item 屬性）
-    const eqId = `eq-${equipIdCounter++}`;
-    equipDataStore.set(eqId, eq);
-
-    return `
-      <div class="equip-card" data-eq-id="${eqId}" style="border-left-color:${pColor}">
-        <div class="equip-top">
-          ${eq?.icon ? `<img src="${eq.icon}" style="width:36px; height:36px; border-radius:4px" onerror="this.style.display='none'">` : ''}
-          <div>
-            <div class="equip-slot">${eq?.slot ?? '未知'}</div>
-            <div class="equip-name">${eq?.name ?? '空'} ${eq?.starforce > 0 ? `<span style="color:var(--legendary)">★${eq.starforce}</span>` : ''}</div>
-          </div>
-        </div>
-        ${(eq?.potential_grade && eq.potential_grade !== '無') ? `
-          <div class="equip-details">
-            <div class="equip-pot-line"><span style="color:${pColor}">[${eq.potential_grade}]</span> ${eq?.potential?.join(' / ') ?? ''}</div>
-          </div>` : ''}
-      </div>`;
-  }).join('');
-}
 
 // 內在潛能
 function renderInnerAbility(ability) {
