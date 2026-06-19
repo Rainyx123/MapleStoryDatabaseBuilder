@@ -108,16 +108,8 @@ function renderCharacter(data) {
   document.getElementById('char-class').textContent = data?.class ?? '—';
   document.getElementById('char-level').textContent = data?.level ? `Lv. ${data.level}` : '—';
 
-  // 🎯 1. 取得我們剛寫好的裝備與角色排版 HTML
-  const equipCharHtml = renderEquipAndChar(data);
-  
-  // 🎯 2. 直接寫入 HTML 中專屬裝備的容器裡 (假設您的 ID 是 equip-grid，請確認您的 html 實際 ID 名稱)
-  const equipContainer = document.getElementById('equip-grid'); // 或 'equip-container'
-  if (equipContainer) {
-      equipContainer.innerHTML = equipCharHtml;
-  }
-  
   renderStats(data);
+  renderEquipment(data?.equipment ?? []);
   renderInnerAbility(data?.inner_ability ?? {});
   renderUnionRaider(data?.union_raider ?? []);
   renderCashItems(data?.cash_items ?? []);
@@ -270,6 +262,40 @@ function renderStats(data) {
   grid.innerHTML = html;
 }
 
+// 裝備
+function renderEquipment(data) {
+  const list = document.getElementById('equip-list');
+  if (!list) return;
+
+  const equips = Array.isArray(data) ? data : (data?.preset_0 ?? []);
+  if (equips.length === 0) { list.innerHTML = '<div class="empty">無裝備資料</div>'; return; }
+
+  equipDataStore.clear(); // 切換角色時清空舊資料，避免 Map 無限累積
+
+  list.innerHTML = equips.map(eq => {
+    if (!eq) return '';
+    const pColor = GRADE_COLOR[eq?.potential_grade] ?? 'var(--border)';
+
+    // 改用 Map 對照（取代直接把整包 JSON 塞進 data-item 屬性）
+    const eqId = `eq-${equipIdCounter++}`;
+    equipDataStore.set(eqId, eq);
+
+    return `
+      <div class="equip-card" data-eq-id="${eqId}" style="border-left-color:${pColor}">
+        <div class="equip-top">
+          ${eq?.icon ? `<img src="${eq.icon}" style="width:36px; height:36px; border-radius:4px" onerror="this.style.display='none'">` : ''}
+          <div>
+            <div class="equip-slot">${eq?.slot ?? '未知'}</div>
+            <div class="equip-name">${eq?.name ?? '空'} ${eq?.starforce > 0 ? `<span style="color:var(--legendary)">★${eq.starforce}</span>` : ''}</div>
+          </div>
+        </div>
+        ${(eq?.potential_grade && eq.potential_grade !== '無') ? `
+          <div class="equip-details">
+            <div class="equip-pot-line"><span style="color:${pColor}">[${eq.potential_grade}]</span> ${eq?.potential?.join(' / ') ?? ''}</div>
+          </div>` : ''}
+      </div>`;
+  }).join('');
+}
 
 // 內在潛能
 function renderInnerAbility(ability) {
@@ -739,71 +765,4 @@ function initTooltip() {
     if (card.contains(related)) return;
     tooltip.classList.add('hidden');
   });
-}
-// ================================================================
-// 渲染：裝備與角色圖合併區塊 (7x6 Grid)
-// ================================================================
-function renderEquipAndChar(data) {
-    // 1. 準備裝備資料陣列 (防呆機制，相容不同 API 格式)
-    let eqArray = [];
-    if (Array.isArray(data.equipment)) {
-        eqArray = data.equipment;
-    } else if (data.equipment && Array.isArray(data.equipment.preset_1)) {
-        eqArray = data.equipment.preset_1;
-    }
-
-    // 2. 定義 30 個裝備格子的對應 CSS Area 與可能出現的 Key
-    const gridSlots = [
-        { area: 'ring1', names: ['戒指1'] }, { area: 'face', names: ['臉飾'] }, { area: 'hat', names: ['帽子'] }, { area: 'cape', names: ['披風', '斗篷'] },
-        { area: 'ring2', names: ['戒指2'] }, { area: 'eye', names: ['眼飾'] }, { area: 'top', names: ['上衣', '衣服(上)'] }, { area: 'glove', names: ['手套'] },
-        { area: 'ring3', names: ['戒指3'] }, { area: 'ear', names: ['耳環'] }, { area: 'bottom', names: ['褲/裙', '褲子'] }, { area: 'shoes', names: ['鞋子'] },
-        { area: 'ring4', names: ['戒指4'] }, { area: 'pend1', names: ['墜飾1', '項鍊1'] }, { area: 'shldr', names: ['肩飾'] }, { area: 'medal', names: ['勳章'] },
-        { area: 'belt', names: ['腰帶'] }, { area: 'pend2', names: ['墜飾2', '項鍊2'] }, { area: 'wep', names: ['武器'] }, { area: 'sub', names: ['副武', '輔助武器'] },
-        { area: 'badge', names: ['徽章'] }, { area: 'droid', names: ['機器人'] }, { area: 'heart', names: ['心臟', '機器人心臟'] },
-        { area: 'pocket', names: ['口袋', '口袋物品'] }, { area: 'puz', names: ['拼圖'] }, { area: 'tot1', names: ['圖騰1', '馴服的怪物'] },
-        { area: 'tot2', names: ['圖騰2', '馬鞍'] }, { area: 'tot3', names: ['圖騰3', '怪物裝備'] }, { area: 'gem', names: ['寶玉'] }, { area: 'chest', names: ['胸章'] }
-    ];
-
-    let html = `<div class="equip-char-grid">`;
-
-    // 3. 依序產生周圍的裝備格子
-    gridSlots.forEach(slot => {
-        let item = null;
-        for (const name of slot.names) {
-            item = eqArray.find(eq => eq.slot === name || eq.item_equipment_slot === name);
-            if (item) break;
-        }
-        
-        // 特殊防呆：機器人與心臟可能存在於 android 屬性
-        if (!item && slot.area === 'droid' && data.android?.name) item = data.android;
-
-        if (item && (item.icon || item.item_icon)) {
-            // 有裝備：綁定 eqId 供 Tooltip 讀取，且只顯示圖示 (無文字)
-            const eqId = 'eq-' + (equipIdCounter++);
-            equipDataStore.set(eqId, item);
-            html += `
-                <div class="equip-grid-item equip-card item-grade-${item.grade || 'none'}" style="grid-area: ${slot.area};" data-eq-id="${eqId}">
-                    <img src="${item.icon || item.item_icon}" alt="${slot.names[0]}" class="equip-icon">
-                </div>
-            `;
-        } else {
-            // 無裝備 (或套裝無褲子、未開放的拼圖等)：顯示半透明預設空位
-            html += `
-                <div class="equip-grid-item empty-slot" style="grid-area: ${slot.area};">
-                    <span class="empty-text">${slot.names[0]}</span>
-                </div>
-            `;
-        }
-    });
-
-    // 4. 插入中央的 4x3 角色圖
-    const charImgUrl = data.image_url || data.character_image; 
-    html += `
-        <div class="equip-char-image">
-            ${charImgUrl ? `<img src="${charImgUrl}" alt="角色圖片">` : '<span class="empty-text">無圖片</span>'}
-        </div>
-    `;
-
-    html += `</div>`;
-    return html;
 }
