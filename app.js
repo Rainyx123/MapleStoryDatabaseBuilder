@@ -108,8 +108,27 @@ function renderCharacter(data) {
   document.getElementById('char-class').textContent = data?.class ?? '—';
   document.getElementById('char-level').textContent = data?.level ? `Lv. ${data.level}` : '—';
 
+  // 取得三個區塊的 HTML
+  const hyperStatsHtml = typeof renderHyperStats === 'function' ? renderHyperStats(data) : '';
+  const equipCharHtml  = renderEquipAndChar(data); // 呼叫我們剛剛寫的新函式
+  const abilityHtml    = typeof renderInnerAbility === 'function' ? renderInnerAbility(data) : '';
+  
+  // 使用 12 欄網格將它們左右並排 (3:6:3 比例)
+  const combinedSectionHtml = `
+      <div class="row-12" style="margin-top: 16px; align-items: stretch;">
+          <div class="col-3">
+              ${buildSection('hyper_stat', '極限屬性', hyperStatsHtml)}
+          </div>
+          <div class="col-6" style="display: flex; justify-content: center;">
+              ${buildSection('equip', '裝備與角色', equipCharHtml)}
+          </div>
+          <div class="col-3">
+              ${buildSection('ability', '內在潛能', abilityHtml)}
+          </div>
+      </div>
+  `;
+  
   renderStats(data);
-  renderEquipment(data?.equipment ?? []);
   renderInnerAbility(data?.inner_ability ?? {});
   renderUnionRaider(data?.union_raider ?? []);
   renderCashItems(data?.cash_items ?? []);
@@ -765,4 +784,71 @@ function initTooltip() {
     if (card.contains(related)) return;
     tooltip.classList.add('hidden');
   });
+}
+// ================================================================
+// 渲染：裝備與角色圖合併區塊 (7x6 Grid)
+// ================================================================
+function renderEquipAndChar(data) {
+    // 1. 準備裝備資料陣列 (防呆機制，相容不同 API 格式)
+    let eqArray = [];
+    if (Array.isArray(data.equipment)) {
+        eqArray = data.equipment;
+    } else if (data.equipment && Array.isArray(data.equipment.preset_1)) {
+        eqArray = data.equipment.preset_1;
+    }
+
+    // 2. 定義 30 個裝備格子的對應 CSS Area 與可能出現的 Key
+    const gridSlots = [
+        { area: 'ring1', names: ['戒指1'] }, { area: 'face', names: ['臉飾'] }, { area: 'hat', names: ['帽子'] }, { area: 'cape', names: ['披風', '斗篷'] },
+        { area: 'ring2', names: ['戒指2'] }, { area: 'eye', names: ['眼飾'] }, { area: 'top', names: ['上衣', '衣服(上)'] }, { area: 'glove', names: ['手套'] },
+        { area: 'ring3', names: ['戒指3'] }, { area: 'ear', names: ['耳環'] }, { area: 'bottom', names: ['褲/裙', '褲子'] }, { area: 'shoes', names: ['鞋子'] },
+        { area: 'ring4', names: ['戒指4'] }, { area: 'pend1', names: ['墜飾1', '項鍊1'] }, { area: 'shldr', names: ['肩飾'] }, { area: 'medal', names: ['勳章'] },
+        { area: 'belt', names: ['腰帶'] }, { area: 'pend2', names: ['墜飾2', '項鍊2'] }, { area: 'wep', names: ['武器'] }, { area: 'sub', names: ['副武', '輔助武器'] },
+        { area: 'badge', names: ['徽章'] }, { area: 'droid', names: ['機器人'] }, { area: 'heart', names: ['心臟', '機器人心臟'] },
+        { area: 'pocket', names: ['口袋', '口袋物品'] }, { area: 'puz', names: ['拼圖'] }, { area: 'tot1', names: ['圖騰1', '馴服的怪物'] },
+        { area: 'tot2', names: ['圖騰2', '馬鞍'] }, { area: 'tot3', names: ['圖騰3', '怪物裝備'] }, { area: 'gem', names: ['寶玉'] }, { area: 'chest', names: ['胸章'] }
+    ];
+
+    let html = `<div class="equip-char-grid">`;
+
+    // 3. 依序產生周圍的裝備格子
+    gridSlots.forEach(slot => {
+        let item = null;
+        for (const name of slot.names) {
+            item = eqArray.find(eq => eq.slot === name || eq.item_equipment_slot === name);
+            if (item) break;
+        }
+        
+        // 特殊防呆：機器人與心臟可能存在於 android 屬性
+        if (!item && slot.area === 'droid' && data.android?.name) item = data.android;
+
+        if (item && (item.icon || item.item_icon)) {
+            // 有裝備：綁定 eqId 供 Tooltip 讀取，且只顯示圖示 (無文字)
+            const eqId = 'eq-' + (equipIdCounter++);
+            equipDataStore.set(eqId, item);
+            html += `
+                <div class="equip-grid-item equip-card item-grade-${item.grade || 'none'}" style="grid-area: ${slot.area};" data-eq-id="${eqId}">
+                    <img src="${item.icon || item.item_icon}" alt="${slot.names[0]}" class="equip-icon">
+                </div>
+            `;
+        } else {
+            // 無裝備 (或套裝無褲子、未開放的拼圖等)：顯示半透明預設空位
+            html += `
+                <div class="equip-grid-item empty-slot" style="grid-area: ${slot.area};">
+                    <span class="empty-text">${slot.names[0]}</span>
+                </div>
+            `;
+        }
+    });
+
+    // 4. 插入中央的 4x3 角色圖
+    const charImgUrl = data.image_url || data.character_image; 
+    html += `
+        <div class="equip-char-image">
+            ${charImgUrl ? `<img src="${charImgUrl}" alt="角色圖片">` : '<span class="empty-text">無圖片</span>'}
+        </div>
+    `;
+
+    html += `</div>`;
+    return html;
 }
