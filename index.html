@@ -23,40 +23,46 @@
 
     <div id="content" class="hidden container-stack">
 
-      <div class="grid-system">
-        <section class="section-card span-2" id="section-header">
-          <div class="section-header"><span>角色資訊</span><span class="toggle-icon">▼</span></div>
-          <div class="section-body char-info" id="char-header">
-            <img id="char-image" src="" alt="角色圖片">
-            <div class="char-meta">
-              <div id="char-name"></div>
-              <div id="char-class"></div>
-              <div id="char-level"></div>
+      <!-- =========================================================
+           角色總覽：極限屬性／角色與裝備／內在潛能 三欄並排
+           （手機 / 窄螢幕改垂直堆疊，順序：角色與裝備 → 極限屬性 → 內在潛能，見 style.css）
+           三個板塊各自保留獨立的收合功能（沿用既有 .section-header 收合機制）
+      ========================================================== -->
+      <div class="overview-row" id="overview-row">
+
+        <section class="section-card overview-side" id="section-hyper">
+          <div class="section-header"><span>極限屬性</span><span class="toggle-icon">▼</span></div>
+          <div class="section-body" id="hyper-list"></div>
+        </section>
+
+        <section class="section-card overview-main" id="section-equip">
+          <div class="section-header"><span>角色與裝備</span><span class="toggle-icon">▼</span></div>
+          <div class="section-body">
+            <!-- 頂部資訊列：角色名稱／職業／等級／戰鬥力／伺服器 -->
+            <div class="char-info-bar">
+              <span class="info-name" id="char-name"></span>
+              <span class="info-item" id="char-class"></span>
+              <span class="info-item" id="char-level"></span>
+              <span class="info-item info-cp">戰鬥力 <b id="char-combat-power">—</b></span>
+              <span class="info-item" id="char-server"></span>
             </div>
+            <!-- 裝備棋盤格（含中央角色圖），內容由 app.js 的 renderEquipment() 動態產生 -->
+            <div class="equip-doll-grid" id="equip-doll-grid"></div>
           </div>
         </section>
 
-        <section class="section-card span-6" id="section-stats">
-          <div class="section-header"><span>核心屬性</span><span class="toggle-icon">▼</span></div>
-          <div class="section-body grid-stats" id="stat-grid"></div>
+        <section class="section-card overview-side" id="section-ability">
+          <div class="section-header"><span>內在潛能</span><span class="toggle-icon">▼</span></div>
+          <div class="section-body" id="ability-list"></div>
         </section>
 
-        <div class="flex-column-layout span-4">
-          <section class="section-card" id="section-ability">
-            <div class="section-header"><span>內在潛能</span><span class="toggle-icon">▼</span></div>
-            <div class="section-body" id="ability-list"></div>
-          </section>
-          <section class="section-card" id="section-hyper">
-            <div class="section-header"><span>極限屬性</span><span class="toggle-icon">▼</span></div>
-            <div class="section-body" id="hyper-list"></div>
-          </section>
-        </div>
       </div>
 
+      <!-- 核心屬性（原本與角色資訊同排，現整個移到角色總覽下方）-->
       <div class="grid-system">
-        <section class="section-card span-12" id="section-equip">
-          <div class="section-header"><span>裝備</span><span class="toggle-icon">▼</span></div>
-          <div class="section-body" id="equip-list"></div>
+        <section class="section-card span-12" id="section-stats">
+          <div class="section-header"><span>核心屬性</span><span class="toggle-icon">▼</span></div>
+          <div class="section-body grid-stats" id="stat-grid"></div>
         </section>
       </div>
 
@@ -140,7 +146,7 @@
         <div class="settings-group-title">顯示區塊</div>
         <label><input type="checkbox" data-section="section-stats" checked> 核心屬性</label>
         <label><input type="checkbox" data-section="section-hyper" checked> 極限屬性</label>
-        <label><input type="checkbox" data-section="section-equip" checked> 裝備</label>
+        <label><input type="checkbox" data-section="section-equip" checked> 角色與裝備</label>
         <label><input type="checkbox" data-section="section-v" checked> 五轉 V-Matrix</label>
         <label><input type="checkbox" data-section="section-hexa" checked> 六轉 HEXA</label>
         <label><input type="checkbox" data-section="section-link" checked> 傳授技能</label>
