@@ -1,5 +1,5 @@
 /* ================================================================
-   楓之谷角色資料庫 — 模組化深色主題 v3 (完整修正版)
+   楓之谷角色資料庫 — 模組化深色主題 v4（角色與裝備棋盤排版版）
    ================================================================ */
 
 /* ---- 1. 全域變數 (UI 主題設定) ---- */
@@ -51,13 +51,6 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans TC
 .section-body { padding: 12px; height: auto; min-height: 50px; }
 .empty { color: var(--text-4); font-size: var(--fs-sm); text-align: center; padding: 10px 0; }
 
-/* 角色專屬標頭 */
-.char-info { display: flex; align-items: center; gap: 20px; }
-#char-image { width: 90px; height: 90px; object-fit: contain; }
-#char-name { font-size: var(--fs-lg); font-weight: 700; color: var(--text-1); }
-#char-class { font-size: var(--fs-base); color: var(--accent-light); margin-top: 4px; }
-#char-level { font-size: var(--fs-sm); color: var(--text-4); margin-top: 2px; }
-
 /* 絕對優先權的收合隱藏規則 (鏈式選擇器) */
 .section-card .section-body.collapsed { display: none !important; }
 .section-card .section-body.collapsed * { display: none !important; }
@@ -65,6 +58,58 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans TC
 /* 收合箭頭動畫 */
 .toggle-icon { font-size: 10px; transition: transform 0.2s ease; color: var(--text-4); display: inline-block; }
 .section-card.collapsed .section-header .toggle-icon { transform: rotate(-90deg); }
+
+/* ---- 5a. 角色總覽：極限屬性／角色與裝備／內在潛能 三欄並排 ---- */
+/* 三者各自是獨立的 .section-card，沿用既有收合機制；此處只負責排成一排 */
+.overview-row { display: flex; gap: 15px; align-items: stretch; width: 100%; }
+.overview-side { flex: 0 0 200px; min-width: 0; }
+.overview-main { flex: 1 1 auto; min-width: 0; }
+
+/* 角色與裝備卡片頂部資訊列：角色名稱／職業／等級／戰鬥力／伺服器 */
+.char-info-bar {
+  display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap;
+  padding-bottom: 10px; margin-bottom: 10px; border-bottom: 1px solid var(--border);
+}
+.char-info-bar .info-name { font-size: var(--fs-lg); font-weight: 700; color: var(--text-1); }
+.char-info-bar .info-item { font-size: var(--fs-base); color: var(--text-3); }
+.char-info-bar .info-cp b { color: var(--accent-light); font-weight: 700; }
+
+/* 裝備棋盤格：左右兩欄裝備 + 中央角色圖（含武器/副武/徽章/圖騰列）
+   版位對照表請參考 排版.md，與 app.js 的 DOLL_SLOTS 一一對應 */
+.equip-doll-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  grid-template-rows: repeat(6, 1fr);
+  grid-template-areas:
+    "ring1  face   img       img       img    hat      cape"
+    "ring2  eye    img       img       img    top       glove"
+    "ring3  ear    img       img       img    pants    shoe"
+    "ring4  neck1  img       img       img    shoulder medal"
+    "belt   neck2  weapon subweapon badge     mecha    heart"
+    "pocket puzzle totem1 totem2 totem3      gem      chest";
+  gap: 6px;
+}
+.doll-slot {
+  aspect-ratio: 1 / 1;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
+}
+.doll-slot img { width: 80%; height: 80%; object-fit: contain; }
+.doll-slot.empty-slot { background: var(--bg-1); border-style: dashed; opacity: 0.5; }
+
+/* 中央角色圖：佔據棋盤格未填滿的中間 12 格區域，深色底板 */
+.doll-img-cell {
+  grid-area: img;
+  background: var(--bg-0);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
+}
+.doll-img-cell img { width: 100%; height: 100%; object-fit: contain; }
 
 /* ---- 6. 各區塊內部網格排版 ---- */
 .grid-stats, .grid-hexa, .grid-champion, .grid-pet, .grid-beauty, .grid-union, .grid-symbol, .grid-vmatrix, .grid-artifact, .grid-link { display: grid; gap: 8px; }
@@ -105,7 +150,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans TC
 .grid-hexa .grid-item { aspect-ratio: 1 / 1; width: 100%; border-radius: var(--r-sm); background: var(--bg-2); border: 1px solid var(--border); padding: 5px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
 
 /* JS 生成元件樣式 (裝備、潛能等) */
-#equip-list, #cash-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 8px; }
+#cash-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 8px; }
 .equip-card { background: var(--bg-3); border: 1px solid var(--border); border-left: 3px solid var(--none); border-radius: var(--r); padding: 8px 12px; }
 .equip-top { display: flex; align-items: center; gap: 8px; }
 .equip-slot { font-size: var(--fs-xs); background: var(--bg-4); padding: 2px 6px; border-radius: var(--r-sm); color: var(--text-4); flex-shrink: 0; }
@@ -188,11 +233,16 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans TC
 @media (max-width: 1024px) {
     .grid-system { display: flex; flex-direction: column; }
     .span-1, .span-2, .span-3, .span-4, .span-5, .span-6, .span-7, .span-8, .span-9, .span-10, .span-11, .span-12 { width: 100%; }
+
+    /* 角色總覽：窄螢幕改垂直堆疊，順序：角色與裝備 → 極限屬性 → 內在潛能 */
+    .overview-row { flex-direction: column; }
+    .overview-main { order: 1; }
+    #section-hyper { order: 2; }
+    #section-ability { order: 3; }
 }
 
 @media (max-width: 768px) {
     .grid-vmatrix, .grid-symbol { grid-template-columns: repeat(4, 1fr); }
     .grid-artifact, .grid-link { grid-template-columns: repeat(2, 1fr); }
     .grid-stats, .grid-hexa, .grid-champion, .grid-pet, .grid-beauty, .grid-union, .grid-unionraider { grid-template-columns: 1fr; }
-    .char-info { flex-direction: column; text-align: center; }
 }
