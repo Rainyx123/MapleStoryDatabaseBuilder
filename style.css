@@ -62,7 +62,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans TC
 /* ---- 5a. 角色總覽：極限屬性／角色與裝備／內在潛能 三欄並排 ---- */
 /* 三者各自是獨立的 .section-card，沿用既有收合機制；此處只負責排成一排 */
 .overview-row { display: flex; gap: 15px; align-items: stretch; width: 100%; }
-.overview-side { flex: 0 0 300px; min-width: 0; }
+.overview-side { flex: 0 0 400px; min-width: 0; }
 .overview-main { flex: 1 1 auto; min-width: 0; }
 
 /* 角色與裝備卡片頂部資訊列：角色名稱／職業／等級／戰鬥力／伺服器 */
