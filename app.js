@@ -169,6 +169,8 @@ function buildTabs() {
 }
 
 function switchTab(idx) {
+  document.getElementById('boss-content')?.classList.add('hidden');   // 新增
+  document.getElementById('content').classList.remove('hidden');       // 新增
   currentIdx = idx;
   document.querySelectorAll('.tab-btn').forEach((btn, i) => btn.classList.toggle('active', i === idx));
   renderCharacter(characters[idx]);
@@ -993,3 +995,8 @@ function initTooltip() {
     tooltip.classList.add('hidden');
   });
 }
+
+document.getElementById('btn-boss')?.addEventListener('click', () => {
+  document.getElementById('content').classList.add('hidden');
+  document.getElementById('boss-content').classList.remove('hidden');
+});
