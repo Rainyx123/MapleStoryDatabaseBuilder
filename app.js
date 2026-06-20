@@ -1,17 +1,24 @@
 // ================================================================
-// 楓之谷角色資料庫 — 前端主程式 v5（角色與裝備棋盤排版版）
+// 楓之谷角色資料庫 — 前端主程式 v6（角色總覽棋盤排版版）
 //
-// 本次變更摘要：
-//   - 「角色資訊」「裝備」「內在潛能」「極限屬性」4 個獨立卡片，
-//     整併為「角色與裝備｜極限屬性｜內在潛能」三欄並排的角色總覽區塊
-//     （HTML 結構變更見 index.html，三者仍各自保留獨立收合功能）。
-//   - 「核心屬性」整個移到角色總覽下方，渲染邏輯（renderStats）完全不變。
-//   - renderEquipment() 改寫：裝備不再用「有資料才顯示」的流動清單，
-//     而是固定 30 格棋盤式版位（DOLL_SLOTS），角色圖直接置中顯示在
-//     裝備尚未填滿的中央 12 格區域；沒有資料的格位顯示空格（沿用既有
-//     .empty-slot 樣式），「拼圖」格為 Nexon API 尚未提供的保留版位。
-//   - initTooltip() 的卡片判斷選擇器，由舊的 .equip-card 改成新的
-//     .doll-slot（現金道具區塊仍使用 .equip-card，彼此不衝突）。
+// 本次變更摘要（對應 排版要求與錯誤修正.md）：
+//   - 角色總覽改為 5 個區塊（極限屬性／內在潛能／傳授技能／角色與裝備／
+//     核心屬性）扁平排列，由 style.css 的 CSS Grid 負責桌面版排列位置
+//     （左欄 2:3:1 比例堆疊／中欄角色裝備／右欄核心屬性），窄螢幕則用
+//     order 屬性收合成單欄堆疊。渲染邏輯本身（renderStats / renderEquipment
+//     / renderInnerAbility）不變，只是容器位置改變。
+//   - 新增 renderAppearance()：外觀／現金道具改用棋盤格顯示（戒指/臉飾/
+//     眼飾/耳環/帽子/披風/上衣/手套/褲子/鞋子/武器/副武 ＋ 中央角色圖、
+//     最下排髮型/臉型/膚色），取代原本的扁平卡片清單，原美容美髮卡片
+//     的資訊也併入這裡的中央三格。
+//   - 符文系統新增 ARC／AUT 屬性加成合計（renderSymbolSummary），並在
+//     顯示符文名稱時移除「秘法的／真實的」等前綴（stripSymbolPrefix）。
+//   - 聯盟冠軍維持逐一列出個別冠軍＋徽章，並新增 champion_badge_total_info
+//     的加總效果文字。
+//   - 戰地攻擊隊改為單欄列表＋允許文字換行，修正窄欄位時敘述被截斷的問題。
+//   - 戰地聯盟（等級／階級）併入角色資訊列，移除原本獨立的卡片。
+//   - 移除已棄用的 renderCashItems() / showCashTooltip() / hideTooltip()
+//     （原 #cash-grid 卡片清單已由外觀棋盤格取代）。
 // ================================================================
 
 const API_BASE = 'https://maple-story-database-builder.vercel.app'; // ★ 換成你的 Vercel 網址
@@ -24,12 +31,14 @@ const GRADE_COLOR = {
 let characters = [];
 let currentIdx = 0;
 
-// 裝備資料對照表：DOM 只放 data-eq-id，實際資料存在這裡（取代塞進 data-item 屬性）
+// 裝備／外觀資料對照表：DOM 只放 data-eq-id，實際資料存在這裡
+// （取代塞進 data-item 屬性；item._kind 用來區分 'gear'（一般裝備）或 'cash'（現金道具），
+//  供 initTooltip() 顯示不同格式的懸浮預覽內容）
 const equipDataStore = new Map();
 let equipIdCounter = 0;
 
 // ----------------------------------------------------------------
-// 裝備棋盤格位定義（對應 排版.md 的版面規劃）
+// 裝備棋盤格位定義（對應 排版要求與錯誤修正.md 的版面規劃）
 //   area：CSS grid-area 名稱（見 style.css 的 .equip-doll-grid）
 //   slot：對應 parseEquipList() 產出的中文 slot 名稱，用來在裝備陣列中查找資料
 //   slot 為 '__android__'：機器人格位，資料來源是 data.android（機器人本體），
@@ -57,6 +66,35 @@ const DOLL_SLOTS = [
   { area: 'heart',     slot: '心臟' },
   { area: 'gem',       slot: '寶玉' },
   { area: 'chest',     slot: '胸章' },
+];
+
+// ----------------------------------------------------------------
+// 外觀（現金道具）棋盤格位定義（對應 排版要求與錯誤修正.md 的「外觀區」表格）
+//   cash_items 內的 slot 欄位是 Nexon 回傳的原始部位字串（main.py 的
+//   _map_cash() 沒有經過 SLOT_NAME_MAP 轉換），所以這裡用獨立的
+//   CASH_SLOT_NAME_MAP 轉成跟 DOLL_SLOTS 一致的中文簡稱。
+//   slot 為 '__hair__' / '__face__' / '__skin__'：直接讀 data.beauty 對應欄位
+//   slot 為 null：保留版位（無對應資料，例如戒指4右側的空格）
+// ----------------------------------------------------------------
+const CASH_SLOT_NAME_MAP = {
+  "戒指1": "戒指1", "戒指2": "戒指2", "戒指3": "戒指3", "戒指4": "戒指4",
+  "臉飾": "臉飾", "眼飾": "眼飾", "耳環": "耳環",
+  "帽子": "帽子", "披風": "披風", "衣服(上)": "上衣", "褲子": "褲/裙",
+  "鞋子": "鞋子", "手套": "手套", "武器": "武器", "輔助武器": "副武",
+};
+
+const APPEARANCE_SLOTS = [
+  { area: 'ring1', slot: '戒指1' }, { area: 'face',  slot: '臉飾' },
+  { area: 'ring2', slot: '戒指2' }, { area: 'eye',   slot: '眼飾' },
+  { area: 'ring3', slot: '戒指3' }, { area: 'ear',   slot: '耳環' },
+  { area: 'ring4', slot: '戒指4' }, { area: 'blank', slot: null },
+  { area: 'hat',   slot: '帽子' },  { area: 'cape',  slot: '披風' },
+  { area: 'top',   slot: '上衣' },  { area: 'glove', slot: '手套' },
+  { area: 'pants', slot: '褲/裙' }, { area: 'shoe',  slot: '鞋子' },
+  { area: 'weapon', slot: '武器' }, { area: 'subweapon', slot: '副武' },
+  { area: 'hair',   slot: '__hair__' },
+  { area: 'facetp', slot: '__face__' },
+  { area: 'skin',   slot: '__skin__' },
 ];
 
 // ================================================================
@@ -132,19 +170,21 @@ function renderList(containerId, dataArray, renderItemFn) {
 function renderCharacter(data) {
   if (!data) return;
 
-  // 頂部資訊列：角色名稱／職業／等級／戰鬥力／伺服器
+  // 頂部資訊列：角色名稱／職業／等級／戰鬥力／伺服器／戰地聯盟／聯盟等級
   document.getElementById('char-name').textContent = data?.name ?? '—';
   document.getElementById('char-class').textContent = data?.class ?? '—';
   document.getElementById('char-level').textContent = data?.level ? `Lv. ${data.level}` : '—';
   document.getElementById('char-combat-power').textContent =
     data?.combat_power != null ? Number(data.combat_power).toLocaleString() : '—';
   document.getElementById('char-server').textContent = data?.world_name ? `🌍 ${data.world_name}` : '—';
+  document.getElementById('char-union-grade').textContent = data?.union?.grade ? `🏯 ${data.union.grade}` : '—';
+  document.getElementById('char-union-level').textContent = data?.union?.level ? `聯盟Lv.${data.union.level}` : '—';
 
   renderStats(data);
-  renderEquipment(data);   // 裝備棋盤＋角色圖（角色圖的 #char-image 在此函式內動態建立）
+  renderEquipment(data);     // 裝備棋盤＋角色圖（角色圖的 #char-image 在此函式內動態建立）
+  renderAppearance(data);    // 外觀棋盤＋角色圖＋髮型/臉型/膚色（取代原本的現金道具卡片清單）
   renderInnerAbility(data?.inner_ability ?? {});
   renderUnionRaider(data?.union_raider ?? []);
-  renderCashItems(data?.cash_items ?? []);
 
   if (data.union_artifact) renderUnionArtifact(data.union_artifact);
   if (data.union_champion) renderUnionChampion(data.union_champion);
@@ -195,10 +235,11 @@ function renderCharacter(data) {
   renderList('symbol-grid', data?.symbols, s =>
     `<div class="grid-item">
         <img src="${s?.icon || ''}" onerror="this.style.display='none'">
-        <div class="grid-item-text">${s?.name ?? '符文'}</div>
+        <div class="grid-item-text">${stripSymbolPrefix(s?.name) || '符文'}</div>
         <div style="font-size:10px; color:var(--text-3)">Lv.${s?.level ?? 0}</div>
     </div>`
   );
+  renderSymbolSummary(data); // 符文清單下方的 ARC／AUT 屬性加成合計
 
   renderList('pets-grid', data?.pets, p =>
     `<div class="grid-item">
@@ -209,12 +250,6 @@ function renderCharacter(data) {
 
   const androidEl = document.getElementById('android-grid');
   if (androidEl) androidEl.innerHTML = data?.android?.name ? `<div class="raider-row">${data.android.name}</div>` : '<div class="empty">無資料</div>';
-
-  const beautyEl = document.getElementById('beauty-grid');
-  if (beautyEl) beautyEl.innerHTML = data?.beauty ? `<div class="raider-row">髮型: ${data.beauty.hair || '無'}</div><div class="raider-row">臉型: ${data.beauty.face || '無'}</div>` : '<div class="empty">無資料</div>';
-
-  const unionEl = document.getElementById('union-grid');
-  if (unionEl) unionEl.innerHTML = data?.union ? `<div class="raider-row">總等級: ${data.union.level || 0}</div><div class="raider-row">階級: ${data.union.grade || '無'}</div>` : '<div class="empty">無資料</div>';
 
   // 7日最高戰力（若設定已開啟，會在 refreshPeakBadge 內補上文字）
   refreshPeakBadge(data?.name);
@@ -294,12 +329,12 @@ function renderStats(data) {
   grid.innerHTML = html;
 }
 
-// 裝備（棋盤版位 + 中央角色圖，對應 排版.md 的版面規劃）
+// 裝備（棋盤版位 + 中央角色圖，對應 排版要求與錯誤修正.md 的版面規劃）
 function renderEquipment(data) {
   const grid = document.getElementById('equip-doll-grid');
   if (!grid) return;
 
-  equipDataStore.clear(); // 切換角色時清空舊資料，避免 Map 無限累積
+  equipDataStore.clear(); // 切換角色時清空舊資料（裝備＋外觀共用同一份 Map，避免無限累積）
 
   const items = data?.equipment?.preset_0 ?? [];
   const bySlot = {};
@@ -324,7 +359,7 @@ function renderEquipment(data) {
     if (!eq) return `<div class="doll-slot empty-slot" style="grid-area:${area}" title="${slot}"></div>`;
 
     const eqId = `eq-${equipIdCounter++}`;
-    equipDataStore.set(eqId, eq);
+    equipDataStore.set(eqId, { ...eq, _kind: 'gear' });
     return `<div class="doll-slot" data-eq-id="${eqId}" style="grid-area:${area}">
               ${eq.icon ? `<img src="${eq.icon}" onerror="this.style.display='none'">` : ''}
             </div>`;
@@ -333,6 +368,56 @@ function renderEquipment(data) {
   // 中央角色圖：佔據裝備棋盤格未填滿的中間 12 格區域
   const imgCell = `<div class="doll-img-cell" style="grid-area:img">
       <img id="char-image" src="${data?.image_url || ''}" alt="角色圖片" onerror="this.style.display='none'">
+    </div>`;
+
+  grid.innerHTML = cells + imgCell;
+}
+
+// 外觀（現金道具）棋盤版位 + 中央角色圖 + 髮型/臉型/膚色
+// 對應 排版要求與錯誤修正.md 的「外觀區」表格；取代原本的現金道具卡片清單
+function renderAppearance(data) {
+  const grid = document.getElementById('appearance-doll-grid');
+  if (!grid) return;
+
+  const cash = data?.cash_items ?? {};
+  const activeIdx = cash.active_preset || 0;
+  const items = cash[`preset_${activeIdx}`] ?? [];
+
+  const bySlot = {};
+  items.forEach(it => {
+    const display = CASH_SLOT_NAME_MAP[it.slot];
+    if (display) bySlot[display] = it;
+  });
+
+  const beauty = data?.beauty ?? {};
+
+  const cells = APPEARANCE_SLOTS.map(({ area, slot }) => {
+    if (slot === null) {
+      return `<div class="doll-slot empty-slot" style="grid-area:${area}"></div>`;
+    }
+    if (slot === '__hair__') {
+      return `<div class="doll-slot beauty-cell" style="grid-area:${area}">髮型<br>${beauty.hair || '—'}</div>`;
+    }
+    if (slot === '__face__') {
+      return `<div class="doll-slot beauty-cell" style="grid-area:${area}">臉型<br>${beauty.face || '—'}</div>`;
+    }
+    if (slot === '__skin__') {
+      return `<div class="doll-slot beauty-cell" style="grid-area:${area}">膚色<br>${beauty.skin || '—'}</div>`;
+    }
+
+    const item = bySlot[slot];
+    if (!item) return `<div class="doll-slot empty-slot" style="grid-area:${area}" title="${slot}"></div>`;
+
+    const eqId = `cash-${equipIdCounter++}`;
+    equipDataStore.set(eqId, { ...item, _kind: 'cash' });
+    return `<div class="doll-slot" data-eq-id="${eqId}" style="grid-area:${area}">
+              ${item.icon ? `<img src="${item.icon}" onerror="this.style.display='none'">` : ''}
+            </div>`;
+  }).join('');
+
+  // 中央角色圖：與裝備棋盤格共用同一張角色圖
+  const imgCell = `<div class="doll-img-cell" style="grid-area:img">
+      <img src="${data?.image_url || ''}" alt="角色圖片" onerror="this.style.display='none'">
     </div>`;
 
   grid.innerHTML = cells + imgCell;
@@ -351,7 +436,7 @@ function renderInnerAbility(ability) {
     + ability.abilities.map(ab => `<div style="font-size:12px; padding:3px 0; color:var(--text-2)">${ab}</div>`).join('');
 }
 
-// 戰地攻擊隊（數值合併邏輯）
+// 戰地攻擊隊（數值合併邏輯；顯示改為單欄列表，避免長文字被截斷看不到完整內容）
 function renderUnionRaider(data) {
   const el = document.getElementById('union-raider-grid');
   if (!el) return;
@@ -380,81 +465,38 @@ function renderUnionRaider(data) {
   el.innerHTML = consolidated.map(stat => `<div class="raider-row">${stat}</div>`).join('');
 }
 
-// 現金道具
-function renderCashItems(cashData) {
-  const container = document.getElementById('cash-grid');
-  if (!container) return;
+// ================================================================
+// 符文系統：前綴移除 ＋ ARC／AUT 屬性加成合計
+// ================================================================
 
-  container.innerHTML = '';
-
-  const activeIndex = cashData.active_preset || 0;
-  const items = cashData[`preset_${activeIndex}`] || [];
-
-  items.forEach(item => {
-    if (!item.name) return;
-
-    const card = document.createElement('div');
-    card.className = 'equip-card cash-card';
-
-    let labelHtml = '';
-    if (item.label) {
-      labelHtml = `<div class="equip-add-line" style="color: #FFD700;">[${item.label}]</div>`;
-    }
-
-    let optionsHtml = '';
-    if (item.options && item.options.length > 0) {
-      item.options.forEach(opt => {
-        optionsHtml += `<div class="equip-pot-line">${opt.option_type}: +${opt.option_value}</div>`;
-      });
-    }
-
-    card.innerHTML = `
-            <div class="equip-top">
-                ${item.icon ? `<img src="${item.icon}" alt="${item.name}" style="width: 24px; height: 24px;">` : ''}
-                <div class="equip-slot">${item.slot}</div>
-                <div class="equip-name">${item.name}</div>
-            </div>
-            <div class="equip-details">
-                ${labelHtml}
-                ${optionsHtml}
-            </div>
-        `;
-
-    card.addEventListener('mouseenter', (e) => showCashTooltip(e, item));
-    card.addEventListener('mouseleave', hideTooltip);
-
-    container.appendChild(card);
-  });
+// 移除符文名稱中的「秘法的／真實的」等前綴，只保留符文本名（例：奧迪溫 Lv.6）
+// 註：Nexon API 實際回傳字串前綴尚未經實機驗證，這裡先涵蓋常見幾種寫法，
+//     若實際資料的前綴格式不同，之後可以再補規則。
+function stripSymbolPrefix(name = '') {
+  return name.replace(/^(秘法的|真實的|秘法|真實)/, '').trim();
 }
 
-function showCashTooltip(event, item) {
-  const tooltip = document.getElementById('tooltip');
-  if (!tooltip) return;
+// ARC（秘法符文）／AUT（真實符文）屬性加成合計
+//   ARC 屬性加成合計 = 核心屬性「神秘力量」數值 × 10
+//   AUT 屬性加成合計 = Σ（每個真實符文區域的等級 × 200 + 300）
+function renderSymbolSummary(data) {
+  const el = document.getElementById('symbol-summary');
+  if (!el) return;
 
-  let html = `
-        <div style="font-weight: bold; margin-bottom: 4px;">${item.name}</div>
-        <div style="font-size: 12px; color: #aaa; margin-bottom: 8px;">部位：${item.slot}</div>
-    `;
+  const S = {};
+  (data.final_stat ?? []).forEach(({ stat_name, stat_value }) => { S[stat_name] = stat_value; });
 
-  if (item.label) {
-    html += `<div style="color: #FFD700; font-size: 12px; margin-bottom: 4px;">[${item.label}]</div>`;
-  }
+  const arcPower = parseFloat(S['神秘力量']) || 0;
+  const arcBonus = Math.round(arcPower * 10);
 
-  if (item.options && item.options.length > 0) {
-    html += `<hr style="border: 0; border-top: 1px solid var(--border); margin: 6px 0;">`;
-    item.options.forEach(opt => {
-      html += `<div style="font-size: 12px; color: var(--text-1);">${opt.option_type}: +${opt.option_value}</div>`;
-    });
-  }
+  const autSymbols = (data.symbols ?? []).filter(s => (s.name || '').includes('真實'));
+  const autBonus = autSymbols.reduce((sum, s) => sum + ((parseInt(s.level) || 0) * 200 + 300), 0);
+  const autPower = parseFloat(S['真實之力']) || 0;
 
-  tooltip.innerHTML = html;
-  tooltip.classList.remove('hidden');
-  tooltip.style.left = (event.clientX + 15) + 'px';
-  tooltip.style.top = (event.clientY + 15) + 'px';
-}
-
-function hideTooltip() {
-  document.getElementById('tooltip')?.classList.add('hidden');
+  el.innerHTML = `
+    <div class="symbol-summary-row"><span>ARC 神秘力量 ${arcPower}</span><span class="symbol-summary-val">屬性加成合計 +${arcBonus.toLocaleString()}</span></div>
+    <div class="symbol-summary-row"><span>AUT 真實之力 ${autPower}</span><span class="symbol-summary-val">屬性加成合計 +${autBonus.toLocaleString()}</span></div>
+  `;
 }
 
 // ================================================================
@@ -510,18 +552,20 @@ function renderUnionArtifact(data) {
   el.innerHTML = effectsHtml + crystalsHtml;
 }
 
+// 聯盟冠軍：維持逐一列出個別冠軍＋徽章，並新增 champion_badge_total_info 的加總效果文字
 function renderUnionChampion(data) {
   const el = document.getElementById('union-champion-grid');
   if (!el) return;
 
   const champions = Array.isArray(data) ? data : (data?.champions ?? []);
+  const totalBadge = Array.isArray(data) ? [] : (data?.total_badge ?? []);
 
-  if (champions.length === 0) {
+  if (champions.length === 0 && totalBadge.length === 0) {
     el.innerHTML = '<div class="empty">無資料</div>';
     return;
   }
 
-  el.innerHTML = champions.map(c => {
+  const championsHtml = champions.map(c => {
     if (!c) return '';
     return `
       <div class="grid-item" style="flex-direction:row; justify-content:flex-start; padding:8px; gap:8px;">
@@ -537,6 +581,16 @@ function renderUnionChampion(data) {
         </div>
       </div>`;
   }).join('');
+
+  // 冠軍徽章效果加總（champion_badge_total_info）
+  const totalHtml = totalBadge.length > 0
+    ? `<div class="champion-total-summary">
+         <div class="champion-total-title">冠軍徽章效果加總</div>
+         ${totalBadge.map(t => `<div class="champion-total-line">${t}</div>`).join('')}
+       </div>`
+    : '';
+
+  el.innerHTML = championsHtml + totalHtml;
 }
 
 // ================================================================
@@ -729,6 +783,8 @@ function showToast(message, type = 'info') {
 
 // ================================================================
 // 懸浮預覽 (Tooltip)
+//   item._kind === 'cash'：現金道具（外觀棋盤格），顯示名稱／標籤／屬性
+//   item._kind === 'gear' 或未標示：一般裝備（裝備棋盤格），顯示完整潛能/星火/卷軸資訊
 // ================================================================
 function initTooltip() {
   const tooltip = document.getElementById('tooltip');
@@ -736,48 +792,62 @@ function initTooltip() {
 
   document.addEventListener('mouseover', (e) => {
     const card = e.target.closest('.doll-slot');
-    if (!card || !card.dataset.eqId) return; // 空格位 / 拼圖 / 機器人 沒有 data-eq-id，自然略過
+    if (!card || !card.dataset.eqId) return; // 空格位 / 拼圖 / 機器人 / 髮型臉型膚色 沒有 data-eq-id，自然略過
 
     const item = equipDataStore.get(card.dataset.eqId);
     if (!item) return;
 
-    const starforce = item.starforce > 0 ? `<span class="tt-star" style="color:#facc15;">★ ${item.starforce}</span>` : '';
-    const scroll = item.scroll_upgrade !== '0' ? `<span style="color:#ffaa00;">(+${item.scroll_upgrade})</span>` : '';
+    let html;
 
-    let html = `<div class="tt-header">${item.name} ${scroll} ${starforce}</div>`;
+    if (item._kind === 'cash') {
+      html = `<div class="tt-header">${item.name || '現金道具'}</div>`;
+      if (item.label) {
+        html += `<div class="tt-section" style="color:#FFD700; font-size:12px;">[${item.label}]</div>`;
+      }
+      if (item.options && item.options.length > 0) {
+        html += `<div class="tt-section"><div class="tt-title">屬性</div>`;
+        item.options.forEach(opt => html += `<span class="tt-line">${opt.option_type}: +${opt.option_value}</span>`);
+        html += `</div>`;
+      }
+    } else {
+      const starforce = item.starforce > 0 ? `<span class="tt-star" style="color:#facc15;">★ ${item.starforce}</span>` : '';
+      const scroll = item.scroll_upgrade !== '0' ? `<span style="color:#ffaa00;">(+${item.scroll_upgrade})</span>` : '';
 
-    const gradeColorMap = {
-      '傳說': '#a3e877', '唯一': '#E15AE8', '稀有': '#a68ce8', '罕見': '#e8c15a', '特殊': '#62b5e8',
-    };
+      html = `<div class="tt-header">${item.name} ${scroll} ${starforce}</div>`;
 
-    if (item.potential && item.potential.length > 0) {
-      const pColor = gradeColorMap[item.potential_grade] || 'var(--accent-light)';
-      html += `<div class="tt-section"><div class="tt-title" style="color: ${pColor};">潛能 (${item.potential_grade})</div>`;
-      item.potential.forEach(opt => html += `<span class="tt-line">${opt}</span>`);
-      html += `</div>`;
-    }
+      const gradeColorMap = {
+        '傳說': '#a3e877', '唯一': '#E15AE8', '稀有': '#a68ce8', '罕見': '#e8c15a', '特殊': '#62b5e8',
+      };
 
-    if (item.additional && item.additional.length > 0) {
-      const aColor = gradeColorMap[item.additional_grade] || 'var(--accent-light)';
-      html += `<div class="tt-section"><div class="tt-title" style="color: ${aColor};">附加潛能 (${item.additional_grade})</div>`;
-      item.additional.forEach(opt => html += `<span class="tt-line">${opt}</span>`);
-      html += `</div>`;
-    }
+      if (item.potential && item.potential.length > 0) {
+        const pColor = gradeColorMap[item.potential_grade] || 'var(--accent-light)';
+        html += `<div class="tt-section"><div class="tt-title" style="color: ${pColor};">潛能 (${item.potential_grade})</div>`;
+        item.potential.forEach(opt => html += `<span class="tt-line">${opt}</span>`);
+        html += `</div>`;
+      }
 
-    if (item.add_option && item.add_option.length > 0) {
-      html += `<div class="tt-section"><div class="tt-title">星火</div>`;
-      item.add_option.forEach(opt => html += `<span class="tt-line">${opt}</span>`);
-      html += `</div>`;
-    }
+      if (item.additional && item.additional.length > 0) {
+        const aColor = gradeColorMap[item.additional_grade] || 'var(--accent-light)';
+        html += `<div class="tt-section"><div class="tt-title" style="color: ${aColor};">附加潛能 (${item.additional_grade})</div>`;
+        item.additional.forEach(opt => html += `<span class="tt-line">${opt}</span>`);
+        html += `</div>`;
+      }
 
-    if (item.etc_option && item.etc_option.length > 0) {
-      html += `<div class="tt-section"><div class="tt-title" style="color: #ffaa00;">卷軸強化</div>`;
-      item.etc_option.forEach(opt => html += `<span class="tt-line">${opt}</span>`);
-      html += `</div>`;
-    }
+      if (item.add_option && item.add_option.length > 0) {
+        html += `<div class="tt-section"><div class="tt-title">星火</div>`;
+        item.add_option.forEach(opt => html += `<span class="tt-line">${opt}</span>`);
+        html += `</div>`;
+      }
 
-    if (item.soul_name) {
-      html += `<div class="tt-section"><div class="tt-title">${item.soul_name}</div><span class="tt-line">${item.soul_option}</span></div>`;
+      if (item.etc_option && item.etc_option.length > 0) {
+        html += `<div class="tt-section"><div class="tt-title" style="color: #ffaa00;">卷軸強化</div>`;
+        item.etc_option.forEach(opt => html += `<span class="tt-line">${opt}</span>`);
+        html += `</div>`;
+      }
+
+      if (item.soul_name) {
+        html += `<div class="tt-section"><div class="tt-title">${item.soul_name}</div><span class="tt-line">${item.soul_option}</span></div>`;
+      }
     }
 
     tooltip.innerHTML = html;
