@@ -339,10 +339,7 @@ function renderStats(data) {
     sec.pairs.forEach(([l, r]) => { html += renderPair(l, r); });
   });
 
-  if (data.remain_ap != null) {
-    html += '<div class="stat-divider"></div>';
-    html += `<div class="stat-row"><div class="stat-pair"><span class="stat-name">剩餘 AP</span><span class="stat-val">${data.remain_ap}</span></div></div>`;
-  }
+  
 
   grid.innerHTML = html;
 }
