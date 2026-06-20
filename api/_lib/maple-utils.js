@@ -2,16 +2,22 @@
 // api/_lib/maple-utils.js — Nexon API 資料解析共用模組
 // 把 query.js 裡「裝備欄位對照」「解析邏輯」抽出來，
 // 對應 Python 端的 crawler/utils.py，兩邊各自維護但職責一致。
+//
+// 變更摘要（對應 排版要求與錯誤修正.md #6，依 equipment_label_mapping.md 實測資料校正）：
+//   與 crawler/utils.py 同步修正 SLOT_NAME_MAP 的鍵名，並新增 resolveSlot()
+//   處理「墜飾」同時對應「墜飾1」與「寶玉」的特例（詳見 utils.py 的註解）。
 // =================================================================
 
 export const SLOT_NAME_MAP = {
-  "武器":"武器","輔助武器":"副武","徽章":"徽章","機器人心臟":"心臟",
-  "帽子":"帽子","衣服(上)":"上衣","褲子":"褲/裙","鞋子":"鞋子",
-  "手套":"手套","披風":"披風","肩飾":"肩飾","臉飾":"臉飾","眼飾":"眼飾",
+  "武器":"武器","輔助武器":"副武","徽章":"徽章","機器心臟":"心臟",
+  "帽子":"帽子","上衣":"上衣","褲/裙":"褲/裙","鞋子":"鞋子",
+  "手套":"手套","披風":"披風","肩膀裝飾":"肩飾","臉飾":"臉飾","眼飾":"眼飾",
   "戒指1":"戒指1","戒指2":"戒指2","戒指3":"戒指3","戒指4":"戒指4",
-  "耳環":"耳環","腰帶":"腰帶","墜飾1":"墜飾1","墜飾2":"墜飾2",
-  "口袋物品":"口袋","胸章":"胸章","勳章":"勳章",
-  "馴服的怪物":"圖騰1","馬鞍":"圖騰2","怪物裝備":"圖騰3","寶玉":"寶玉",
+  "耳環":"耳環","腰帶":"腰帶","墜飾2":"墜飾2",
+  "口袋道具":"口袋","胸章":"胸章","勳章":"勳章",
+  "馴服的怪物":"圖騰1","馬鞍":"圖騰2","怪物裝備":"圖騰3",
+  // 注意：「寶玉」與「墜飾1」皆對應 Nexon 原始字串「墜飾」，不能直接放進這張表，
+  // 需透過 resolveSlot() 用 item_name 判斷後再分流。
 };
 
 export const SLOT_ORDER = Object.fromEntries([
@@ -53,12 +59,22 @@ function buildOptionParts(optObj = {}) {
   return parts;
 }
 
+// 將 Nexon 原始 item_equipment_slot 轉成前端顯示用簡稱。
+// 特例：raw === '墜飾' 同時可能是「墜飾1」或「寶玉」（Nexon API 對寶玉欄位
+// 回傳的 slot 字串與墜飾1 重複），須靠 item_name 是否包含「寶玉」分流。
+function resolveSlot(item) {
+  const raw = item.item_equipment_slot || item.equipment_slot || '';
+  if (raw === '墜飾') {
+    return (item.item_name || '').includes('寶玉') ? '寶玉' : '墜飾1';
+  }
+  return SLOT_NAME_MAP[raw] || raw;
+}
+
 // ── 裝備清單解析（含圖標、潛能、星火、卷軸）──────────────────────
 export function parseEquipList(items = []) {
   return items
     .map(item => {
-      const slotRaw = item.item_equipment_slot || item.equipment_slot || '';
-      const slot = SLOT_NAME_MAP[slotRaw] || slotRaw;
+      const slot = resolveSlot(item);
       return {
         slot,
         name:             item.item_name || '',
@@ -194,7 +210,9 @@ export function buildCharacterData(charName, raw, skillIconMap) {
     return { name: c.v_core_name, type: c.v_core_type || '', level: c.v_core_level || 0, skills, icon: skills[0]?.icon || '' };
   });
 
-  // HEXA 矩陣（直接用 API 提供的圖示欄位，與 main.py 對齊）
+  // HEXA 矩陣
+  // 已知限制：官方 schema 的 linked_skill 內只有 hexa_skill_id，沒有名稱／圖示欄位，
+  // hexa_core_icon 也不在官方 schema 中，目前無法可靠還原圖示（依使用者指示先擱置）。
   const hexa_cores = (raw.h6?.character_hexa_core_equipment || []).filter(c => c.hexa_core_name).map(c => ({
     name: c.hexa_core_name, level: c.hexa_core_level || 0, type: c.hexa_core_type || '',
     icon: c.hexa_core_icon || '',
@@ -250,11 +268,15 @@ export function buildCharacterData(charName, raw, skillIconMap) {
     remain_ap: uaRaw.union_artifact_remain_ap || 0,
   };
 
+  // 聯盟冠軍
+  // 注意：即時查詢（query.js）走的是這條路徑，無法像 main.py 一樣跨角色互相比對
+  // 取得圖示，icon 預設為空字串，前端會自動隱藏圖片區塊（不影響其他欄位顯示）。
   const uchRaw = raw.uch || {};
   const union_champion = {
     champions: (uchRaw.union_champion || []).map(x => ({
       name: x.champion_name || '', slot: x.champion_slot || 0,
       grade: x.champion_grade || '', class: x.champion_class || '',
+      icon: '',
       badges: (x.champion_badge_info || []).map(b => b.stat || ''),
     })),
     total_badge: (uchRaw.champion_badge_total_info || []).map(b => b.stat || ''),
