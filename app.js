@@ -196,31 +196,33 @@ function renderCharacter(data) {
     </div>`
   );
 
-  renderList('v-grid', data?.v_cores, c => `
-      <div class="grid-item">
-          ${c?.icon ? `<img src="${c.icon}" style="width:32px; height:32px; object-fit:contain; margin-bottom:4px;" onerror="this.style.display='none'">` : ''}
-          <div class="grid-item-text">${c?.name ?? '核心'}</div>
-          <div style="color:var(--text-4); font-size:10px;">Lv.${c?.level ?? 0}</div>
-      </div>`
-  );
-
-  renderList('hexa-grid', data?.hexa_cores, c => {
-    const subSkills = Array.isArray(c?.skills) && c.skills.length > 0
-      ? `<div style="display:flex; gap:2px; margin-top:3px; justify-content:center; flex-wrap:wrap;">
-             ${c.skills.map(sk => `<img src="${sk.icon}" title="${sk.name}" style="width:14px; height:14px; border-radius:2px; opacity:0.8;" onerror="this.style.display='none'">`).join('')}
-           </div>`
-      : '';
-
-    return `
-    <div class="grid-item">
-        ${c?.icon
-          ? `<img src="${c.icon}" style="width:32px; height:32px; object-fit:contain;" onerror="this.style.display='none'">`
-          : `<div style="width:32px; height:32px; background:var(--bg-3); border-radius:4px;"></div>`}
-        <div class="grid-item-text" style="color:var(--text-1);">${c?.name ?? '核心'}</div>
-        <div style="color:var(--accent-light); font-size:10px;">Lv.${c?.level ?? 0}</div>
-        ${subSkills}
-    </div>`;
+    // --- 五轉 V-Matrix 渲染 ---
+  renderSkillGrid('v-grid', data?.v_cores, (c) => {
+      return {
+          icon: c?.icon,
+          tooltip: `
+              <div style="font-weight:bold; color:var(--accent);">${c?.name || '核心'}</div>
+              <div style="font-size:var(--fs-sm);">等級：${c?.level || 0}</div>
+          `
+      };
   });
+  
+  // --- 六轉 HEXA 渲染 ---
+  renderSkillGrid('hexa-grid', data?.hexa_cores, (c) => {
+      const subSkills = Array.isArray(c?.skills) && c.skills.length > 0
+          ? c.skills.map(sk => `<img src="${sk.icon}" style="width:14px; height:14px; margin:1px;">`).join('')
+          : '';
+          
+      return {
+          icon: c?.icon,
+          tooltip: `
+              <div style="font-weight:bold; color:var(--accent);">${c?.name || '核心'}</div>
+              <div style="font-size:var(--fs-sm);">等級：${c?.level || 0}</div>
+              <div style="margin-top:4px;">${subSkills}</div>
+          `
+      };
+  });
+
 
   renderLinkSkill(data.link_skills);
 
@@ -515,43 +517,6 @@ function getArtifactImagePath(name) {
   return 'images/crystals/default.png';
 }
 
-// function renderUnionArtifact(data) {
-//   const el = document.getElementById('union-artifact-grid');
-//   if (!el) return;
-
-//   const crystals = data?.crystals || [];
-//   const effects = data?.effects || [];
-
-//   if (crystals.length === 0 && effects.length === 0) {
-//     el.innerHTML = '<div class="empty">無資料</div>';
-//     return;
-//   }
-
-//   const effectsHtml = effects.length > 0
-//     ? `<div style="grid-column: span 3; padding-bottom: 8px; border-bottom: 1px solid var(--border); margin-bottom: 4px;">
-//          <div style="font-size:11px; color:var(--text-4); margin-bottom:6px; font-weight:bold;">總和效果</div>
-//          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:4px;">
-//            ${effects.map(e => `<div style="font-size:11.5px; color:var(--text-1);">• ${e.name} <span style="color:var(--accent-light)">(Lv.${e.level})</span></div>`).join('')}
-//          </div>
-//        </div>`
-//     : '';
-
-//   const crystalsHtml = crystals.map(item => `
-//     <div class="grid-item" style="align-items: flex-start; text-align: left; padding: 10px;">
-//         <img src="${getArtifactImagePath(item.name)}" style="width:36px; height:36px; margin-bottom:6px" onerror="this.src='images/crystals/default.png'">
-//         <div style="font-weight:bold; font-size:12.5px; color:var(--text-1); margin-bottom:4px;">
-//             ${item?.name ?? '水晶'} <span style="color:var(--accent-light); font-size:11px;">Lv.${item?.level ?? 0}</span>
-//         </div>
-//         <div style="font-size:10.5px; color:var(--text-3); line-height:1.4;">
-//            ${item?.option1 ? `<div>- ${item.option1}</div>` : ''}
-//            ${item?.option2 ? `<div>- ${item.option2}</div>` : ''}
-//            ${item?.option3 ? `<div>- ${item.option3}</div>` : ''}
-//         </div>
-//     </div>
-//   `).join('');
-
-//   el.innerHTML = effectsHtml + crystalsHtml;
-// }
 function renderUnionArtifact(data) {
     // 這裡改用您 HTML 中實際的 ID：union-artifact-grid
     const container = document.getElementById('union-artifact-grid'); 
@@ -662,6 +627,34 @@ function renderLinkSkill(data) {
 
 // 確保呼叫它 (如果您的架構是直接呼叫，請替換掉原本的 renderList)
 // renderLinkSkill(data.link_skills);
+/**
+ * 輔助函式：將網格邏輯標準化
+ */
+function renderSkillGrid(containerId, skills, contentFn) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    
+    // 確保容器有正確的網格樣式 (需配合 style.css 中的 .skill-grid)
+    container.style.display = 'grid';
+    container.style.gridTemplateColumns = 'repeat(auto-fill, minmax(45px, 1fr))';
+    container.style.gap = '8px';
+    container.innerHTML = '';
+
+    (skills || []).forEach(c => {
+        const itemData = contentFn(c);
+        const slot = document.createElement('div');
+        slot.className = 'doll-slot'; // 使用既有的 doll-slot 樣式
+        slot.dataset.tooltip = itemData.tooltip; // 注入 Tooltip 資料
+        slot.style.width = '45px';
+        slot.style.height = '45px';
+        
+        if (itemData.icon) {
+            slot.innerHTML = `<img src="${itemData.icon}" style="width:100%; height:100%; object-fit:contain;">`;
+        }
+        
+        container.appendChild(slot);
+    });
+}
 
 // ================================================================
 // 區塊收合（單一版本：取代原本重複三次的監聽器）
