@@ -866,6 +866,20 @@ function initQuery() {
   });
 }
 
+// 切換「角色資訊」與「Boss 資訊」的顯示狀態
+function switchTab(tabName) {
+    const charView = document.getElementById('view-character');
+    const bossView = document.getElementById('view-boss');
+    
+    if (tabName === 'character') {
+        charView.style.display = 'block'; // 顯示角色
+        bossView.style.display = 'none';  // 隱藏 Boss
+    } else if (tabName === 'boss') {
+        charView.style.display = 'none';  // 隱藏角色
+        bossView.style.display = 'block'; // 顯示 Boss
+    }
+}
+
 // ================================================================
 // Toast 提示（取代 alert）
 // ================================================================
