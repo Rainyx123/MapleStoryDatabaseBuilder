@@ -206,6 +206,36 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans TC
 .grid-hexa { display: grid !important; grid-template-columns: repeat(6, 1fr) !important; grid-template-rows: repeat(2, 1fr) !important; gap: 8px !important; width: 100% !important; }
 .grid-hexa .grid-item { aspect-ratio: 1 / 1; width: 100%; border-radius: var(--r-sm); background: var(--bg-2); border: 1px solid var(--border); padding: 5px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
 
+/* 技能圖示網格容器 */
+.skill-grid {
+    display: grid;
+    /* 根據您的版面寬度，自動調整排列數量 */
+    grid-template-columns: repeat(auto-fill, minmax(45px, 1fr));
+    gap: 8px;
+    padding: 10px;
+    background: var(--bg-3);
+    border-radius: var(--r-sm);
+}
+
+/* 確保技能圖示的大小統一 */
+.skill-grid .doll-slot {
+    width: 45px;
+    height: 45px;
+    padding: 2px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border: 1px solid var(--border);
+    border-radius: var(--r-sm);
+    background: var(--bg-2);
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.skill-grid .doll-slot:hover {
+    background: var(--bg-hover);
+}
+
 /* 符文系統：ARC / AUT 屬性加成合計（顯示於符文清單下方） */
 .symbol-summary {
   margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--border);
@@ -213,6 +243,26 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans TC
 }
 .symbol-summary-row { display: flex; justify-content: space-between; font-size: var(--fs-sm); color: var(--text-3); }
 .symbol-summary-val { color: var(--accent-light); font-weight: 600; }
+
+/* 符文系統網格容器，與其他區塊對齊 */
+.symbol-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(45px, 1fr));
+    gap: 8px;
+    margin-top: 10px;
+}
+
+/* 確保符文圖示容器與裝備欄共用同一個樣式觸發懸浮效果 */
+.symbol-slot {
+    width: 45px;
+    height: 45px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    background: var(--bg-3); /* 使用既有的背景色變數 */
+    border-radius: var(--r-sm);
+}
 
 /*聯盟神器專用*/
 /* 聯盟神器專用網格 (對應您的 class="grid-artifact") */
