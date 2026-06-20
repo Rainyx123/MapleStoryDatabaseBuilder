@@ -111,7 +111,16 @@ const APPEARANCE_SLOTS = [
   { area: 'facetp', slot: '__face__' },
   { area: 'skin',   slot: '__skin__' },
 ];
-
+// ================================================================
+// 本地自訂圖片對應表（修復 Nexon API 破圖問題）
+// ================================================================
+const LOCAL_IMAGE_OVERRIDES = {
+    "伊妮絲的寶玉": "images/totems/gem.png",
+    "貝奧武夫的痕跡": "images/totems/totem1.png",
+    "萬事的痕跡": "images/totems/totem2.png",
+    "阿德勒的痕跡": "images/totems/totem3.png",
+    "柏林的痕跡": "images/totems/totem4.png"
+};
 // ================================================================
 // 1. 系統初始化
 // ================================================================
@@ -369,8 +378,17 @@ function renderEquipment(data) {
 
     const eqId = `eq-${equipIdCounter++}`;
     equipDataStore.set(eqId, { ...eq, _kind: 'gear' });
+    // ==========================================
+    // 💡 圖片攔截與替換邏輯：修復 Nexon API 破圖問題
+    // ==========================================
+    let itemIcon = eq.icon; 
+    if (eq.name && LOCAL_IMAGE_OVERRIDES[eq.name]) {
+        itemIcon = LOCAL_IMAGE_OVERRIDES[eq.name]; // 強制替換為本地路徑
+    }
+
+    // 渲染圖示時改用攔截處理過的 itemIcon
     return `<div class="doll-slot" data-eq-id="${eqId}" style="grid-area:${area}">
-              ${eq.icon ? `<img src="${eq.icon}" onerror="this.style.display='none'">` : ''}
+              ${itemIcon ? `<img src="${itemIcon}" onerror="this.style.display='none'">` : ''}
             </div>`;
   }).join('');
 
