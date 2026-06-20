@@ -935,13 +935,13 @@ function initTooltip() {
       }
 
       if (item.add_option && item.add_option.length > 0) {
-        html += `<div class="tt-section"><div class="tt-title">星火</div>`;
+        html += `<div class="tt-section"><div class="tt-title" style="color: #ffffff;">星火</div>`;
         item.add_option.forEach(opt => html += `<span class="tt-line">${opt}</span>`);
         html += `</div>`;
       }
 
       if (item.etc_option && item.etc_option.length > 0) {
-        html += `<div class="tt-section"><div class="tt-title" style="color: #ffaa00;">卷軸強化</div>`;
+        html += `<div class="tt-section"><div class="tt-title" style="color: #ffffff;">卷軸強化</div>`;
         item.etc_option.forEach(opt => html += `<span class="tt-line">${opt}</span>`);
         html += `</div>`;
       }
