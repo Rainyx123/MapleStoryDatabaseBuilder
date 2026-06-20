@@ -999,4 +999,5 @@ function initTooltip() {
 document.getElementById('btn-boss')?.addEventListener('click', () => {
   document.getElementById('content').classList.add('hidden');
   document.getElementById('boss-content').classList.remove('hidden');
+  window.scrollTo(0, 0);   // 新增這行，避免使用者卡在原本捲動的位置看不到新內容
 });
