@@ -128,6 +128,18 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans TC
 .doll-slot img { width: 80%; height: 80%; object-fit: contain; }
 .doll-slot.empty-slot { background: var(--bg-1); border-style: dashed; opacity: 0.5; }
 
+/* 空格位文字標籤（裝備區／外觀區棋盤格）：無資料時直接顯示欄位名稱，
+   取代原本只藏在 title 屬性裡、滑鼠停留才看得到的做法 */
+.doll-slot.empty-slot {
+  font-size: 9px;
+  line-height: 1.2;
+  color: var(--text-4);
+  text-align: center;
+  padding: 2px;
+  word-break: break-word;
+  white-space: normal;
+}
+
 /* 中央角色圖：佔據棋盤格未填滿的中間區域，深色底板 */
 .doll-img-cell {
   grid-area: img;
@@ -198,7 +210,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans TC
 /* 戰地攻擊隊：單欄列表，避免長文字在窄欄被截斷看不到完整內容 */
 .grid-unionraider { display: flex; flex-direction: column; gap: 0; }
 .raider-row {
-  padding: 6px 8px; border-bottom: 1px solid var(--border); font-size: 0.85rem; color: var(--text-1);
+  padding: 6px 8px; border-bottom: 1px solid var(--border); font-size: 12px; color: var(--text-1);
   display: block; white-space: normal; word-break: break-word; line-height: 1.4;
 }
 
@@ -281,10 +293,15 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans TC
     border-radius: 4px;
 }
 
+/* 聯盟神器：總效果加成（union_artifact_effect 加總，顯示於神器格子上方） */
+.artifact-total-summary { grid-column: 1 / -1; margin-bottom: 6px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+.artifact-total-title { font-size: var(--fs-xs); color: var(--text-4); font-weight: bold; margin-bottom: 4px; }
+.artifact-total-line { font-size: 12px; color: var(--text-1); padding: 2px 0; }
+
 /* 聯盟冠軍：個別冠軍清單下方的「徽章效果加總」（取自 champion_badge_total_info） */
 .champion-total-summary { grid-column: 1 / -1; margin-top: 6px; padding-top: 8px; border-top: 1px solid var(--border); }
 .champion-total-title { font-size: var(--fs-xs); color: var(--text-4); font-weight: bold; margin-bottom: 4px; }
-.champion-total-line { font-size: 11.5px; color: var(--text-1); padding: 2px 0; }
+.champion-total-line { font-size: 12px; color: var(--text-1); padding: 2px 0; }
 
 /* JS 生成元件樣式 (現金道具卡片等，目前僅作備用，主要顯示已改為外觀棋盤格) */
 #cash-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 8px; }
