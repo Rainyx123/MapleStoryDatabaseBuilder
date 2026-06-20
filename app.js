@@ -483,38 +483,56 @@ function stripSymbolPrefix(name = '') {
 //   ARC 屬性加成合計 = 核心屬性「神秘力量」數值 × 10
 //   AUT 屬性加成合計 = Σ（每個真實符文區域的等級 × 200 + 300）
 function renderSymbolSummary(data) {
-    const container = document.getElementById('symbol-container');
-    if (!container) return;
+  const container = document.getElementById('symbol-summary');
+  if (!container) return;
 
-    // 清空現有內容並應用網格樣式
-    container.className = 'symbol-grid'; 
-    
-    // 如果沒有資料，顯示提示
-    if (!data || data.length === 0) {
-        container.innerHTML = '<div style="color:var(--text-4)">無資料</div>';
-        return;
-    }
+  const symbols = data?.symbols ?? [];
+  const finalStat = data?.final_stat ?? [];
 
-    // 將陣列資料轉為 HTML
-    container.innerHTML = data.map(s => {
-        // 確保 icon 路徑存在，否則使用預設值
-        const iconPath = s.icon || `images/symbols/${s.name}.png`;
-        
-        // 封裝詳細資訊至 data-tooltip (移除前綴邏輯依需求保留)
-        const tooltipContent = `${s.name}<br>等級: ${s.level}<br>加成: +${s.force}`;
-        
-        return `
-            <div class="doll-slot" data-tooltip="${tooltipContent}">
-                <img src="${iconPath}" onerror="this.src='images/default.png'" style="width:100%; height:100%; object-fit:contain;">
-            </div>
-        `;
-    }).join('');
+  // ARC：從核心屬性「神秘力量」取值 × 10
+  const arcForce = parseInt(finalStat.find(s => s.stat_name === '神秘力量')?.stat_value ?? 0);
+  const arcBonus = arcForce * 10;
 
-    // 重新初始化懸浮預覽
-    // 如果您原本有 initTooltip() 函式，確保這裡呼叫它
-    if (typeof initTooltip === 'function') {
-        initTooltip();
-    }
+  // AUT：只計算名稱含「真實」的符文，每個等級 × 200 + 300
+  let autTotal = 0;
+  const autDetails = [];
+  symbols.forEach(s => {
+    if (!s.name?.includes('真實')) return;
+    const lv = parseInt(s.level ?? 0);
+    const bonus = lv * 200 + 300;
+    autTotal += bonus;
+    autDetails.push(`${stripSymbolPrefix(s.name)} Lv.${lv} (+${bonus.toLocaleString()})`);
+  });
+
+  if (arcForce === 0 && autTotal === 0) {
+    container.innerHTML = '';
+    return;
+  }
+
+  let html = '';
+  if (arcForce > 0) {
+    html += `
+      <div class="symbol-summary-row">
+        <span>ARC 合計（神秘力量）</span>
+        <span class="symbol-summary-val">${arcForce}</span>
+      </div>
+      <div class="symbol-summary-row">
+        <span>ARC 屬性加成合計</span>
+        <span class="symbol-summary-val">+${arcBonus.toLocaleString()}</span>
+      </div>`;
+  }
+  if (autTotal > 0) {
+    html += `
+      <div class="symbol-summary-row" style="margin-top:6px;">
+        <span>AUT 屬性加成合計</span>
+        <span class="symbol-summary-val">+${autTotal.toLocaleString()}</span>
+      </div>`;
+    autDetails.forEach(d => {
+      html += `<div class="symbol-summary-row"><span style="padding-left:8px;color:var(--text-4)">${d}</span></div>`;
+    });
+  }
+
+  container.innerHTML = html;
 }
 
 // ================================================================
@@ -533,42 +551,38 @@ function getArtifactImagePath(name) {
 }
 
 function renderUnionArtifact(data) {
-    // 這裡改用您 HTML 中實際的 ID：union-artifact-grid
-    const container = document.getElementById('union-artifact-grid'); 
-    if (!container) return;
+  const container = document.getElementById('union-artifact-grid');
+  if (!container) return;
 
-    // 清空內容
-    container.innerHTML = '';
+  container.innerHTML = '';
 
-    // 防呆檢查
-    if (!data || !data.crystals || data.crystals.length === 0) {
-        container.innerHTML = '<div style="padding:10px;">暫無神器資料</div>';
-        return;
-    }
+  if (!data || (!data.crystals?.length && !data.effects?.length)) {
+    container.innerHTML = '<div style="padding:10px;">暫無神器資料</div>';
+    return;
+  }
 
-    data.crystals.forEach(c => {
-        const div = document.createElement('div');
-        div.className = 'doll-slot'; // 繼續複用既有卡槽樣式
-        
-        // 懸浮文字內容
-        div.setAttribute('data-tooltip', `
-            <div style="text-align:left; font-size:12px;">
-                <strong style="color:var(--accent);">${c.name}</strong><br>
-                等級: Lv.${c.level}<br>
-                <hr style="border:0; border-top:1px solid #444; margin:5px 0;">
-                ${c.option1 ? `<div>${c.option1}</div>` : ''}
-                ${c.option2 ? `<div>${c.option2}</div>` : ''}
-                ${c.option3 ? `<div>${c.option3}</div>` : ''}
-            </div>
-        `);
+  // 神器水晶格子（3欄棋盤格，用 getArtifactImagePath 取正確圖片）
+  (data.crystals ?? []).forEach(c => {
+    const div = document.createElement('div');
+    div.className = 'doll-slot';
+    const tooltipHtml = `<strong style="color:var(--accent);">${c.name}</strong><br>等級: Lv.${c.level}<br>${[c.option1, c.option2, c.option3].filter(Boolean).join('<br>')}`;
+    div.setAttribute('data-tooltip', tooltipHtml);
 
-        const img = document.createElement('img');
-        img.src = `images/crystals/Artifact${c.level}.png`;
-        img.onerror = () => { img.src = 'images/crystals/default.png'; };
-        
-        div.appendChild(img);
-        container.appendChild(div);
-    });
+    const img = document.createElement('img');
+    img.src = getArtifactImagePath(c.name);
+    img.onerror = () => { img.src = 'images/crystals/default.png'; };
+    div.appendChild(img);
+    container.appendChild(div);
+  });
+
+  // 總效果加成（顯示在水晶格子下方，跨全欄）
+  if (data.effects?.length > 0) {
+    const summary = document.createElement('div');
+    summary.style.cssText = 'grid-column:1/-1; margin-top:8px; padding-top:8px; border-top:1px solid var(--border);';
+    summary.innerHTML = `<div style="font-size:var(--fs-xs);color:var(--text-4);font-weight:bold;margin-bottom:4px;">神器總效果加成</div>`
+      + data.effects.map(e => `<div style="font-size:11px;color:var(--text-2);padding:2px 0;">${e.name} Lv.${e.level}</div>`).join('');
+    container.appendChild(summary);
+  }
 }
 
 // 聯盟冠軍：維持逐一列出個別冠軍＋徽章，並新增 champion_badge_total_info 的加總效果文字
@@ -629,7 +643,7 @@ function renderLinkSkill(data) {
         slot.className = 'doll-slot'; 
         
         // 將名稱與等級塞入 data-tooltip，懸浮預覽會自動讀取此屬性
-        slot.setAttribute('data-tooltip', `${sk.name || '技能'}\nLv.${sk.level || 0}`);
+        slot.setAttribute('data-tooltip', `<div style="font-weight:bold;color:var(--text-1)">${sk.name || '技能'}</div><div style="font-size:var(--fs-sm);">Lv.${sk.level || 0}</div>`);
 
         const img = document.createElement('img');
         img.src = sk.icon || '';
@@ -870,7 +884,16 @@ function initTooltip() {
 
   document.addEventListener('mouseover', (e) => {
     const card = e.target.closest('.doll-slot');
-    if (!card || !card.dataset.eqId) return; // 空格位 / 拼圖 / 機器人 / 髮型臉型膚色 沒有 data-eq-id，自然略過
+    if (!card) return;
+
+    // data-tooltip：傳授技能／五轉／六轉／神器等使用純 HTML 字串的懸浮預覽
+    if (card.dataset.tooltip) {
+      tooltip.innerHTML = card.dataset.tooltip;
+      tooltip.classList.remove('hidden');
+      return;
+    }
+
+    if (!card.dataset.eqId) return; // 空格位 / 拼圖 / 機器人 / 髮型臉型膚色 沒有 data-eq-id，自然略過
 
     const item = equipDataStore.get(card.dataset.eqId);
     if (!item) return;
