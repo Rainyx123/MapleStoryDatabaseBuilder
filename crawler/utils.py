@@ -5,14 +5,24 @@
 # =================================================================
 
 # 裝備欄位：Nexon 原始欄位名 → 前端顯示用簡稱
-SLOT_NAME_MAP = {
+# 優先以 item_equipment_part 查表（part 比 slot 更精確，例如「寶玉」part=寶玉 但 slot=墜飾）
+# slot 欄位作為補充（part 查不到時 fallback）
+PART_NAME_MAP = {
     "武器": "武器", "輔助武器": "副武", "徽章": "徽章", "機器人心臟": "心臟",
     "帽子": "帽子", "衣服(上)": "上衣", "褲子": "褲/裙", "鞋子": "鞋子",
     "手套": "手套", "披風": "披風", "肩飾": "肩飾", "臉飾": "臉飾", "眼飾": "眼飾",
+    "耳環": "耳環", "腰帶": "腰帶", "胸章": "胸章", "勳章": "勳章",
+    "馴服的怪物": "圖騰1", "馬鞍": "圖騰2", "怪物裝備": "圖騰3",
+    "寶玉": "寶玉",  # item_equipment_part = "寶玉"，slot 卻是 "墜飾"，只能靠 part 區分
+    "墜飾": "墜飾",  # 同義：part 也可能是 "墜飾"
+}
+
+SLOT_NAME_MAP = {
     "戒指1": "戒指1", "戒指2": "戒指2", "戒指3": "戒指3", "戒指4": "戒指4",
-    "耳環": "耳環", "腰帶": "腰帶", "墜飾1": "墜飾1", "墜飾2": "墜飾2",
-    "口袋物品": "口袋", "胸章": "胸章", "勳章": "勳章",
-    "馴服的怪物": "圖騰1", "馬鞍": "圖騰2", "怪物裝備": "圖騰3", "寶玉": "寶玉",
+    "墜飾": "墜飾1",   # slot="墜飾" 且 part 非"寶玉" → 第一個墜飾欄
+    "墜飾2": "墜飾2",
+    "口袋道具": "口袋",  # Nexon 實際回傳的欄位名（非口袋物品）
+    "口袋物品": "口袋",  # 保留舊名稱相容
 }
 
 # 裝備清單排序順序（依顯示簡稱）
@@ -48,12 +58,36 @@ def _build_option_parts(opt_dict: dict) -> list:
     return parts
 
 
+def _resolve_display_slot(item: dict) -> str:
+    """
+    依優先順序決定前端顯示用的 slot 簡稱：
+      1. item_equipment_part 查 PART_NAME_MAP（最精確，可區分「寶玉」vs「墜飾」）
+      2. item_equipment_slot 查 SLOT_NAME_MAP（補充戒指1~4、墜飾2、口袋等）
+      3. 回傳原始 slot 字串（fallback）
+    """
+    part = item.get('item_equipment_part', '')
+    slot = item.get('item_equipment_slot') or item.get('equipment_slot') or ''
+
+    # 寶玉：part="寶玉" 但 slot="墜飾"，必須優先用 part 判斷
+    if part in PART_NAME_MAP:
+        mapped = PART_NAME_MAP[part]
+        # "墜飾" part 可能對應 墜飾1 或 墜飾2，改由 slot 決定序號
+        if mapped == '墜飾':
+            return SLOT_NAME_MAP.get(slot, '墜飾1')
+        return mapped
+
+    # part 查不到時，改查 slot
+    if slot in SLOT_NAME_MAP:
+        return SLOT_NAME_MAP[slot]
+
+    return slot
+
+
 def parse_equip_list(items: list) -> list:
     """將 Nexon API 的裝備道具清單，轉為前端使用的統一格式（含圖示、潛能、星火、卷軸）。"""
     parsed = []
     for item in items:
-        slot_raw = item.get('item_equipment_slot') or item.get('equipment_slot') or ''
-        display_slot = SLOT_NAME_MAP.get(slot_raw, slot_raw)
+        display_slot = _resolve_display_slot(item)
 
         p_opts = [item.get(f'potential_option_{k}') for k in range(1, 4) if item.get(f'potential_option_{k}')]
         a_opts = [item.get(f'additional_potential_option_{k}') for k in range(1, 4) if item.get(f'additional_potential_option_{k}')]
