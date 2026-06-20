@@ -445,7 +445,7 @@ function renderUnionRaider(data) {
   if (Array.isArray(data)) raiders = data;
   else if (data && Array.isArray(data.raider_stats)) raiders = data.raider_stats;
 
-  if (raiders.length === 0) { el.innerHTML = '<div class="empty">無資料</div>'; return; }
+  if (raiders.length === 0) { el.innerHTML = '<div class="empty" style="color: var(--text-4); padding: 10px;">無資料</div>'; return; }
 
   const statsMap = {};
   raiders.forEach(stat => {
@@ -462,7 +462,16 @@ function renderUnionRaider(data) {
     val !== null ? `${key.replace('%', '')} ${val}${key.includes('%') ? '%' : ''}` : key
   );
 
-  el.innerHTML = consolidated.map(stat => `<div class="raider-row">${stat}</div>`).join('');
+  // [修改重點]：只更動這裡，將原本的 div 替換成聯盟神器的網格結構與樣式
+  el.innerHTML = `
+    <div class="stat-container" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px;">
+      ${consolidated.map(stat => `
+        <div class="stat-cell" style="display: flex; justify-content: flex-start; align-items: center; background: var(--bg-3); padding: 6px 10px; border-radius: var(--r-sm);">
+          <span class="stat-label" style="white-space: normal; word-break: break-word;">${stat}</span>
+        </div>
+      `).join('')}
+    </div>
+  `;
 }
 
 // ================================================================
