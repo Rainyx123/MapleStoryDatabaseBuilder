@@ -483,23 +483,33 @@ function stripSymbolPrefix(name = '') {
 //   ARC 屬性加成合計 = 核心屬性「神秘力量」數值 × 10
 //   AUT 屬性加成合計 = Σ（每個真實符文區域的等級 × 200 + 300）
 function renderSymbolSummary(data) {
-  const el = document.getElementById('symbol-summary');
-  if (!el) return;
+    const container = document.getElementById('symbol-container');
+    if (!container) return;
+    
+    // 清空舊內容並建立網格容器
+    container.innerHTML = '';
+    const grid = document.createElement('div');
+    grid.className = 'symbol-grid';
 
-  const S = {};
-  (data.final_stat ?? []).forEach(({ stat_name, stat_value }) => { S[stat_name] = stat_value; });
+    // 假設 data.symbols 是您的符文陣列
+    data.symbols.forEach(s => {
+        const slot = document.createElement('div');
+        // 加入 .doll-slot 類別，既有的 initTooltip 就會自動抓取這個區塊
+        slot.className = 'doll-slot symbol-slot';
+        
+        // 將詳細敘述寫入 data-tooltip，懸浮時自動顯示
+        slot.dataset.tooltip = `
+            <div style="font-weight:bold; color:var(--accent);">${s.name}</div>
+            <div>目前等級: ${s.level}</div>
+            <div>神秘力量: +${s.stat_increase}</div>
+        `;
 
-  const arcPower = parseFloat(S['神秘力量']) || 0;
-  const arcBonus = Math.round(arcPower * 10);
+        // 放入圖示
+        slot.innerHTML = `<img src="${s.icon}" onerror="this.src='images/default.png'">`;
+        grid.appendChild(slot);
+    });
 
-  const autSymbols = (data.symbols ?? []).filter(s => (s.name || '').includes('真實'));
-  const autBonus = autSymbols.reduce((sum, s) => sum + ((parseInt(s.level) || 0) * 200 + 300), 0);
-  const autPower = parseFloat(S['真實之力']) || 0;
-
-  el.innerHTML = `
-    <div class="symbol-summary-row"><span>ARC 神秘力量 ${arcPower}</span><span class="symbol-summary-val">屬性加成合計 +${arcBonus.toLocaleString()}</span></div>
-    <div class="symbol-summary-row"><span>AUT 真實之力 ${autPower}</span><span class="symbol-summary-val">屬性加成合計 +${autBonus.toLocaleString()}</span></div>
-  `;
+    container.appendChild(grid);
 }
 
 // ================================================================
