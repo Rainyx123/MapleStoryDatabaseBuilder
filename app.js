@@ -222,15 +222,17 @@ function renderCharacter(data) {
     </div>`;
   });
 
-  renderList('link-grid', data?.link_skills, sk =>
-    `<div class="grid-item" style="flex-direction:row; justify-content:flex-start; padding:8px;">
-        <img src="${sk?.icon || ''}" style="width:28px; height:28px; margin-right:8px; border-radius:4px" onerror="this.style.display='none'">
-        <div style="text-align:left">
-            <div style="font-size:11px; font-weight:bold; color:var(--text-1)">${sk?.name ?? '技能'}</div>
-            <div style="font-size:10px; color:var(--text-4)">Lv.${sk?.level ?? 0}</div>
-        </div>
-    </div>`
-  );
+  //原本的傳授技能區域//
+  // renderList('link-grid', data?.link_skills, sk =>
+  //   `<div class="grid-item" style="flex-direction:row; justify-content:flex-start; padding:8px;">
+  //       <img src="${sk?.icon || ''}" style="width:28px; height:28px; margin-right:8px; border-radius:4px" onerror="this.style.display='none'">
+  //       <div style="text-align:left">
+  //           <div style="font-size:11px; font-weight:bold; color:var(--text-1)">${sk?.name ?? '技能'}</div>
+  //           <div style="font-size:10px; color:var(--text-4)">Lv.${sk?.level ?? 0}</div>
+  //       </div>
+  //   </div>`
+  // );
+  renderLinkSkill(data.link_skills);
 
   renderList('symbol-grid', data?.symbols, s =>
     `<div class="grid-item">
@@ -601,6 +603,37 @@ function renderUnionChampion(data) {
 
   el.innerHTML = championsHtml + totalHtml;
 }
+
+// --- 調整後的傳授技能渲染邏輯 ---
+function renderLinkSkill(data) {
+    const container = document.getElementById('link-grid'); // 假設您的容器 ID 是 link-grid
+    if (!container || !data) return;
+
+    // 直接沿用已有的網格設定 (Grid)
+    container.style.display = 'grid';
+    container.style.gridTemplateColumns = 'repeat(6, 1fr)'; // 2*6 網格
+    container.style.gap = '8px';
+    container.innerHTML = ''; // 清空原本內容
+
+    data.forEach(sk => {
+        const slot = document.createElement('div');
+        // 【關鍵】直接複用裝備區的 doll-slot 樣式，它已經有正方形與 Hover 效果
+        slot.className = 'doll-slot'; 
+        
+        // 將名稱與等級塞入 data-tooltip，懸浮預覽會自動讀取此屬性
+        slot.setAttribute('data-tooltip', `${sk.name || '技能'}\nLv.${sk.level || 0}`);
+
+        const img = document.createElement('img');
+        img.src = sk.icon || '';
+        img.onerror = function() { this.style.display = 'none'; }; // 圖片載入失敗隱藏
+        
+        slot.appendChild(img);
+        container.appendChild(slot);
+    });
+}
+
+// 確保呼叫它 (如果您的架構是直接呼叫，請替換掉原本的 renderList)
+// renderLinkSkill(data.link_skills);
 
 // ================================================================
 // 區塊收合（單一版本：取代原本重複三次的監聽器）
