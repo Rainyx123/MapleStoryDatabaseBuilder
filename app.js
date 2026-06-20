@@ -485,31 +485,36 @@ function stripSymbolPrefix(name = '') {
 function renderSymbolSummary(data) {
     const container = document.getElementById('symbol-container');
     if (!container) return;
+
+    // 清空現有內容並應用網格樣式
+    container.className = 'symbol-grid'; 
     
-    // 清空舊內容並建立網格容器
-    container.innerHTML = '';
-    const grid = document.createElement('div');
-    grid.className = 'symbol-grid';
+    // 如果沒有資料，顯示提示
+    if (!data || data.length === 0) {
+        container.innerHTML = '<div style="color:var(--text-4)">無資料</div>';
+        return;
+    }
 
-    // 假設 data.symbols 是您的符文陣列
-    data.symbols.forEach(s => {
-        const slot = document.createElement('div');
-        // 加入 .doll-slot 類別，既有的 initTooltip 就會自動抓取這個區塊
-        slot.className = 'doll-slot symbol-slot';
+    // 將陣列資料轉為 HTML
+    container.innerHTML = data.map(s => {
+        // 確保 icon 路徑存在，否則使用預設值
+        const iconPath = s.icon || `images/symbols/${s.name}.png`;
         
-        // 將詳細敘述寫入 data-tooltip，懸浮時自動顯示
-        slot.dataset.tooltip = `
-            <div style="font-weight:bold; color:var(--accent);">${s.name}</div>
-            <div>目前等級: ${s.level}</div>
-            <div>神秘力量: +${s.stat_increase}</div>
+        // 封裝詳細資訊至 data-tooltip (移除前綴邏輯依需求保留)
+        const tooltipContent = `${s.name}<br>等級: ${s.level}<br>加成: +${s.force}`;
+        
+        return `
+            <div class="doll-slot" data-tooltip="${tooltipContent}">
+                <img src="${iconPath}" onerror="this.src='images/default.png'" style="width:100%; height:100%; object-fit:contain;">
+            </div>
         `;
+    }).join('');
 
-        // 放入圖示
-        slot.innerHTML = `<img src="${s.icon}" onerror="this.src='images/default.png'">`;
-        grid.appendChild(slot);
-    });
-
-    container.appendChild(grid);
+    // 重新初始化懸浮預覽
+    // 如果您原本有 initTooltip() 函式，確保這裡呼叫它
+    if (typeof initTooltip === 'function') {
+        initTooltip();
+    }
 }
 
 // ================================================================
