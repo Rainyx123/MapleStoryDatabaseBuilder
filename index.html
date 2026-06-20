@@ -144,31 +144,53 @@
 
   <div id="modal-settings" class="modal hidden">
     <div class="modal-box">
-      <div class="modal-header"><h2>⚙️ 設定</h2><button onclick="closeModal('modal-settings')">✕</button></div>
-      <div class="modal-body">
-        <div class="settings-group-title">顯示區塊</div>
-        <label><input type="checkbox" data-section="section-stats" checked> 核心屬性</label>
-        <label><input type="checkbox" data-section="section-hyper" checked> 極限屬性</label>
-        <label><input type="checkbox" data-section="section-equip" checked> 角色與裝備</label>
-        <label><input type="checkbox" data-section="section-ability" checked> 內在潛能</label>
-        <label><input type="checkbox" data-section="section-link" checked> 傳授技能</label>
-        <label><input type="checkbox" data-section="section-champion" checked> 聯盟冠軍</label>
-        <label><input type="checkbox" data-section="section-raider" checked> 戰地攻擊隊</label>
-        <label><input type="checkbox" data-section="section-artifact" checked> 聯盟神器</label>
-        <label><input type="checkbox" data-section="section-symbol" checked> 符文系統</label>
-        <label><input type="checkbox" data-section="section-hexa" checked> 六轉 HEXA</label>
-        <label><input type="checkbox" data-section="section-v" checked> 五轉 V-Matrix</label>
-        <label><input type="checkbox" data-section="section-appearance" checked> 外觀區</label>
-        <label><input type="checkbox" data-section="section-pets" checked> 寵物</label>
-        <hr>
-        <label><input type="checkbox" id="toggle-peak"> 顯示 7 日最高戰力</label>
+      <div class="modal-header"><h2>⚙️ 設定</h2><button onclick="closeModal('modal-settings')">❎</button></div>
+        <div class="modal-body">
+          <div class="settings-group-title">顯示區塊</div>
+          
+          <!-- 使用表格進行兩欄排版 -->
+          <table width="100%" border="0" cellpadding="5" cellspacing="0">
+              <tr>
+                  <td><label><input type="checkbox" data-section="section-stats" checked> 核心屬性</label></td>
+                  <td><label><input type="checkbox" data-section="section-hyper" checked> 極限屬性</label></td>
+              </tr>
+              <tr>
+                  <td><label><input type="checkbox" data-section="section-equip" checked> 角色與裝備</label></td>
+                  <td><label><input type="checkbox" data-section="section-ability" checked> 內在潛能</label></td>
+              </tr>
+              <tr>
+                  <td><label><input type="checkbox" data-section="section-link" checked> 傳授技能</label></td>
+                  <td><label><input type="checkbox" data-section="section-champion" checked> 聯盟冠軍</label></td>
+              </tr>
+              <tr>
+                  <td><label><input type="checkbox" data-section="section-raider" checked> 戰地攻擊隊</label></td>
+                  <td><label><input type="checkbox" data-section="section-artifact" checked> 聯盟神器</label></td>
+              </tr>
+              <tr>
+                  <td><label><input type="checkbox" data-section="section-symbol" checked> 符文系統</label></td>
+                  <td><label><input type="checkbox" data-section="section-hexa" checked> 六轉 HEXA</label></td>
+              </tr>
+              <tr>
+                  <td><label><input type="checkbox" data-section="section-v" checked> 五轉 V-Matrix</label></td>
+                  <td><label><input type="checkbox" data-section="section-appearance" checked> 外觀區</label></td>
+              </tr>
+              <tr>
+                  <!-- 奇數個選項，最後一格留空即可 -->
+                  <td><label><input type="checkbox" data-section="section-pets" checked> 寵物</label></td>
+                  <td></td>
+              </tr>
+          </table>
+      
+          <hr>
+          <label><input type="checkbox" id="toggle-peak"> 顯示 7 日最高戰力</label>
       </div>
+
     </div>
   </div>
 
   <div id="modal-query" class="modal hidden">
     <div class="modal-box">
-      <div class="modal-header"><h2>🔍 查詢</h2><button onclick="closeModal('modal-query')">✕</button></div>
+      <div class="modal-header"><h2>🔍 查詢</h2><button onclick="closeModal('modal-query')">❎</button></div>
       <div class="modal-body">
         <input type="text" id="query-input" placeholder="角色名稱...">
         <button id="btn-query-submit">查詢</button>
