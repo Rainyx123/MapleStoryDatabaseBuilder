@@ -83,13 +83,15 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans TC
 
 /* 💡 修正 2：配合上面多加的一列，將裝備區與核心屬性改為跨越 4 列 (span 4) */
 #overview-row #section-equip   { grid-column: 2; grid-row: 1 / span 4; }
-#overview-row #section-stats   { grid-column: 3; grid-row: 1 / span 4; }
+#overview-row #section-stats   { grid-column: 3; grid-row: 1 / span 3; }
+#overview-row #section-pets    { grid-column: 3; grid-row: 4; }
 
-/* 左／右欄高度由比例決定，內容過多時用捲動避免撐破版面 (維持原樣不動) */
+/* 左／右欄高度由比例決定，內容過多時用捲動避免撐破版面 */
 #overview-row #section-hyper .section-body,
 #overview-row #section-ability .section-body,
 #overview-row #section-link .section-body,
-#overview-row #section-stats .section-body {
+#overview-row #section-stats .section-body,
+#overview-row #section-pets .section-body {
   overflow-y: auto;
 }
 
@@ -402,6 +404,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans TC
     #section-link    { order: 3; }
     #section-equip   { order: 4; }
     #section-stats   { order: 5; }
+    #section-pets    { order: 6; }
 }
 
 @media (max-width: 768px) {
