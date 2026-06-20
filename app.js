@@ -467,7 +467,7 @@ function renderUnionRaider(data) {
     <div class="stat-container" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px;">
       ${consolidated.map(stat => `
         <div class="stat-cell" style="display: flex; justify-content: flex-start; align-items: center; background: var(--bg-3); padding: 6px 10px; border-radius: var(--r-sm);">
-          <span class="stat-label" style="white-space: normal; word-break: break-word;">${stat}</span>
+          <span style="white-space: normal; word-break: break-word; color: var(--text-1); font-weight: 500;">${stat}</span>
         </div>
       `).join('')}
     </div>
