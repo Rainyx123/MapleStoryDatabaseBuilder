@@ -75,17 +75,13 @@
 
       <!-- =========================================================
            聯盟與技能系統：左右兩欄配對排列
-           （聯盟冠軍↔符文系統、戰地攻擊隊↔六轉HEXA、聯盟神器↔五轉V-Matrix）
+           （聯盟冠軍↔符文系統、聯盟神器↔六轉Hexa）
       ========================================================== -->
       <div class="grid-system">
         <div class="flex-column-layout span-4">
           <section class="section-card" id="section-champion">
             <div class="section-header"><span>聯盟冠軍</span><span class="toggle-icon">▼</span></div>
             <div class="section-body grid-champion" id="union-champion-grid"></div>
-          </section>
-          <section class="section-card" id="section-raider">
-            <div class="section-header"><span>戰地攻擊隊</span><span class="toggle-icon">▼</span></div>
-            <div class="section-body grid-unionraider" id="union-raider-grid"></div>
           </section>
           <section class="section-card" id="section-artifact">
             <div class="section-header"><span>聯盟神器</span><span class="toggle-icon">▼</span></div>
@@ -94,8 +90,8 @@
         </div>
 
                 <!-- =========================================================
-             外觀區：棋盤格版位（戒指/臉飾/眼飾/耳環/帽子/披風/上衣/手套/
-             褲子/鞋子/武器/副武 ＋ 中央角色圖、最下排髮型/臉型/膚色）
+             外觀區+聯盟攻擊隊：棋盤格版位（戒指/臉飾/眼飾/耳環/帽子/披風/上衣/手套/
+             褲子/鞋子/武器/副武 ＋ 中央角色圖、最下排髮型/臉型/膚色）、戰地攻擊隊↔六轉HEXA
         ========================================================== -->
         <div class="flex-column-layout span-4">
           <section class="section-card" id="section-appearance">
@@ -104,8 +100,12 @@
               <div class="appearance-doll-grid" id="appearance-doll-grid"></div>
             </div>
           </section>
+          <section class="section-card" id="section-raider">
+            <div class="section-header"><span>戰地攻擊隊</span><span class="toggle-icon">▼</span></div>
+            <div class="section-body grid-unionraider" id="union-raider-grid"></div>
+          </section>
         </div>
-          
+        
         <div class="flex-column-layout span-4">
           <section class="section-card" id="section-symbol">
             <div class="section-header"><span>符文系統 (ARC/AUT)</span><span class="toggle-icon">▼</span></div>
