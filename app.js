@@ -479,7 +479,8 @@ function renderUnionRaider(data) {
 
   // 2. 套用原本的 .stat-cell，並加入允許換行 (white-space: normal) 的行內樣式
   el.innerHTML = consolidated.map(stat => 
-    `<div class="stat-cell" style="white-space: normal; word-break: break-word; line-height: 1.4; height: auto; justify-content: center; text-align: center;">${stat}</div>`
+    // 將 justify-content 與 text-align 改為靠左，並將 line-height 從 1.4 縮小為 1.15
+    `<div class="stat-cell" style="white-space: normal; word-break: break-word; line-height: 1.15; height: auto; justify-content: flex-start; text-align: left;">${stat}</div>`
   ).join('');
 }
 
