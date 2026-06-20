@@ -1,5 +1,7 @@
 /* ================================================================
-   楓之谷角色資料庫 — 模組化深色主題 v6（角色總覽棋盤排版版）
+   楓之谷角色資料庫 — 模組化深色主題 v7（排版要求與錯誤修正版）
+   本次變更：新增 .slot-label（空格欄位文字標籤，#7）；
+            .raider-row／.champion-total-line 字級統一為 12px。
    ================================================================ */
 
 /* ---- 1. 全域變數 (UI 主題設定) ---- */
@@ -83,15 +85,13 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans TC
 
 /* 💡 修正 2：配合上面多加的一列，將裝備區與核心屬性改為跨越 4 列 (span 4) */
 #overview-row #section-equip   { grid-column: 2; grid-row: 1 / span 4; }
-#overview-row #section-stats   { grid-column: 3; grid-row: 1 / span 3; }
-#overview-row #section-pets    { grid-column: 3; grid-row: 4; }
+#overview-row #section-stats   { grid-column: 3; grid-row: 1 / span 4; }
 
-/* 左／右欄高度由比例決定，內容過多時用捲動避免撐破版面 */
+/* 左／右欄高度由比例決定，內容過多時用捲動避免撐破版面 (維持原樣不動) */
 #overview-row #section-hyper .section-body,
 #overview-row #section-ability .section-body,
 #overview-row #section-link .section-body,
-#overview-row #section-stats .section-body,
-#overview-row #section-pets .section-body {
+#overview-row #section-stats .section-body {
   overflow-y: auto;
 }
 
@@ -130,16 +130,10 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans TC
 .doll-slot img { width: 80%; height: 80%; object-fit: contain; }
 .doll-slot.empty-slot { background: var(--bg-1); border-style: dashed; opacity: 0.5; }
 
-/* 空格位文字標籤（裝備區／外觀區棋盤格）：無資料時直接顯示欄位名稱，
-   取代原本只藏在 title 屬性裡、滑鼠停留才看得到的做法 */
-.doll-slot.empty-slot {
-  font-size: 9px;
-  line-height: 1.2;
-  color: var(--text-4);
-  text-align: center;
-  padding: 2px;
-  word-break: break-word;
-  white-space: normal;
+/* 空格欄位文字標籤（對應 排版要求與錯誤修正.md #7：空格直接顯示欄位名稱，不再只靠 title） */
+.doll-slot.empty-slot .slot-label {
+  font-size: 9px; color: var(--text-4); text-align: center;
+  line-height: 1.2; padding: 2px; word-break: break-word;
 }
 
 /* 中央角色圖：佔據棋盤格未填滿的中間區域，深色底板 */
@@ -295,11 +289,6 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans TC
     border-radius: 4px;
 }
 
-/* 聯盟神器：總效果加成（union_artifact_effect 加總，顯示於神器格子上方） */
-.artifact-total-summary { grid-column: 1 / -1; margin-bottom: 6px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
-.artifact-total-title { font-size: var(--fs-xs); color: var(--text-4); font-weight: bold; margin-bottom: 4px; }
-.artifact-total-line { font-size: 12px; color: var(--text-1); padding: 2px 0; }
-
 /* 聯盟冠軍：個別冠軍清單下方的「徽章效果加總」（取自 champion_badge_total_info） */
 .champion-total-summary { grid-column: 1 / -1; margin-top: 6px; padding-top: 8px; border-top: 1px solid var(--border); }
 .champion-total-title { font-size: var(--fs-xs); color: var(--text-4); font-weight: bold; margin-bottom: 4px; }
@@ -404,7 +393,6 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans TC
     #section-link    { order: 3; }
     #section-equip   { order: 4; }
     #section-stats   { order: 5; }
-    #section-pets    { order: 6; }
 }
 
 @media (max-width: 768px) {
