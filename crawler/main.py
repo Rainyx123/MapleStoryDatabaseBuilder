@@ -1,8 +1,18 @@
 # =================================================================
-# main.py — 楓之谷角色資料每日排程爬蟲（v3 重構版）
-# 變更摘要（對應 reply06170858.md 決議）：
+# main.py — 楓之谷角色資料每日排程爬蟲（v4 重構版）
+#
+# 本次變更摘要（對應 排版要求與錯誤修正.md #9）：
+#   - union_champion 內每個 champion 新增 "icon" 欄位（預設空字串）。
+#   - main() 改成兩階段：先抓完本次清單內所有角色的資料，建立
+#     「角色名稱 → image_url」對照表，再回頭把每個角色的聯盟冠軍名稱
+#     拿去比對這張表，補上對應的角色圖（聯盟冠軍通常就是同一帳號下的
+#     其他角色）。若冠軍名稱不在本次抓取清單內（例如已刪除或改名的
+#     角色），icon 維持空字串，前端會自動隱藏圖片區塊。
+#   - 此為「偷懶版」做法：只能比對到本次 9 名角色內的冠軍，無法涵蓋
+#     資料庫外的角色（與使用者確認過，這是可接受的限制）。
+#
+# 上一輪變更摘要（對應 reply06170858.md 決議）：
 #   A3/A4/D17：final_stat 直接使用 Nexon 原始陣列，不再額外組「英文 key 字典」
-#              （與 query.js 輸出格式一致，前端 renderStats 兩邊都吃得到）
 #   A6       ：因為直接存 final_stat 陣列，characters.js 不需要再做 keyMap 轉換
 #   B7       ：角色清單改由 Supabase characters 表動態讀取（is_active=true）
 #   B10/B11  ：混合式瘦身——完整 JSON 只留「最新一筆」，combat_power+日期保留7天，
@@ -266,7 +276,10 @@ def process_character(char_name: str) -> dict | None:
                 "icon": skills[0]['icon'] if skills else '',
             })
 
-        # --- HEXA 矩陣（直接使用 API 提供的圖示欄位）---
+        # --- HEXA 矩陣 ---
+        # 已知限制：官方 schema 的 linked_skill 內只有 hexa_skill_id，沒有名稱／圖示欄位，
+        # hexa_core_icon 也不在官方 schema 中，目前無法可靠還原圖示（依使用者指示先擱置，
+        # 待之後實機抓到完整回應再補正）。
         hexa_cores = []
         for c in ((raw.get('h6') or {}).get('character_hexa_core_equipment') or []):
             if not c.get('hexa_core_name'):
@@ -348,12 +361,15 @@ def process_character(char_name: str) -> dict | None:
         }
 
         # --- 聯盟冠軍 ---
+        # icon 先預設空字串，main() 在抓完本次清單所有角色後，會依冠軍名稱
+        # 跨角色比對、回頭補上對應的角色圖（見 main() 的 Step 2）。
         uch_raw = raw.get('uch') or {}
         union_champion = {
             "champions": [
                 {
                     "name": x.get('champion_name', ''), "slot": x.get('champion_slot', 0),
                     "grade": x.get('champion_grade', ''), "class": x.get('champion_class', ''),
+                    "icon": '',
                     "badges": [b.get('stat', '') for b in (x.get('champion_badge_info') or [])],
                 }
                 for x in (uch_raw.get('union_champion') or [])
@@ -446,14 +462,27 @@ def main():
     tz = timezone(timedelta(hours=8))
     today_str = datetime.now(tz).strftime("%Y-%m-%d")
 
-    success_count = 0
+    # Step 1：依序抓取所有角色資料（角色間序列＋角色內平行，維持原節流策略）
+    all_data: dict[str, dict] = {}
     for char_name in character_list:
         data = process_character(char_name)
-        if not data:
+        if data:
+            all_data[char_name] = data
+        else:
             logger.error(f"❌ {char_name} — 抓取失敗")
-            time.sleep(1)
-            continue
+        time.sleep(1)  # 角色間節流，避免觸發 Nexon API rate limit
 
+    # Step 2：建立「角色名稱 → 角色圖」對照表，回頭補齊聯盟冠軍圖示
+    #   （聯盟冠軍通常是同一帳號下的其他角色，因此用本次抓到的清單互相比對；
+    #    若冠軍名稱不在清單內，icon 維持空字串，前端會自動隱藏圖片區塊）
+    image_map = {name: d['image_url'] for name, d in all_data.items() if d.get('image_url')}
+    for d in all_data.values():
+        for champ in d.get('union_champion', {}).get('champions', []):
+            champ['icon'] = image_map.get(champ.get('name', ''), '')
+
+    # Step 3：寫入 Supabase ＋ 瘦身
+    success_count = 0
+    for char_name, data in all_data.items():
         cp_formatted = f"{data['combat_power']:,}"
         logger.info(f"✅ {char_name} — 戰鬥力 {cp_formatted}")
 
@@ -475,8 +504,6 @@ def main():
             success_count += 1
         except Exception as e:
             logger.error(f"❌ 寫入 {char_name} 失敗：{e}")
-
-        time.sleep(1)  # 角色間節流，避免觸發 Nexon API rate limit
 
     logger.info(f"🎉 完成！共 {success_count}/{len(character_list)} 個角色，快照日期：{today_str}")
 
