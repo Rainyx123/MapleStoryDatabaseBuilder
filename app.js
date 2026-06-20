@@ -1,7 +1,23 @@
 // ================================================================
-// 楓之谷角色資料庫 — 前端主程式 v6（角色總覽棋盤排版版）
+// 楓之谷角色資料庫 — 前端主程式 v7（排版要求與錯誤修正版）
 //
-// 本次變更摘要（對應 排版要求與錯誤修正.md）：
+// 本次變更摘要（對應 排版要求與錯誤修正.md，2025-06）：
+//   #4  戰地攻擊隊跑版：renderUnionRaider() 改回單欄 .raider-row 輸出
+//       （之前被覆蓋成兩欄 stat-cell，長文字會被截斷看不到完整內容）
+//   #7  裝備區／外觀區空格欄位：原本只寫在 title 屬性（需滑鼠停留才看到），
+//       改成直接把欄位名稱顯示在格子內（.slot-label）
+//   #1/#2 符文系統 ARC／AUT 合計：renderSymbolSummary() 原本目標一個不存在的
+//       #symbol-container，且邏輯只是重複渲染符文格子、沒有真的計算數值，
+//       改成正確操作 #symbol-summary，並依公式計算
+//       （ARC = 神秘力量×10；AUT = Σ每顆真實符文等級×200+300）
+//   #13 懸浮預覽：initTooltip() 原本只認 data-eq-id，導致傳授技能／五轉／
+//       六轉／聯盟神器的 data-tooltip 從未真正顯示，現在統一支援兩種機制
+//   其他：移除 renderSymbolSummary() 內多餘的 initTooltip() 重複呼叫
+//       （原本每次切換角色都會疊加一組新的事件監聽器）；聯盟冠軍／戰地
+//       攻擊隊文字字級統一為 12px；傳授技能懸浮預覽 \n 改為 <br> 以配合
+//       新版 initTooltip 的 HTML 渲染。
+// ----------------------------------------------------------------
+// 本次變更摘要（對應 排版要求與錯誤修正.md，上一輪）：
 //   - 角色總覽改為 5 個區塊（極限屬性／內在潛能／傳授技能／角色與裝備／
 //     核心屬性）扁平排列，由 style.css 的 CSS Grid 負責桌面版排列位置
 //     （左欄 2:3:1 比例堆疊／中欄角色裝備／右欄核心屬性），窄螢幕則用
@@ -15,7 +31,6 @@
 //     顯示符文名稱時移除「秘法的／真實的」等前綴（stripSymbolPrefix）。
 //   - 聯盟冠軍維持逐一列出個別冠軍＋徽章，並新增 champion_badge_total_info
 //     的加總效果文字。
-//   - 戰地攻擊隊改為單欄列表＋允許文字換行，修正窄欄位時敘述被截斷的問題。
 //   - 戰地聯盟（等級／階級）併入角色資訊列，移除原本獨立的卡片。
 //   - 移除已棄用的 renderCashItems() / showCashTooltip() / hideTooltip()
 //     （原 #cash-grid 卡片清單已由外觀棋盤格取代）。
@@ -315,10 +330,10 @@ function renderStats(data) {
     sec.pairs.forEach(([l, r]) => { html += renderPair(l, r); });
   });
 
-  // if (data.remain_ap != null) {
-  //   html += '<div class="stat-divider"></div>';
-  //   html += `<div class="stat-row"><div class="stat-pair"><span class="stat-name">剩餘 AP</span><span class="stat-val">${data.remain_ap}</span></div></div>`;
-  // }
+  if (data.remain_ap != null) {
+    html += '<div class="stat-divider"></div>';
+    html += `<div class="stat-row"><div class="stat-pair"><span class="stat-name">剩餘 AP</span><span class="stat-val">${data.remain_ap}</span></div></div>`;
+  }
 
   grid.innerHTML = html;
 }
@@ -338,7 +353,7 @@ function renderEquipment(data) {
     // 機器人格位：資料來源是 data.android（機器人本體），不是裝備陣列
     if (slot === '__android__') {
       const an = data?.android;
-      if (!an?.icon) return `<div class="doll-slot empty-slot" style="grid-area:${area}" title="機器人"></div>`;
+      if (!an?.icon) return `<div class="doll-slot empty-slot" style="grid-area:${area}" title="機器人"><span class="slot-label">機器人</span></div>`;
       return `<div class="doll-slot" style="grid-area:${area}" title="${an.name || '機器人'}">
                 <img src="${an.icon}" onerror="this.style.display='none'">
               </div>`;
@@ -346,11 +361,11 @@ function renderEquipment(data) {
 
     // 拼圖：Nexon API 目前尚未提供對應資料，先保留版位與功能
     if (slot === null) {
-      return `<div class="doll-slot empty-slot" style="grid-area:${area}" title="拼圖（功能保留中，尚無資料）"></div>`;
+      return `<div class="doll-slot empty-slot" style="grid-area:${area}" title="拼圖（功能保留中，尚無資料）"><span class="slot-label">拼圖</span></div>`;
     }
 
     const eq = bySlot[slot];
-    if (!eq) return `<div class="doll-slot empty-slot" style="grid-area:${area}" title="${slot}"></div>`;
+    if (!eq) return `<div class="doll-slot empty-slot" style="grid-area:${area}" title="${slot}"><span class="slot-label">${slot}</span></div>`;
 
     const eqId = `eq-${equipIdCounter++}`;
     equipDataStore.set(eqId, { ...eq, _kind: 'gear' });
@@ -400,7 +415,7 @@ function renderAppearance(data) {
     }
 
     const item = bySlot[slot];
-    if (!item) return `<div class="doll-slot empty-slot" style="grid-area:${area}" title="${slot}"></div>`;
+    if (!item) return `<div class="doll-slot empty-slot" style="grid-area:${area}" title="${slot}"><span class="slot-label">${slot}</span></div>`;
 
     const eqId = `cash-${equipIdCounter++}`;
     equipDataStore.set(eqId, { ...item, _kind: 'cash' });
@@ -456,16 +471,9 @@ function renderUnionRaider(data) {
     val !== null ? `${key.replace('%', '')} ${val}${key.includes('%') ? '%' : ''}` : key
   );
 
-  // [修改重點]：只更動這裡，將原本的 div 替換成聯盟神器的網格結構與樣式
-  el.innerHTML = `
-    <div class="stat-container" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px;">
-      ${consolidated.map(stat => `
-        <div class="stat-cell" style="display: flex; justify-content: flex-start; align-items: center; background: var(--bg-3); padding: 6px 10px; border-radius: var(--r-sm);">
-          <span style="white-space: normal; word-break: break-word; color: var(--text-1); font-weight: 500;">${stat}</span>
-        </div>
-      `).join('')}
-    </div>
-  `;
+  // 改回單欄 .raider-row 輸出（對應 排版要求與錯誤修正.md #4），
+  // 避免兩欄網格把較長的敘述截斷看不到完整內容
+  el.innerHTML = consolidated.map(stat => `<div class="raider-row">${stat}</div>`).join('');
 }
 
 // ================================================================
@@ -476,63 +484,36 @@ function renderUnionRaider(data) {
 // 註：Nexon API 實際回傳字串前綴尚未經實機驗證，這裡先涵蓋常見幾種寫法，
 //     若實際資料的前綴格式不同，之後可以再補規則。
 function stripSymbolPrefix(name = '') {
-  return name.replace(/^(祕法符文：|真實符文：)/, '').trim();
+  return name.replace(/^(秘法的|真實的|秘法|真實)/, '').trim();
 }
 
-// ARC（秘法符文）／AUT（真實符文）屬性加成合計
+// ARC（秘法符文）／AUT（真實符文）屬性加成合計（對應 排版要求與錯誤修正.md #1/#2/#15）
 //   ARC 屬性加成合計 = 核心屬性「神秘力量」數值 × 10
-//   AUT 屬性加成合計 = Σ（每個真實符文區域的等級 × 200 + 300）
+//   AUT 屬性加成合計 = Σ（每個真實符文的等級 × 200 + 300）
+// 註：符文圖示清單本身（#symbol-grid）已由 renderCharacter() 內的 renderList() 處理，
+//     這裡只負責下方的 ARC／AUT 合計區塊（#symbol-summary），不重複渲染符文格子。
 function renderSymbolSummary(data) {
-  const container = document.getElementById('symbol-summary');
-  if (!container) return;
+  const el = document.getElementById('symbol-summary');
+  if (!el) return;
 
-  const symbols = data?.symbols ?? [];
   const finalStat = data?.final_stat ?? [];
+  const getStat = name => parseFloat(finalStat.find(s => s.stat_name === name)?.stat_value) || 0;
 
-  // ARC：從核心屬性「神秘力量」取值 × 10
-  const arcForce = parseInt(finalStat.find(s => s.stat_name === '神秘力量')?.stat_value ?? 0);
-  const arcBonus = arcForce * 10;
+  const mysticForce = getStat('神秘力量');      // ARC 合計數值
+  const authenticForce = getStat('真實之力');   // AUT 合計數值
 
-  // AUT：只計算名稱含「真實」的符文，每個等級 × 200 + 300
-  let autTotal = 0;
-  const autDetails = [];
-  symbols.forEach(s => {
-    if (!s.name?.includes('真實')) return;
-    const lv = parseInt(s.level ?? 0);
-    const bonus = lv * 200 + 300;
-    autTotal += bonus;
-    autDetails.push(`${stripSymbolPrefix(s.name)} Lv.${lv} (+${bonus.toLocaleString()})`);
-  });
+  // 分類依據：symbols 內的原始名稱仍保留「秘法的／真實的」前綴（顯示時才用 stripSymbolPrefix 移除）
+  const autBonus = (data?.symbols ?? [])
+    .filter(s => (s?.name || '').startsWith('真實'))
+    .reduce((sum, s) => sum + ((s.level || 0) * 200 + 300), 0);
+  const arcBonus = mysticForce * 10;
 
-  if (arcForce === 0 && autTotal === 0) {
-    container.innerHTML = '';
-    return;
-  }
-
-  let html = '';
-  if (arcForce > 0) {
-    html += `
-      <div class="symbol-summary-row">
-        <span>ARC 合計（神秘力量）</span>
-        <span class="symbol-summary-val">${arcForce}</span>
-      </div>
-      <div class="symbol-summary-row">
-        <span>ARC 屬性加成合計</span>
-        <span class="symbol-summary-val">+${arcBonus.toLocaleString()}</span>
-      </div>`;
-  }
-  if (autTotal > 0) {
-    html += `
-      <div class="symbol-summary-row" style="margin-top:6px;">
-        <span>AUT 屬性加成合計</span>
-        <span class="symbol-summary-val">+${autTotal.toLocaleString()}</span>
-      </div>`;
-    autDetails.forEach(d => {
-      html += `<div class="symbol-summary-row"><span style="padding-left:8px;color:var(--text-4)">${d}</span></div>`;
-    });
-  }
-
-  container.innerHTML = html;
+  el.innerHTML = `
+    <div class="symbol-summary-row"><span>ARC 神秘力量合計</span><span class="symbol-summary-val">${mysticForce.toLocaleString()}</span></div>
+    <div class="symbol-summary-row"><span>ARC 屬性加成合計</span><span class="symbol-summary-val">${arcBonus.toLocaleString()}</span></div>
+    <div class="symbol-summary-row"><span>AUT 真實之力合計</span><span class="symbol-summary-val">${authenticForce.toLocaleString()}</span></div>
+    <div class="symbol-summary-row"><span>AUT 屬性加成合計</span><span class="symbol-summary-val">${autBonus.toLocaleString()}</span></div>
+  `;
 }
 
 // ================================================================
@@ -551,38 +532,42 @@ function getArtifactImagePath(name) {
 }
 
 function renderUnionArtifact(data) {
-  const container = document.getElementById('union-artifact-grid');
-  if (!container) return;
+    // 這裡改用您 HTML 中實際的 ID：union-artifact-grid
+    const container = document.getElementById('union-artifact-grid'); 
+    if (!container) return;
 
-  container.innerHTML = '';
+    // 清空內容
+    container.innerHTML = '';
 
-  if (!data || (!data.crystals?.length && !data.effects?.length)) {
-    container.innerHTML = '<div style="padding:10px;">暫無神器資料</div>';
-    return;
-  }
+    // 防呆檢查
+    if (!data || !data.crystals || data.crystals.length === 0) {
+        container.innerHTML = '<div style="padding:10px;">暫無神器資料</div>';
+        return;
+    }
 
-  // 神器水晶格子（3欄棋盤格，用 getArtifactImagePath 取正確圖片）
-  (data.crystals ?? []).forEach(c => {
-    const div = document.createElement('div');
-    div.className = 'doll-slot';
-    const tooltipHtml = `<strong style="color:var(--accent);">${c.name}</strong><br>等級: Lv.${c.level}<br>${[c.option1, c.option2, c.option3].filter(Boolean).join('<br>')}`;
-    div.setAttribute('data-tooltip', tooltipHtml);
+    data.crystals.forEach(c => {
+        const div = document.createElement('div');
+        div.className = 'doll-slot'; // 繼續複用既有卡槽樣式
+        
+        // 懸浮文字內容
+        div.setAttribute('data-tooltip', `
+            <div style="text-align:left; font-size:12px;">
+                <strong style="color:var(--accent);">${c.name}</strong><br>
+                等級: Lv.${c.level}<br>
+                <hr style="border:0; border-top:1px solid #444; margin:5px 0;">
+                ${c.option1 ? `<div>${c.option1}</div>` : ''}
+                ${c.option2 ? `<div>${c.option2}</div>` : ''}
+                ${c.option3 ? `<div>${c.option3}</div>` : ''}
+            </div>
+        `);
 
-    const img = document.createElement('img');
-    img.src = getArtifactImagePath(c.name);
-    img.onerror = () => { img.src = 'images/crystals/default.png'; };
-    div.appendChild(img);
-    container.appendChild(div);
-  });
-
-  // 總效果加成（顯示在水晶格子下方，跨全欄）
-  if (data.effects?.length > 0) {
-    const summary = document.createElement('div');
-    summary.style.cssText = 'grid-column:1/-1; margin-top:8px; padding-top:8px; border-top:1px solid var(--border);';
-    summary.innerHTML = `<div style="font-size:var(--fs-xs);color:var(--text-4);font-weight:bold;margin-bottom:4px;">神器總效果加成</div>`
-      + data.effects.map(e => `<div style="font-size:11px;color:var(--text-2);padding:2px 0;">${e.name} Lv.${e.level}</div>`).join('');
-    container.appendChild(summary);
-  }
+        const img = document.createElement('img');
+        img.src = `images/crystals/Artifact${c.level}.png`;
+        img.onerror = () => { img.src = 'images/crystals/default.png'; };
+        
+        div.appendChild(img);
+        container.appendChild(div);
+    });
 }
 
 // 聯盟冠軍：維持逐一列出個別冠軍＋徽章，並新增 champion_badge_total_info 的加總效果文字
@@ -604,13 +589,13 @@ function renderUnionChampion(data) {
       <div class="grid-item" style="flex-direction:row; justify-content:flex-start; padding:8px; gap:8px;">
         ${c.icon ? `<img src="${c.icon}" style="width:28px; height:28px; border-radius:4px; flex-shrink:0" onerror="this.style.display='none'">` : ''}
         <div style="text-align:left; min-width:0;">
-          <div style="font-size:11px; font-weight:bold; color:var(--text-1); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+          <div style="font-size:12px; font-weight:bold; color:var(--text-1); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
             ${c.name ?? c.class ?? '冠軍'}
           </div>
-          <div style="font-size:10px; color:var(--text-4);">
+          <div style="font-size:12px; color:var(--text-4);">
             ${c.class ? `${c.class}` : ''}${c.level ? ` · Lv.${c.level}` : ''}
           </div>
-          ${c.effect ? `<div style="font-size:10px; color:var(--accent-light); margin-top:2px;">${c.effect}</div>` : ''}
+          ${c.effect ? `<div style="font-size:12px; color:var(--accent-light); margin-top:2px;">${c.effect}</div>` : ''}
         </div>
       </div>`;
   }).join('');
@@ -643,7 +628,7 @@ function renderLinkSkill(data) {
         slot.className = 'doll-slot'; 
         
         // 將名稱與等級塞入 data-tooltip，懸浮預覽會自動讀取此屬性
-        slot.setAttribute('data-tooltip', `<div style="font-weight:bold;color:var(--text-1)">${sk.name || '技能'}</div><div style="font-size:var(--fs-sm);">Lv.${sk.level || 0}</div>`);
+        slot.setAttribute('data-tooltip', `${sk.name || '技能'}<br>Lv.${sk.level || 0}`);
 
         const img = document.createElement('img');
         img.src = sk.icon || '';
@@ -886,14 +871,14 @@ function initTooltip() {
     const card = e.target.closest('.doll-slot');
     if (!card) return;
 
-    // data-tooltip：傳授技能／五轉／六轉／神器等使用純 HTML 字串的懸浮預覽
-    if (card.dataset.tooltip) {
+    // 簡易懸浮預覽：傳授技能／五轉V-Matrix／六轉HEXA／聯盟神器等直接把 HTML
+    // 塞在 data-tooltip（沒有 data-eq-id，不走 equipDataStore），統一在這裡顯示
+    if (!card.dataset.eqId) {
+      if (!card.dataset.tooltip) return; // 空格位 / 拼圖 / 機器人 / 髮型臉型膚色：兩者都沒有，自然略過
       tooltip.innerHTML = card.dataset.tooltip;
       tooltip.classList.remove('hidden');
       return;
     }
-
-    if (!card.dataset.eqId) return; // 空格位 / 拼圖 / 機器人 / 髮型臉型膚色 沒有 data-eq-id，自然略過
 
     const item = equipDataStore.get(card.dataset.eqId);
     if (!item) return;
@@ -935,13 +920,13 @@ function initTooltip() {
       }
 
       if (item.add_option && item.add_option.length > 0) {
-        html += `<div class="tt-section"><div class="tt-title" style="color: #ffffff;">星火</div>`;
+        html += `<div class="tt-section"><div class="tt-title">星火</div>`;
         item.add_option.forEach(opt => html += `<span class="tt-line">${opt}</span>`);
         html += `</div>`;
       }
 
       if (item.etc_option && item.etc_option.length > 0) {
-        html += `<div class="tt-section"><div class="tt-title" style="color: #ffffff;">卷軸強化</div>`;
+        html += `<div class="tt-section"><div class="tt-title" style="color: #ffaa00;">卷軸強化</div>`;
         item.etc_option.forEach(opt => html += `<span class="tt-line">${opt}</span>`);
         html += `</div>`;
       }
