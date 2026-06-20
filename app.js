@@ -471,9 +471,16 @@ function renderUnionRaider(data) {
     val !== null ? `${key.replace('%', '')} ${val}${key.includes('%') ? '%' : ''}` : key
   );
 
-  // 改回單欄 .raider-row 輸出（對應 排版要求與錯誤修正.md #4），
-  // 避免兩欄網格把較長的敘述截斷看不到完整內容
-  el.innerHTML = consolidated.map(stat => `<div class="raider-row">${stat}</div>`).join('');
+  // --- 以下為修改區域 ---
+  // 1. 強制設定父容器為雙欄網格
+  el.style.display = 'grid';
+  el.style.gridTemplateColumns = 'repeat(2, minmax(0, 1fr))';
+  el.style.gap = '6px'; 
+
+  // 2. 套用原本的 .stat-cell，並加入允許換行 (white-space: normal) 的行內樣式
+  el.innerHTML = consolidated.map(stat => 
+    `<div class="stat-cell" style="white-space: normal; word-break: break-word; line-height: 1.4; height: auto; justify-content: center; text-align: center;">${stat}</div>`
+  ).join('');
 }
 
 // ================================================================
@@ -484,7 +491,7 @@ function renderUnionRaider(data) {
 // 註：Nexon API 實際回傳字串前綴尚未經實機驗證，這裡先涵蓋常見幾種寫法，
 //     若實際資料的前綴格式不同，之後可以再補規則。
 function stripSymbolPrefix(name = '') {
-  return name.replace(/^(秘法的|真實的|秘法|真實)/, '').trim();
+  return name.replace(/^(祕法符文：|真實符文：)/, '').trim();
 }
 
 // ARC（秘法符文）／AUT（真實符文）屬性加成合計（對應 排版要求與錯誤修正.md #1/#2/#15）
