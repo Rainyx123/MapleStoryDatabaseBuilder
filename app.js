@@ -222,16 +222,6 @@ function renderCharacter(data) {
     </div>`;
   });
 
-  //原本的傳授技能區域//
-  // renderList('link-grid', data?.link_skills, sk =>
-  //   `<div class="grid-item" style="flex-direction:row; justify-content:flex-start; padding:8px;">
-  //       <img src="${sk?.icon || ''}" style="width:28px; height:28px; margin-right:8px; border-radius:4px" onerror="this.style.display='none'">
-  //       <div style="text-align:left">
-  //           <div style="font-size:11px; font-weight:bold; color:var(--text-1)">${sk?.name ?? '技能'}</div>
-  //           <div style="font-size:10px; color:var(--text-4)">Lv.${sk?.level ?? 0}</div>
-  //       </div>
-  //   </div>`
-  // );
   renderLinkSkill(data.link_skills);
 
   renderList('symbol-grid', data?.symbols, s =>
@@ -525,42 +515,79 @@ function getArtifactImagePath(name) {
   return 'images/crystals/default.png';
 }
 
+// function renderUnionArtifact(data) {
+//   const el = document.getElementById('union-artifact-grid');
+//   if (!el) return;
+
+//   const crystals = data?.crystals || [];
+//   const effects = data?.effects || [];
+
+//   if (crystals.length === 0 && effects.length === 0) {
+//     el.innerHTML = '<div class="empty">無資料</div>';
+//     return;
+//   }
+
+//   const effectsHtml = effects.length > 0
+//     ? `<div style="grid-column: span 3; padding-bottom: 8px; border-bottom: 1px solid var(--border); margin-bottom: 4px;">
+//          <div style="font-size:11px; color:var(--text-4); margin-bottom:6px; font-weight:bold;">總和效果</div>
+//          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:4px;">
+//            ${effects.map(e => `<div style="font-size:11.5px; color:var(--text-1);">• ${e.name} <span style="color:var(--accent-light)">(Lv.${e.level})</span></div>`).join('')}
+//          </div>
+//        </div>`
+//     : '';
+
+//   const crystalsHtml = crystals.map(item => `
+//     <div class="grid-item" style="align-items: flex-start; text-align: left; padding: 10px;">
+//         <img src="${getArtifactImagePath(item.name)}" style="width:36px; height:36px; margin-bottom:6px" onerror="this.src='images/crystals/default.png'">
+//         <div style="font-weight:bold; font-size:12.5px; color:var(--text-1); margin-bottom:4px;">
+//             ${item?.name ?? '水晶'} <span style="color:var(--accent-light); font-size:11px;">Lv.${item?.level ?? 0}</span>
+//         </div>
+//         <div style="font-size:10.5px; color:var(--text-3); line-height:1.4;">
+//            ${item?.option1 ? `<div>- ${item.option1}</div>` : ''}
+//            ${item?.option2 ? `<div>- ${item.option2}</div>` : ''}
+//            ${item?.option3 ? `<div>- ${item.option3}</div>` : ''}
+//         </div>
+//     </div>
+//   `).join('');
+
+//   el.innerHTML = effectsHtml + crystalsHtml;
+// }
 function renderUnionArtifact(data) {
-  const el = document.getElementById('union-artifact-grid');
-  if (!el) return;
+    const container = document.getElementById('union-artifact-container'); // 請確認您的 HTML ID
+    if (!container) return;
 
-  const crystals = data?.crystals || [];
-  const effects = data?.effects || [];
+    // 直接使用 CSS Grid 排列，這是最乾淨的寫法
+    container.style.display = 'grid';
+    container.style.gridTemplateColumns = 'repeat(3, 1fr)'; // 3欄設計
+    container.style.gap = '10px';
+    container.innerHTML = '';
 
-  if (crystals.length === 0 && effects.length === 0) {
-    el.innerHTML = '<div class="empty">無資料</div>';
-    return;
-  }
+    if (!data || !data.crystals) return;
 
-  const effectsHtml = effects.length > 0
-    ? `<div style="grid-column: span 3; padding-bottom: 8px; border-bottom: 1px solid var(--border); margin-bottom: 4px;">
-         <div style="font-size:11px; color:var(--text-4); margin-bottom:6px; font-weight:bold;">總和效果</div>
-         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:4px;">
-           ${effects.map(e => `<div style="font-size:11.5px; color:var(--text-1);">• ${e.name} <span style="color:var(--accent-light)">(Lv.${e.level})</span></div>`).join('')}
-         </div>
-       </div>`
-    : '';
+    data.crystals.forEach(c => {
+        const div = document.createElement('div');
+        div.className = 'doll-slot'; // 關鍵：複用現有的卡槽 class
+        
+        // 將資訊放入 data-tooltip，讓現有的 initTooltip() 自動抓取
+        div.setAttribute('data-tooltip', `
+            <div style="text-align:left; font-size:11px;">
+                <strong>${c.name}</strong><br>
+                Lv. ${c.level}<br>
+                <div style="border-top:1px solid #555; margin:4px 0;"></div>
+                ${c.option1 ? `<div>${c.option1}</div>` : ''}
+                ${c.option2 ? `<div>${c.option2}</div>` : ''}
+                ${c.option3 ? `<div>${c.option3}</div>` : ''}
+            </div>
+        `);
 
-  const crystalsHtml = crystals.map(item => `
-    <div class="grid-item" style="align-items: flex-start; text-align: left; padding: 10px;">
-        <img src="${getArtifactImagePath(item.name)}" style="width:36px; height:36px; margin-bottom:6px" onerror="this.src='images/crystals/default.png'">
-        <div style="font-weight:bold; font-size:12.5px; color:var(--text-1); margin-bottom:4px;">
-            ${item?.name ?? '水晶'} <span style="color:var(--accent-light); font-size:11px;">Lv.${item?.level ?? 0}</span>
-        </div>
-        <div style="font-size:10.5px; color:var(--text-3); line-height:1.4;">
-           ${item?.option1 ? `<div>- ${item.option1}</div>` : ''}
-           ${item?.option2 ? `<div>- ${item.option2}</div>` : ''}
-           ${item?.option3 ? `<div>- ${item.option3}</div>` : ''}
-        </div>
-    </div>
-  `).join('');
-
-  el.innerHTML = effectsHtml + crystalsHtml;
+        const img = document.createElement('img');
+        img.src = `images/crystals/Artifact${c.level}.png`;
+        img.style.width = '100%';
+        img.onerror = () => { img.src = 'images/crystals/default.png'; };
+        
+        div.appendChild(img);
+        container.appendChild(div);
+    });
 }
 
 // 聯盟冠軍：維持逐一列出個別冠軍＋徽章，並新增 champion_badge_total_info 的加總效果文字
