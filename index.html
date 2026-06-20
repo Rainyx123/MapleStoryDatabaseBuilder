@@ -17,14 +17,7 @@
       <button id="btn-settings" title="顯示設定">⚙️</button>
     </div>
   </header>
-  
-<div id="nav-tabs" style="display: flex; gap: 10px; margin-bottom: 15px;">
-    <button onclick="switchTab('character')" class="btn-tab">角色資訊</button>
-    <button onclick="switchTab('boss')" class="btn-tab">Boss 資訊</button>
-</div>
 
-<div id="view-character">
-  
   <main id="main">
     <div id="loading"><div class="spinner"></div><p>讀取角色資料中...</p></div>
 
@@ -143,54 +136,7 @@
 
     </div>
   </main>
-</div>
-<!-- Boss資訊頁面 -->
-<div id="view-boss" style="display: none;">
-  <div class="row-12" style="align-items: flex-start;">
-    <div class="col-12">
-        <div class="section-card">
-            
-            <div class="section-header" onclick="toggleSection(this)">
-                <h3>周常 Boss 掉落資訊</h3>
-                <span class="toggle-icon">▼</span>
-            </div>
-            
-            <div class="section-body">
-                <table class="ms-table">
-                    <thead>
-                        <tr>
-                            <th>Boss 名稱</th>
-                            <th>難度</th>
-                            <th>血量估計</th>
-                            <th>主要掉落物</th>
-                            <th>備註</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>史烏 (Suu)</td>
-                            <td>困難</td>
-                            <td>約 33 兆</td>
-                            <td>漆黑的 Boss 飾品、S級核心</td>
-                            <td>第一階段注意雷射</td>
-                        </tr>
-                        <tr>
-                            <td>戴米安 (Damien)</td>
-                            <td>困難</td>
-                            <td>約 35 兆</td>
-                            <td>魔力石、漆黑飾品</td>
-                            <td>二階有大量天上掉落物</td>
-                        </tr>
-                        </tbody>
-                </table>
-            </div>
-            
-        </div>
-    </div>
-  </div>
-</div>
 
-  
   <div id="tooltip" class="hidden"></div>
 
   <!-- 提示訊息容器（取代原本的 alert()，由 app.js 動態插入 .toast 元素） -->
