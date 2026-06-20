@@ -1,5 +1,5 @@
 /* ================================================================
-   楓之谷角色資料庫 — 模組化深色主題 v4（角色與裝備棋盤排版版）
+   楓之谷角色資料庫 — 模組化深色主題 v6（角色總覽棋盤排版版）
    ================================================================ */
 
 /* ---- 1. 全域變數 (UI 主題設定) ---- */
@@ -59,13 +59,36 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans TC
 .toggle-icon { font-size: 10px; transition: transform 0.2s ease; color: var(--text-4); display: inline-block; }
 .section-card.collapsed .section-header .toggle-icon { transform: rotate(-90deg); }
 
-/* ---- 5a. 角色總覽：極限屬性／角色與裝備／內在潛能 三欄並排 ---- */
-/* 三者各自是獨立的 .section-card，沿用既有收合機制；此處只負責排成一排 */
-.overview-row { display: flex; gap: 15px; align-items: stretch; width: 100%; }
-.overview-side { flex: 0 0 400px; min-width: 0; }
-.overview-main { flex: 1 1 auto; min-width: 0; }
+/* ---- 5a. 角色總覽（v6 棋盤總覽版）----
+   左欄：極限屬性／內在潛能／傳授技能，依高度比例 2:3:1 垂直堆疊
+   中欄：角色與裝備（裝備棋盤＋角色圖），佔滿三欄高度
+   右欄：核心屬性，佔滿三欄高度
+   五個區塊皆為 .overview-row 的直接子元素、各自獨立的 .section-card，
+   沿用既有收合機制；此處只用 CSS Grid 控制排列位置（不額外包一層容器，
+   方便窄螢幕用 order 屬性重新排序，見第 9 節 RWD）。
+---- */
+.overview-row {
+  display: grid;
+  grid-template-columns: 400px minmax(0, 1fr) 400px;
+  grid-template-rows: 2fr 3fr 1fr;
+  gap: 15px;
+  width: 100%;
+}
+#overview-row #section-hyper   { grid-column: 1; grid-row: 1; }
+#overview-row #section-ability { grid-column: 1; grid-row: 2; }
+#overview-row #section-link    { grid-column: 1; grid-row: 3; }
+#overview-row #section-equip   { grid-column: 2; grid-row: 1 / span 3; }
+#overview-row #section-stats   { grid-column: 3; grid-row: 1 / span 3; }
 
-/* 角色與裝備卡片頂部資訊列：角色名稱／職業／等級／戰鬥力／伺服器 */
+/* 左／右欄高度由比例決定，內容過多時用捲動避免撐破版面 */
+#overview-row #section-hyper .section-body,
+#overview-row #section-ability .section-body,
+#overview-row #section-link .section-body,
+#overview-row #section-stats .section-body {
+  overflow-y: auto;
+}
+
+/* 角色與裝備卡片頂部資訊列：角色名稱／職業／等級／戰鬥力／伺服器／戰地聯盟／聯盟等級 */
 .char-info-bar {
   display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap;
   padding-bottom: 10px; margin-bottom: 10px; border-bottom: 1px solid var(--border);
@@ -75,7 +98,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans TC
 .char-info-bar .info-cp b { color: var(--accent-light); font-weight: 700; }
 
 /* 裝備棋盤格：左右兩欄裝備 + 中央角色圖（含武器/副武/徽章/圖騰列）
-   版位對照表請參考 排版.md，與 app.js 的 DOLL_SLOTS 一一對應 */
+   版位對照表請參考 排版要求與錯誤修正.md，與 app.js 的 DOLL_SLOTS 一一對應 */
 .equip-doll-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
@@ -100,7 +123,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans TC
 .doll-slot img { width: 80%; height: 80%; object-fit: contain; }
 .doll-slot.empty-slot { background: var(--bg-1); border-style: dashed; opacity: 0.5; }
 
-/* 中央角色圖：佔據棋盤格未填滿的中間 12 格區域，深色底板 */
+/* 中央角色圖：佔據棋盤格未填滿的中間區域，深色底板 */
 .doll-img-cell {
   grid-area: img;
   background: var(--bg-0);
@@ -111,12 +134,38 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans TC
 }
 .doll-img-cell img { width: 100%; height: 100%; object-fit: contain; }
 
-/* ---- 6. 各區塊內部網格排版 ---- */
-.grid-stats, .grid-hexa, .grid-champion, .grid-pet, .grid-beauty, .grid-union, .grid-symbol, .grid-vmatrix, .grid-artifact, .grid-link { display: grid; gap: 8px; }
+/* ---- 5b. 外觀區棋盤格（戒指/臉飾/眼飾/耳環/帽子/披風/上衣/手套/褲子/鞋子/武器/副武
+            ＋ 中央角色圖、最下排髮型/臉型/膚色）---- */
+.appearance-doll-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  grid-template-rows: repeat(4, 1fr);
+  grid-template-areas:
+    "ring1 face  img    img    img    hat    cape"
+    "ring2 eye   img    img    img    top    glove"
+    "ring3 ear   img    img    img    pants  shoe"
+    "ring4 blank hair   facetp skin   weapon subweapon";
+  gap: 6px;
+}
+.appearance-doll-grid .doll-slot.beauty-cell {
+  flex-direction: column;
+  font-size: 10px;
+  line-height: 1.3;
+  color: var(--text-2);
+  text-align: center;
+  padding: 4px;
+  white-space: normal;
+}
 
-.grid-champion, .grid-pet, .grid-beauty, .grid-union { grid-template-columns: repeat(2, 1fr); }
-.grid-artifact, .grid-link { grid-template-columns: repeat(3, 1fr); }
+/* ---- 6. 各區塊內部網格排版 ---- */
+.grid-stats, .grid-hexa, .grid-champion, .grid-pet, .grid-symbol, .grid-vmatrix, .grid-artifact { display: grid; gap: 8px; }
+
+.grid-champion, .grid-pet { grid-template-columns: repeat(2, 1fr); }
+.grid-artifact { grid-template-columns: repeat(3, 1fr); }
 .grid-vmatrix, .grid-symbol { grid-template-columns: repeat(6, 1fr); }
+
+/* 傳授技能：現為角色總覽左欄最下方的獨立卡片（窄欄），改為單欄垂直列表 */
+.grid-link { display: flex; flex-direction: column; gap: 8px; }
 
 /* 通用方塊 (grid-item) */
 .grid-item {
@@ -141,15 +190,31 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans TC
 /* 強制正方形 (V矩陣 & 六轉) */
 .grid-vmatrix .grid-item, .grid-hexa .grid-item { aspect-ratio: 1 / 1; width: 100%; }
 
-/* 戰地攻擊隊 */
-.grid-unionraider { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0; }
-.raider-row { padding: 6px 8px; border-bottom: 1px solid var(--border); font-size: 0.85rem; color: var(--text-1); display: flex; align-items: center; }
+/* 戰地攻擊隊：單欄列表，避免長文字在窄欄被截斷看不到完整內容 */
+.grid-unionraider { display: flex; flex-direction: column; gap: 0; }
+.raider-row {
+  padding: 6px 8px; border-bottom: 1px solid var(--border); font-size: 0.85rem; color: var(--text-1);
+  display: block; white-space: normal; word-break: break-word; line-height: 1.4;
+}
 
 /* 六轉 HEXA 專屬設定 */
 .grid-hexa { display: grid !important; grid-template-columns: repeat(6, 1fr) !important; grid-template-rows: repeat(2, 1fr) !important; gap: 8px !important; width: 100% !important; }
 .grid-hexa .grid-item { aspect-ratio: 1 / 1; width: 100%; border-radius: var(--r-sm); background: var(--bg-2); border: 1px solid var(--border); padding: 5px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
 
-/* JS 生成元件樣式 (裝備、潛能等) */
+/* 符文系統：ARC / AUT 屬性加成合計（顯示於符文清單下方） */
+.symbol-summary {
+  margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--border);
+  display: flex; flex-direction: column; gap: 4px;
+}
+.symbol-summary-row { display: flex; justify-content: space-between; font-size: var(--fs-sm); color: var(--text-3); }
+.symbol-summary-val { color: var(--accent-light); font-weight: 600; }
+
+/* 聯盟冠軍：個別冠軍清單下方的「徽章效果加總」（取自 champion_badge_total_info） */
+.champion-total-summary { grid-column: 1 / -1; margin-top: 6px; padding-top: 8px; border-top: 1px solid var(--border); }
+.champion-total-title { font-size: var(--fs-xs); color: var(--text-4); font-weight: bold; margin-bottom: 4px; }
+.champion-total-line { font-size: 11.5px; color: var(--text-1); padding: 2px 0; }
+
+/* JS 生成元件樣式 (現金道具卡片等，目前僅作備用，主要顯示已改為外觀棋盤格) */
 #cash-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 8px; }
 .equip-card { background: var(--bg-3); border: 1px solid var(--border); border-left: 3px solid var(--none); border-radius: var(--r); padding: 8px 12px; }
 .equip-top { display: flex; align-items: center; gap: 8px; }
@@ -234,15 +299,25 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans TC
     .grid-system { display: flex; flex-direction: column; }
     .span-1, .span-2, .span-3, .span-4, .span-5, .span-6, .span-7, .span-8, .span-9, .span-10, .span-11, .span-12 { width: 100%; }
 
-    /* 角色總覽：窄螢幕改垂直堆疊，順序：角色與裝備 → 極限屬性 → 內在潛能 */
-    .overview-row { flex-direction: column; }
-    .overview-main { order: 1; }
-    #section-hyper { order: 2; }
-    #section-ability { order: 3; }
+    /* 角色總覽：窄螢幕收合成單欄堆疊
+       順序：極限屬性 → 內在潛能 → 傳授技能 → 角色與裝備 → 核心屬性 */
+    .overview-row {
+      display: flex;
+      flex-direction: column;
+      grid-template-columns: none;
+      grid-template-rows: none;
+    }
+    .overview-row > .section-card { width: 100%; }
+    #section-hyper   { order: 1; }
+    #section-ability { order: 2; }
+    #section-link    { order: 3; }
+    #section-equip   { order: 4; }
+    #section-stats   { order: 5; }
 }
 
 @media (max-width: 768px) {
     .grid-vmatrix, .grid-symbol { grid-template-columns: repeat(4, 1fr); }
-    .grid-artifact, .grid-link { grid-template-columns: repeat(2, 1fr); }
-    .grid-stats, .grid-hexa, .grid-champion, .grid-pet, .grid-beauty, .grid-union, .grid-unionraider { grid-template-columns: 1fr; }
+    .grid-artifact { grid-template-columns: repeat(2, 1fr); }
+    .grid-stats, .grid-hexa, .grid-champion, .grid-pet { grid-template-columns: 1fr; }
+    .appearance-doll-grid { grid-template-columns: repeat(7, minmax(32px, 1fr)); }
 }
