@@ -315,10 +315,10 @@ function renderStats(data) {
     sec.pairs.forEach(([l, r]) => { html += renderPair(l, r); });
   });
 
-  if (data.remain_ap != null) {
-    html += '<div class="stat-divider"></div>';
-    html += `<div class="stat-row"><div class="stat-pair"><span class="stat-name">剩餘 AP</span><span class="stat-val">${data.remain_ap}</span></div></div>`;
-  }
+  // if (data.remain_ap != null) {
+  //   html += '<div class="stat-divider"></div>';
+  //   html += `<div class="stat-row"><div class="stat-pair"><span class="stat-name">剩餘 AP</span><span class="stat-val">${data.remain_ap}</span></div></div>`;
+  // }
 
   grid.innerHTML = html;
 }
@@ -476,7 +476,7 @@ function renderUnionRaider(data) {
 // 註：Nexon API 實際回傳字串前綴尚未經實機驗證，這裡先涵蓋常見幾種寫法，
 //     若實際資料的前綴格式不同，之後可以再補規則。
 function stripSymbolPrefix(name = '') {
-  return name.replace(/^(秘法的|真實的|秘法|真實)/, '').trim();
+  return name.replace(/^(祕法符文：|真實符文：)/, '').trim();
 }
 
 // ARC（秘法符文）／AUT（真實符文）屬性加成合計
