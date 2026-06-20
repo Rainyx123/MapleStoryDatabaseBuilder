@@ -594,6 +594,14 @@ function renderUnionArtifact(data) {
         div.appendChild(img);
         container.appendChild(div);
     });
+      // 總效果加成（顯示在水晶格子下方，跨全欄）
+    if (data.effects?.length > 0) {
+      const summary = document.createElement('div');
+      summary.style.cssText = 'grid-column:1/-1; margin-top:8px; padding-top:8px; border-top:1px solid var(--border);';
+      summary.innerHTML = `<div style="font-size:var(--fs-xs);color:var(--text-4);font-weight:bold;margin-bottom:4px;">神器總效果加成</div>`
+        + data.effects.map(e => `<div style="font-size:11px;color:var(--text-2);padding:2px 0;">${e.name} Lv.${e.level}</div>`).join('');
+      container.appendChild(summary);
+    }
 }
 
 // 聯盟冠軍：維持逐一列出個別冠軍＋徽章，並新增 champion_badge_total_info 的加總效果文字
