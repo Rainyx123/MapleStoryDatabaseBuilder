@@ -2,27 +2,31 @@
 # utils.py — Nexon API 資料解析共用工具
 # 把「裝備欄位對照表」「屬性標籤對照表」「裝備清單解析」獨立出來，
 # 讓 main.py 專注在「流程控制」（抓取→解析→寫入），易於維護。
+#
+# 變更摘要（對應 排版要求與錯誤修正.md #6，依 equipment_label_mapping.md 實測資料校正）：
+#   - SLOT_NAME_MAP 多個鍵原本是猜測的原始字串，與實測資料不符，已校正：
+#       "衣服(上)"   → "上衣"
+#       "褲子"       → "褲/裙"
+#       "肩飾"       → "肩膀裝飾"（鍵名，顯示值仍是「肩飾」）
+#       "口袋物品"   → "口袋道具"（鍵名，顯示值仍是「口袋」）
+#       "機器人心臟" → "機器心臟"（鍵名，顯示值仍是「心臟」）
+#   - 新增 _resolve_slot()：處理「墜飾」這個特例。Nexon API 對「墜飾1」與
+#     「寶玉」回傳的 item_equipment_slot 字串都是「墜飾」（API 本身的已知
+#     重疊問題，原本誤判導致寶玉永遠對不到版位），只能靠 item_name 是否
+#     包含「寶玉」二字來分流；「墜飾2」則本身就是不重複的獨立字串，不受影響。
 # =================================================================
 
 # 裝備欄位：Nexon 原始欄位名 → 前端顯示用簡稱
-# 優先以 item_equipment_part 查表（part 比 slot 更精確，例如「寶玉」part=寶玉 但 slot=墜飾）
-# slot 欄位作為補充（part 查不到時 fallback）
-PART_NAME_MAP = {
-    "武器": "武器", "輔助武器": "副武", "徽章": "徽章", "機器人心臟": "心臟",
-    "帽子": "帽子", "衣服(上)": "上衣", "褲子": "褲/裙", "鞋子": "鞋子",
-    "手套": "手套", "披風": "披風", "肩飾": "肩飾", "臉飾": "臉飾", "眼飾": "眼飾",
-    "耳環": "耳環", "腰帶": "腰帶", "胸章": "胸章", "勳章": "勳章",
-    "馴服的怪物": "圖騰1", "馬鞍": "圖騰2", "怪物裝備": "圖騰3",
-    "寶玉": "寶玉",  # item_equipment_part = "寶玉"，slot 卻是 "墜飾"，只能靠 part 區分
-    "墜飾": "墜飾",  # 同義：part 也可能是 "墜飾"
-}
-
 SLOT_NAME_MAP = {
+    "武器": "武器", "輔助武器": "副武", "徽章": "徽章", "機器心臟": "心臟",
+    "帽子": "帽子", "上衣": "上衣", "褲/裙": "褲/裙", "鞋子": "鞋子",
+    "手套": "手套", "披風": "披風", "肩膀裝飾": "肩飾", "臉飾": "臉飾", "眼飾": "眼飾",
     "戒指1": "戒指1", "戒指2": "戒指2", "戒指3": "戒指3", "戒指4": "戒指4",
-    "墜飾": "墜飾1",   # slot="墜飾" 且 part 非"寶玉" → 第一個墜飾欄
-    "墜飾2": "墜飾2",
-    "口袋道具": "口袋",  # Nexon 實際回傳的欄位名（非口袋物品）
-    "口袋物品": "口袋",  # 保留舊名稱相容
+    "耳環": "耳環", "腰帶": "腰帶", "墜飾2": "墜飾2",
+    "口袋道具": "口袋", "胸章": "胸章", "勳章": "勳章",
+    "馴服的怪物": "圖騰1", "馬鞍": "圖騰2", "怪物裝備": "圖騰3",
+    # 注意：「寶玉」與「墜飾1」皆對應 Nexon 原始字串「墜飾」，不能直接放進這張表，
+    # 需透過 _resolve_slot() 用 item_name 判斷後再分流。
 }
 
 # 裝備清單排序順序（依顯示簡稱）
@@ -47,6 +51,20 @@ def get_stat_value(final_stat: list, stat_name: str, default='0'):
     return next((x['stat_value'] for x in final_stat if x.get('stat_name') == stat_name), default)
 
 
+def _resolve_slot(item: dict) -> str:
+    """
+    將 Nexon 原始 item_equipment_slot 轉成前端顯示用的簡稱。
+    特例：raw == '墜飾' 同時可能是「墜飾1」或「寶玉」（Nexon API 對寶玉欄位
+    回傳的 item_equipment_slot 字串與墜飾1 重複，是 API 本身的已知怪異行為），
+    須靠 item_name 是否包含「寶玉」二字才能正確分流（依 equipment_label_mapping.md
+    實測資料：「伊妮絲的寶玉」raw slot 顯示為「墜飾」，但功能其實是寶玉欄位）。
+    """
+    raw = item.get('item_equipment_slot') or item.get('equipment_slot') or ''
+    if raw == '墜飾':
+        return '寶玉' if '寶玉' in (item.get('item_name') or '') else '墜飾1'
+    return SLOT_NAME_MAP.get(raw, raw)
+
+
 def _build_option_parts(opt_dict: dict) -> list:
     """把星火/卷軸的 {key: value} 物件轉成『標籤+數值』字串清單。"""
     parts = []
@@ -58,36 +76,11 @@ def _build_option_parts(opt_dict: dict) -> list:
     return parts
 
 
-def _resolve_display_slot(item: dict) -> str:
-    """
-    依優先順序決定前端顯示用的 slot 簡稱：
-      1. item_equipment_part 查 PART_NAME_MAP（最精確，可區分「寶玉」vs「墜飾」）
-      2. item_equipment_slot 查 SLOT_NAME_MAP（補充戒指1~4、墜飾2、口袋等）
-      3. 回傳原始 slot 字串（fallback）
-    """
-    part = item.get('item_equipment_part', '')
-    slot = item.get('item_equipment_slot') or item.get('equipment_slot') or ''
-
-    # 寶玉：part="寶玉" 但 slot="墜飾"，必須優先用 part 判斷
-    if part in PART_NAME_MAP:
-        mapped = PART_NAME_MAP[part]
-        # "墜飾" part 可能對應 墜飾1 或 墜飾2，改由 slot 決定序號
-        if mapped == '墜飾':
-            return SLOT_NAME_MAP.get(slot, '墜飾1')
-        return mapped
-
-    # part 查不到時，改查 slot
-    if slot in SLOT_NAME_MAP:
-        return SLOT_NAME_MAP[slot]
-
-    return slot
-
-
 def parse_equip_list(items: list) -> list:
     """將 Nexon API 的裝備道具清單，轉為前端使用的統一格式（含圖示、潛能、星火、卷軸）。"""
     parsed = []
     for item in items:
-        display_slot = _resolve_display_slot(item)
+        display_slot = _resolve_slot(item)
 
         p_opts = [item.get(f'potential_option_{k}') for k in range(1, 4) if item.get(f'potential_option_{k}')]
         a_opts = [item.get(f'additional_potential_option_{k}') for k in range(1, 4) if item.get(f'additional_potential_option_{k}')]
