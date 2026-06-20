@@ -553,27 +553,29 @@ function getArtifactImagePath(name) {
 //   el.innerHTML = effectsHtml + crystalsHtml;
 // }
 function renderUnionArtifact(data) {
-    const container = document.getElementById('union-artifact-container'); // 請確認您的 HTML ID
+    // 這裡改用您 HTML 中實際的 ID：union-artifact-grid
+    const container = document.getElementById('union-artifact-grid'); 
     if (!container) return;
 
-    // 直接使用 CSS Grid 排列，這是最乾淨的寫法
-    container.style.display = 'grid';
-    container.style.gridTemplateColumns = 'repeat(3, 1fr)'; // 3欄設計
-    container.style.gap = '10px';
+    // 清空內容
     container.innerHTML = '';
 
-    if (!data || !data.crystals) return;
+    // 防呆檢查
+    if (!data || !data.crystals || data.crystals.length === 0) {
+        container.innerHTML = '<div style="padding:10px;">暫無神器資料</div>';
+        return;
+    }
 
     data.crystals.forEach(c => {
         const div = document.createElement('div');
-        div.className = 'doll-slot'; // 關鍵：複用現有的卡槽 class
+        div.className = 'doll-slot'; // 繼續複用既有卡槽樣式
         
-        // 將資訊放入 data-tooltip，讓現有的 initTooltip() 自動抓取
+        // 懸浮文字內容
         div.setAttribute('data-tooltip', `
-            <div style="text-align:left; font-size:11px;">
-                <strong>${c.name}</strong><br>
-                Lv. ${c.level}<br>
-                <div style="border-top:1px solid #555; margin:4px 0;"></div>
+            <div style="text-align:left; font-size:12px;">
+                <strong style="color:var(--accent);">${c.name}</strong><br>
+                等級: Lv.${c.level}<br>
+                <hr style="border:0; border-top:1px solid #444; margin:5px 0;">
                 ${c.option1 ? `<div>${c.option1}</div>` : ''}
                 ${c.option2 ? `<div>${c.option2}</div>` : ''}
                 ${c.option3 ? `<div>${c.option3}</div>` : ''}
@@ -582,7 +584,6 @@ function renderUnionArtifact(data) {
 
         const img = document.createElement('img');
         img.src = `images/crystals/Artifact${c.level}.png`;
-        img.style.width = '100%';
         img.onerror = () => { img.src = 'images/crystals/default.png'; };
         
         div.appendChild(img);
