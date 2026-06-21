@@ -61,6 +61,7 @@ let equipIdCounter = 0;
 let bossData = { 簡單: [], 普通: [], 困難: [] };
 let calcState = [];
 let bossLoaded = false;
+let currentBossTier = '困難'; // 目前選中的 Boss 難度分頁
 
 const CALC_COLS = 9;
 const CALC_ROWS = 12;
@@ -1062,7 +1063,7 @@ async function loadBossTabIfNeeded() {
     bossData = await bossRes.json();
     calcState = await calcRes.json();
 
-    renderBossTables();
+    renderBossTable(currentBossTier);
     buildCalculatorTable();
     bossLoaded = true;
   } catch (err) {
@@ -1072,28 +1073,49 @@ async function loadBossTabIfNeeded() {
 }
 
 // 把 bossData 填回原本就存在的三張表格（取代寫死的 <tr>）
-function renderBossTables() {
-  const TIER_TBODY = { 簡單: 'boss-tbody-easy', 普通: 'boss-tbody-normal', 困難: 'boss-tbody-hard' };
+// 只渲染目前選中難度的那張表格（取代原本同時渲染三張表格的 renderBossTables）
+function renderBossTable(tier) {
+  const tbody = document.getElementById('boss-tbody');
+  if (!tbody) return;
 
-  Object.entries(TIER_TBODY).forEach(([tier, tbodyId]) => {
-    const tbody = document.getElementById(tbodyId);
-    if (!tbody) return;
+  const list = bossData[tier] || [];
+  if (list.length === 0) { tbody.innerHTML = '<tr><td colspan="7" class="empty">無資料</td></tr>'; return; }
 
-    const list = bossData[tier] || [];
-    if (list.length === 0) { tbody.innerHTML = '<tr><td colspan="7" class="empty">無資料</td></tr>'; return; }
+  tbody.innerHTML = list.map(b => `
+    <tr>
+      <td>${b.name}</td>
+      <td><img src="${b.icon || ''}" width="80" class="table-icon" onerror="this.src='images/bosses/boss_default.png'"></td>
+      <td>${b.difficulty || '—'}</td>
+      <td>${b.hp || '—'}</td>
+      <td>${b.defense || '—'}</td>
+      <td>${b.crystal_price != null ? Number(b.crystal_price).toLocaleString() : '無'}</td>
+      <td>${b.recommended_power || '—'}</td>
+    </tr>
+  `).join('');
+}
 
-    tbody.innerHTML = list.map(b => `
-      <tr>
-        <td>${b.name}</td>
-        <td><img src="${b.icon || ''}" width="80" class="table-icon" onerror="this.src='images/bosses/boss_default.png'"></td>
-        <td>${b.difficulty || '—'}</td>
-        <td>${b.hp || '—'}</td>
-        <td>${b.defense || '—'}</td>
-        <td>${b.crystal_price != null ? Number(b.crystal_price).toLocaleString() : '無'}</td>
-        <td>${b.recommended_power || '—'}</td>
-      </tr>
-    `).join('');
+// 難度分頁切換事件（簡單/普通/困難按鈕）
+function initBossTierTabs() {
+  document.querySelectorAll('.boss-tier-btn').forEach(radio => {
+    radio.addEventListener('change', (e) => {
+      currentBossTier = e.target.value;
+      renderBossTable(currentBossTier);
+    });
   });
+}
+//加入分頁初始化
+function initBossPanel() {
+  document.getElementById('btn-boss')?.addEventListener('click', async () => {
+    document.getElementById('content')?.classList.add('hidden');
+    document.getElementById('boss-content')?.classList.remove('hidden');
+    window.scrollTo(0, 0);
+    await loadBossTabIfNeeded();
+  });
+
+  initBossTierTabs(); // 新增：綁定難度按鈕切換事件
+
+  document.getElementById('btn-calc-export')?.addEventListener('click', exportCalculatorCSV);
+  document.getElementById('btn-calc-copy')?.addEventListener('click', copyCalculatorCSV);
 }
 
 // 依 id 在三個 tier 中找出對應的 boss 物件（CSV／合計計算共用）
