@@ -23,45 +23,31 @@
     <div id="loading"><div class="spinner"></div><p>讀取角色資料中...</p></div>
     <div id="boss-content" class="hidden container-stack">
      <div class="grid-system">
-      <section class="section-card span-4" id="section-boss-a">
-        <div class="section-header"><span>BOSS資訊(簡單)</span><span class="toggle-icon">▼</span></div>
+      <section class="section-card span-12" id="section-boss">
+        <div class="section-header"><span>BOSS資訊</span><span class="toggle-icon">▼</span></div>
         <div class="section-body">
+          <!-- 難度切換：outline 按鈕樣式（跟下方結晶石計算機的簡/普/困呼應，但尺寸較大） -->
+          <div class="boss-tier-tabs" id="boss-tier-tabs">
+            <input type="radio" class="boss-tier-btn" name="boss-tier" id="boss-tier-easy" value="簡單" checked>
+            <label class="boss-tier-label" for="boss-tier-easy">簡單</label>
+                
+            <input type="radio" class="boss-tier-btn" name="boss-tier" id="boss-tier-normal" value="普通">
+            <label class="boss-tier-label" for="boss-tier-normal">普通</label>
+                  
+            <input type="radio" class="boss-tier-btn" name="boss-tier" id="boss-tier-hard" value="困難">
+            <label class="boss-tier-label" for="boss-tier-hard">困難</label>
+          </div>
+            
           <table class="data-table">
             <thead>
               <tr><th>名稱</th><th>圖片</th><th>難度</th><th>總血量</th><th>防禦</th><th>結晶石</th><th>建議戰力</th></tr>
             </thead>
-            <!-- 原本寫死的 30 筆 <tr> 已移至 Supabase bosses 表，由 app.js 的 renderBossTables() 動態填入 -->
-            <tbody id="boss-tbody-easy"></tbody>
+            <!-- 依目前選中的難度分頁，由 app.js 的 renderBossTable() 動態填入 -->
+            <tbody id="boss-tbody"></tbody>
           </table>
         </div>
       </section>
-
-      <section class="section-card span-4" id="section-boss-b">
-        <div class="section-header"><span>BOSS資訊(普通)</span><span class="toggle-icon">▼</span></div>
-        <div class="section-body">
-          <table class="data-table">
-            <thead>
-              <tr><th>名稱</th><th>圖片</th><th>難度</th><th>總血量</th><th>防禦</th><th>結晶石</th><th>建議戰力</th></tr>
-            </thead>
-            <!-- 原本寫死的 9 筆 <tr> 已移至 Supabase bosses 表，由 app.js 的 renderBossTables() 動態填入 -->
-            <tbody id="boss-tbody-normal"></tbody>
-          </table>
-        </div>
-      </section>
-
-      <section class="section-card span-4" id="section-boss-c">
-        <div class="section-header"><span>BOSS資訊(困難)</span><span class="toggle-icon">▼</span></div>
-        <div class="section-body">
-          <table class="data-table">
-            <thead>
-              <tr><th>名稱</th><th>圖片</th><th>難度</th><th>總血量</th><th>防禦</th><th>結晶石</th><th>建議戰力</th></tr>
-            </thead>
-            <!-- 原本寫死的 10 筆 <tr> 已移至 Supabase bosses 表，由 app.js 的 renderBossTables() 動態填入 -->
-            <tbody id="boss-tbody-hard"></tbody>
-          </table>
-        </div>
-      </section>
-     </div>
+    </div>
 
      <!-- =========================================================
           結晶石計算機
