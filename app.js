@@ -151,6 +151,8 @@ async function init() {
     buildTabs();
     renderCharacter(characters[0]);
 
+    await waitForImagesIn(document.getElementById('content'), 5000);
+
     document.getElementById('loading')?.classList.add('hidden');
     document.getElementById('content')?.classList.remove('hidden');
 
@@ -167,6 +169,22 @@ async function init() {
     const loadEl = document.getElementById('loading');
     if (loadEl) loadEl.innerHTML = `<p style="color:var(--accent)">載入失敗：${err.message}</p>`;
   }
+}
+
+// 等容器內所有 <img> 載入完成（無論成功或失敗），超過 timeoutMs 就放棄等待直接繼續
+function waitForImagesIn(container, timeoutMs = 5000) {
+  if (!container) return Promise.resolve();
+  const imgs = Array.from(container.querySelectorAll('img'));
+  if (imgs.length === 0) return Promise.resolve();
+
+  const perImage = imgs.map(img => new Promise(resolve => {
+    if (img.complete) return resolve();
+    img.addEventListener('load', resolve, { once: true });
+    img.addEventListener('error', resolve, { once: true });
+  }));
+
+  const timeoutPromise = new Promise(resolve => setTimeout(resolve, timeoutMs));
+  return Promise.race([Promise.all(perImage), timeoutPromise]);
 }
 
 // 分頁切換
@@ -1162,15 +1180,23 @@ function buildCalculatorTable() {
         return;
       }
 
-      const isNone = sel.tier === '無';
+      // 尚未選過難度時，視覺上預設顯示「無」（不寫回 calcState，效果跟未填寫一致）
+      const effectiveTier = sel.tier || '無';
+      const isNone = effectiveTier === '無';
       const selectHtml = isNone ? '' : `
-        <select class="calc-boss-select" data-col="${col.col_index}" data-row="${r}" ${sel.tier ? '' : 'disabled'}>
+        <select class="calc-boss-select" data-col="${col.col_index}" data-row="${r}">
           ${buildBossOptions(sel.tier, sel.boss_id)}
         </select>`;
 
+      const tierButtons = CALC_TIERS.map(t => {
+        const tierId = `tier-${col.col_index}-${r}-${t}`;
+        return `<input type="radio" class="tier-radio-btn" name="tier-${col.col_index}-${r}" value="${t}" id="${tierId}" ${effectiveTier === t ? 'checked' : ''}>
+                <label class="tier-radio-label" for="${tierId}">${t[0]}</label>`;
+      }).join('');
+
       tbody += `<td>
         <div class="calc-tier-group" data-col="${col.col_index}" data-row="${r}">
-          ${CALC_TIERS.map(t => `<label><input type="radio" name="tier-${col.col_index}-${r}" value="${t}" ${sel.tier === t ? 'checked' : ''}>${t[0]}</label>`).join('')}
+          ${tierButtons}
         </div>
         ${selectHtml}
       </td>`;
@@ -1210,7 +1236,7 @@ function bindCalculatorEvents() {
   });
 
   // 難度單選（含「無」）：換難度會重置該格 Boss，並可能影響後續戰次的開放狀態，故整表重繪
-  table.querySelectorAll('.calc-tier-group input[type="radio"]').forEach(radio => {
+  table.querySelectorAll('.tier-radio-btn').forEach(radio => {
     radio.addEventListener('change', (e) => {
       const group = e.target.closest('.calc-tier-group');
       const colIdx = Number(group.dataset.col);
@@ -1218,8 +1244,17 @@ function bindCalculatorEvents() {
       const col = calcState.find(c => c.col_index === colIdx);
       if (!col) return;
 
-      col.selections[rowIdx].tier = e.target.value;
-      col.selections[rowIdx].boss_id = null;
+      const newTier = e.target.value;
+      col.selections[rowIdx].tier = newTier;
+
+      if (newTier === '無') {
+        col.selections[rowIdx].boss_id = null;
+      } else {
+        // 選好難度後，自動帶入該難度清單第一筆 Boss；
+        // 因此該戰立刻視為「已完成」，下一戰會自動開放（由 isRowOpen 判斷）
+        const list = bossData[newTier] || [];
+        col.selections[rowIdx].boss_id = list.length > 0 ? list[0].id : null;
+      }
 
       buildCalculatorTable();
       debouncedSaveColumn(colIdx);
