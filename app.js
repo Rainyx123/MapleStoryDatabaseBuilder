@@ -147,7 +147,7 @@ function setRandomLoadingImage() {
   if (!loadingEl) return;
   
   const isMobile = window.innerWidth <= 768; // 判斷是否為手機螢幕
-  const maxImages = 12; // 💡假設各有 3 張圖片，若您有更多圖片請修改這個數字
+  const maxImages = 16; // 💡假設各有 3 張圖片，若您有更多圖片請修改這個數字
   const randomNum = Math.floor(Math.random() * maxImages) + 1; 
   
   if (isMobile) {
