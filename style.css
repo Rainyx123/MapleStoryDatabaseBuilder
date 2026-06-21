@@ -408,3 +408,48 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans TC
     .grid-stats, .grid-hexa, .grid-champion, .grid-pet { grid-template-columns: 1fr; }
     .appearance-doll-grid { grid-template-columns: repeat(7, minmax(32px, 1fr)); }
 }
+
+/* ================================================================
+   結晶石計算機（新增區塊）
+   表格本體由 app.js 的 buildCalculatorTable() 動態產生，這裡只負責樣式
+   ================================================================ */
+.calc-toolbar {
+  display: flex; justify-content: space-between; align-items: center;
+  flex-wrap: wrap; gap: 10px; margin-bottom: 12px;
+}
+.calc-weekly-total { font-size: var(--fs-md); color: var(--text-1); }
+.calc-weekly-total b { color: var(--accent-light); font-size: var(--fs-lg); margin-left: 4px; }
+.calc-toolbar-actions { display: flex; gap: 8px; }
+.calc-toolbar-actions button {
+  background: var(--bg-3); border: 1px solid var(--border); color: var(--text-2);
+  padding: 6px 12px; border-radius: var(--r-sm); cursor: pointer;
+  font-size: var(--fs-sm); transition: 0.12s;
+}
+.calc-toolbar-actions button:hover { background: var(--bg-hover); color: var(--text-1); }
+
+.calc-table-wrap { overflow-x: auto; }
+.crystal-calc-table { width: 100%; border-collapse: collapse; table-layout: fixed; min-width: 980px; }
+.crystal-calc-table th, .crystal-calc-table td {
+  border: 1px solid var(--border); padding: 6px; text-align: center; vertical-align: middle;
+}
+.crystal-calc-table thead th { background: var(--bg-2); }
+.calc-row-label { background: var(--bg-2); color: var(--text-3); font-size: var(--fs-sm); white-space: nowrap; }
+
+.calc-col-title-input {
+  width: 100%; background: var(--bg-3); border: 1px solid var(--border); color: var(--text-1);
+  text-align: center; padding: 4px; border-radius: var(--r-sm);
+  font-size: var(--fs-sm); font-weight: 600; outline: none;
+}
+.calc-col-title-input:focus { border-color: var(--accent); }
+
+.calc-tier-group { display: flex; justify-content: center; gap: 6px; margin-bottom: 4px; font-size: 10px; color: var(--text-3); }
+.calc-tier-group label { display: flex; align-items: center; gap: 2px; cursor: pointer; }
+.calc-tier-group input[type="radio"] { accent-color: var(--accent); cursor: pointer; margin: 0; }
+
+.calc-boss-select {
+  width: 100%; background: var(--bg-3); border: 1px solid var(--border); color: var(--text-2);
+  font-size: 10px; padding: 3px; border-radius: var(--r-sm);
+}
+.calc-boss-select:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.calc-total-row td, .calc-total-row th { background: var(--bg-3); font-weight: bold; color: var(--accent-light); }
