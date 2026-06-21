@@ -64,7 +64,7 @@ let bossLoaded = false;
 
 const CALC_COLS = 9;
 const CALC_ROWS = 12;
-const CALC_TIERS = ['簡單', '普通', '困難'];
+const CALC_TIERS = ['簡單', '普通', '困難' , '無'];
 
 // ----------------------------------------------------------------
 // 裝備棋盤格位定義（對應 排版要求與錯誤修正.md 的版面規劃）
@@ -1105,17 +1105,39 @@ function ensureCalcState() {
 }
 
 // 依目前選擇的難度，組出對應的 <option> 清單
+//   - 移除「－選擇Boss－」預設選項
+//   - 選項文字只顯示「Boss名稱（難度）」，不再顯示結晶石價格
 function buildBossOptions(tier, selectedId) {
   if (!tier) return '<option value="">— 先選難度 —</option>';
   const list = bossData[tier] || [];
-  const opts = list.map(b => {
-    const priceText = b.crystal_price != null ? Number(b.crystal_price).toLocaleString() : '無';
-    return `<option value="${b.id}" ${b.id === selectedId ? 'selected' : ''}>${b.name}（${b.difficulty}）- ${priceText}</option>`;
-  }).join('');
-  return '<option value="">— 選擇 Boss —</option>' + opts;
+  return list.map(b =>
+    `<option value="${b.id}" ${b.id === selectedId ? 'selected' : ''}>${b.name}（${b.difficulty}）</option>`
+  ).join('');
+}
+// 判斷單一戰次是否「已完成」：難度選了簡/普/困（不是「無」）且 Boss 已選
+function isRowCompleted(sel) {
+  return !!(sel && sel.tier && sel.tier !== '無' && sel.boss_id != null);
 }
 
-// 建立整張計算機表格（表頭標題輸入框／12 列難度+下拉／合計列）
+// 判斷某欄(角色)的第 r 戰是否「開放」：第1戰一律開放；其餘戰次須前面所有戰次都已完成
+function isRowOpen(col, r) {
+  if (r === 0) return true;
+  for (let i = 0; i < r; i++) {
+    if (!isRowCompleted(col.selections[i])) return false;
+  }
+  return true;
+}
+
+// 取得某欄「從第1戰起連續完成」的選擇清單（用於金額合計／Boss計數器，一旦中斷就停止累加）
+function getColumnCompletedSelections(col) {
+  const result = [];
+  for (const sel of col.selections) {
+    if (!isRowCompleted(sel)) break;
+    result.push(sel);
+  }
+  return result;
+}
+// 建立整張計算機表格（表頭標題輸入框／12 列難度+下拉／結晶石合計列／Boss計數器列）
 function buildCalculatorTable() {
   ensureCalcState();
   const table = document.getElementById('crystal-calc-table');
@@ -1133,22 +1155,38 @@ function buildCalculatorTable() {
     tbody += `<tr><td class="calc-row-label">第 ${r + 1} 戰</td>`;
     calcState.forEach(col => {
       const sel = col.selections[r];
+
+      // 未開放：不渲染任何可互動元件，純顯示文字
+      if (!isRowOpen(col, r)) {
+        tbody += `<td><div class="calc-locked">未開放</div></td>`;
+        return;
+      }
+
+      const isNone = sel.tier === '無';
+      const selectHtml = isNone ? '' : `
+        <select class="calc-boss-select" data-col="${col.col_index}" data-row="${r}" ${sel.tier ? '' : 'disabled'}>
+          ${buildBossOptions(sel.tier, sel.boss_id)}
+        </select>`;
+
       tbody += `<td>
         <div class="calc-tier-group" data-col="${col.col_index}" data-row="${r}">
           ${CALC_TIERS.map(t => `<label><input type="radio" name="tier-${col.col_index}-${r}" value="${t}" ${sel.tier === t ? 'checked' : ''}>${t[0]}</label>`).join('')}
         </div>
-        <select class="calc-boss-select" data-col="${col.col_index}" data-row="${r}" ${sel.tier ? '' : 'disabled'}>
-          ${buildBossOptions(sel.tier, sel.boss_id)}
-        </select>
+        ${selectHtml}
       </td>`;
     });
     tbody += '</tr>';
   }
   tbody += '</tbody>';
 
-  let tfoot = '<tfoot><tr class="calc-total-row"><th class="calc-row-label">結晶石金額合計</th>';
+  let tfoot = '<tfoot>';
+  tfoot += '<tr class="calc-total-row"><th class="calc-row-label">結晶石金額合計</th>';
   calcState.forEach(col => { tfoot += `<td id="calc-col-total-${col.col_index}">0</td>`; });
-  tfoot += '</tr></tfoot>';
+  tfoot += '</tr>';
+  tfoot += '<tr class="calc-total-row"><th class="calc-row-label">Boss計數器</th>';
+  calcState.forEach(col => { tfoot += `<td id="calc-col-count-${col.col_index}">0</td>`; });
+  tfoot += '</tr>';
+  tfoot += '</tfoot>';
 
   table.innerHTML = thead + tbody + tfoot;
 
@@ -1161,6 +1199,7 @@ function bindCalculatorEvents() {
   const table = document.getElementById('crystal-calc-table');
   if (!table) return;
 
+  // 標題輸入：不影響解鎖狀態，維持原本「只存值，不重繪」，避免輸入時失焦
   table.querySelectorAll('.calc-col-title-input').forEach(input => {
     input.addEventListener('input', (e) => {
       const col = calcState.find(c => c.col_index === Number(e.target.dataset.col));
@@ -1170,6 +1209,7 @@ function bindCalculatorEvents() {
     });
   });
 
+  // 難度單選（含「無」）：換難度會重置該格 Boss，並可能影響後續戰次的開放狀態，故整表重繪
   table.querySelectorAll('.calc-tier-group input[type="radio"]').forEach(radio => {
     radio.addEventListener('change', (e) => {
       const group = e.target.closest('.calc-tier-group');
@@ -1179,19 +1219,14 @@ function bindCalculatorEvents() {
       if (!col) return;
 
       col.selections[rowIdx].tier = e.target.value;
-      col.selections[rowIdx].boss_id = null; // 換難度後，原本選的 Boss 已不適用，重置
+      col.selections[rowIdx].boss_id = null;
 
-      const select = table.querySelector(`.calc-boss-select[data-col="${colIdx}"][data-row="${rowIdx}"]`);
-      if (select) {
-        select.disabled = false;
-        select.innerHTML = buildBossOptions(e.target.value, null);
-      }
-
-      recalcTotals();
+      buildCalculatorTable();
       debouncedSaveColumn(colIdx);
     });
   });
 
+  // Boss 下拉：選定 Boss 可能讓下一戰開放，故整表重繪
   table.querySelectorAll('.calc-boss-select').forEach(select => {
     select.addEventListener('change', (e) => {
       const colIdx = Number(e.target.dataset.col);
@@ -1200,28 +1235,41 @@ function bindCalculatorEvents() {
       if (!col) return;
 
       col.selections[rowIdx].boss_id = e.target.value ? Number(e.target.value) : null;
-      recalcTotals();
+
+      buildCalculatorTable();
       debouncedSaveColumn(colIdx);
     });
   });
 }
 
-// 重新計算每欄合計＋每週總合計（純前端運算，不用每次都打 API）
+// 重新計算每欄合計＋每週總合計＋每欄Boss計數器＋每週Boss攻略數
+//（只計算「從第1戰起連續完成」的部分，遇到未完成/選「無」即停止累加）
 function recalcTotals() {
   let grand = 0;
+  let grandBossCount = 0;
+
   calcState.forEach(col => {
-    let sum = 0;
-    col.selections.forEach(sel => {
+    const completed = getColumnCompletedSelections(col);
+
+    const sum = completed.reduce((acc, sel) => {
       const boss = getBossById(sel.boss_id);
-      if (boss?.crystal_price != null) sum += Number(boss.crystal_price);
-    });
+      return acc + (boss?.crystal_price != null ? Number(boss.crystal_price) : 0);
+    }, 0);
     grand += sum;
     const cell = document.getElementById(`calc-col-total-${col.col_index}`);
     if (cell) cell.textContent = sum.toLocaleString();
+
+    const bossCount = completed.length;
+    grandBossCount += bossCount;
+    const countCell = document.getElementById(`calc-col-count-${col.col_index}`);
+    if (countCell) countCell.textContent = bossCount;
   });
 
   const grandEl = document.getElementById('calc-grand-total');
   if (grandEl) grandEl.textContent = grand.toLocaleString();
+
+  const grandBossEl = document.getElementById('calc-grand-boss-count');
+  if (grandBossEl) grandBossEl.textContent = grandBossCount;
 }
 
 // 簡單防抖：使用者連續輸入/連續切換選項時，等 600ms 沒有新動作才真正送出存檔請求
