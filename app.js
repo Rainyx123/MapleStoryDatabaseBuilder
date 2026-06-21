@@ -141,7 +141,25 @@ const LOCAL_IMAGE_OVERRIDES = {
 // ================================================================
 document.addEventListener('DOMContentLoaded', init);
 
+// --- 新增：設定隨機全版載入圖片 ---
+function setRandomLoadingImage() {
+  const loadingEl = document.getElementById('loading');
+  if (!loadingEl) return;
+  
+  const isMobile = window.innerWidth <= 768; // 判斷是否為手機螢幕
+  const maxImages = 12; // 💡假設各有 3 張圖片，若您有更多圖片請修改這個數字
+  const randomNum = Math.floor(Math.random() * maxImages) + 1; 
+  
+  if (isMobile) {
+    loadingEl.style.backgroundImage = `url('images/loading/phone/ph${randomNum}.png')`;
+  } else {
+    loadingEl.style.backgroundImage = `url('images/loading/pc/pc${randomNum}.png')`;
+  }
+}
+
 async function init() {
+  setRandomLoadingImage(); // 💡新增這行：一進入網頁就立刻設定載入圖片
+  
   try {
     const res = await fetch(`${API_BASE}/api/characters`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
