@@ -23,7 +23,7 @@
     <div id="loading"><div class="spinner"></div><p>讀取角色資料中...</p></div>
     <div id="boss-content" class="hidden container-stack">
      <div class="grid-system">
-      <section class="section-card span-6" id="section-boss-a">
+      <section class="section-card span-4" id="section-boss-a">
         <div class="section-header"><span>BOSS資訊(簡單)</span><span class="toggle-icon">▼</span></div>
         <div class="section-body">
           <table class="data-table">
@@ -36,7 +36,7 @@
         </div>
       </section>
 
-      <section class="section-card span-6" id="section-boss-b">
+      <section class="section-card span-4" id="section-boss-b">
         <div class="section-header"><span>BOSS資訊(普通)</span><span class="toggle-icon">▼</span></div>
         <div class="section-body">
           <table class="data-table">
@@ -49,7 +49,7 @@
         </div>
       </section>
 
-      <section class="section-card span-6" id="section-boss-c">
+      <section class="section-card span-4" id="section-boss-c">
         <div class="section-header"><span>BOSS資訊(困難)</span><span class="toggle-icon">▼</span></div>
         <div class="section-body">
           <table class="data-table">
@@ -76,7 +76,10 @@
         <div class="section-header"><span>結晶石計算機</span><span class="toggle-icon">▼</span></div>
         <div class="section-body">
           <div class="calc-toolbar">
-            <div class="calc-weekly-total">每週合計：<b id="calc-grand-total">0</b></div>
+            <div class="calc-weekly-total-group">
+              <div class="calc-weekly-total">每週合計：<b id="calc-grand-total">0</b></div>
+              <div class="calc-weekly-total">每週Boss攻略數：<b id="calc-grand-boss-count">0</b></div>
+            </div>
             <div class="calc-toolbar-actions">
               <button id="btn-calc-export" type="button">📄 匯出 CSV</button>
               <button id="btn-calc-copy" type="button">📋 複製 CSV</button>
