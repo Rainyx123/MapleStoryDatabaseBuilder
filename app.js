@@ -53,6 +53,20 @@ const equipDataStore = new Map();
 let equipIdCounter = 0;
 
 // ----------------------------------------------------------------
+// Boss 分頁／結晶石計算機 全域狀態
+//   bossData   ：/api/bosses 回傳結果，依 tier 分組 { 簡單:[], 普通:[], 困難:[] }
+//   calcState  ：/api/crystal-calculator 回傳結果，9 欄各自的標題＋12 列勾選紀錄
+//   bossLoaded ：Boss分頁資料是否已載入過（只在第一次點擊「👾」時才打 API，避免每次切換分頁都重抓）
+// ----------------------------------------------------------------
+let bossData = { 簡單: [], 普通: [], 困難: [] };
+let calcState = [];
+let bossLoaded = false;
+
+const CALC_COLS = 9;
+const CALC_ROWS = 12;
+const CALC_TIERS = ['簡單', '普通', '困難'];
+
+// ----------------------------------------------------------------
 // 裝備棋盤格位定義（對應 排版要求與錯誤修正.md 的版面規劃）
 //   area：CSS grid-area 名稱（見 style.css 的 .equip-doll-grid）
 //   slot：對應 parseEquipList() 產出的中文 slot 名稱，用來在裝備陣列中查找資料
@@ -147,6 +161,7 @@ async function init() {
     initPeakToggle();
     initQuery();
     initTooltip();
+    initBossPanel();      // Boss分頁切換按鈕＋結晶石計算機匯出/複製按鈕（資料延遲到第一次開啟分頁才載入）
 
   } catch (err) {
     const loadEl = document.getElementById('loading');
@@ -996,8 +1011,296 @@ function initTooltip() {
   });
 }
 
-document.getElementById('btn-boss')?.addEventListener('click', () => {
-  document.getElementById('content').classList.add('hidden');
-  document.getElementById('boss-content').classList.remove('hidden');
-  window.scrollTo(0, 0);   // 新增這行，避免使用者卡在原本捲動的位置看不到新內容
-});
+// ================================================================
+// Boss 分頁與結晶石計算機
+//   - initBossPanel()：綁定「👾」分頁切換按鈕＋匯出/複製CSV按鈕（一律在 init() 內呼叫一次）
+//   - loadBossTabIfNeeded()：第一次切到 Boss 分頁時才打 API，之後切換分頁不會重複載入
+//   - renderBossTables()：把 /api/bosses 的資料填回原本三張 BOSS資訊 表格
+//   - buildCalculatorTable() 及以下：結晶石計算機本體（建表／勾選／合計／存檔／CSV）
+// ================================================================
+
+function initBossPanel() {
+  document.getElementById('btn-boss')?.addEventListener('click', async () => {
+    document.getElementById('content')?.classList.add('hidden');
+    document.getElementById('boss-content')?.classList.remove('hidden');
+    window.scrollTo(0, 0);
+    await loadBossTabIfNeeded();
+  });
+
+  document.getElementById('btn-calc-export')?.addEventListener('click', exportCalculatorCSV);
+  document.getElementById('btn-calc-copy')?.addEventListener('click', copyCalculatorCSV);
+}
+
+async function loadBossTabIfNeeded() {
+  if (bossLoaded) return;
+  try {
+    const [bossRes, calcRes] = await Promise.all([
+      fetch(`${API_BASE}/api/bosses`),
+      fetch(`${API_BASE}/api/crystal-calculator`),
+    ]);
+    if (!bossRes.ok) throw new Error(`Boss資料 HTTP ${bossRes.status}`);
+    if (!calcRes.ok) throw new Error(`計算機資料 HTTP ${calcRes.status}`);
+
+    bossData = await bossRes.json();
+    calcState = await calcRes.json();
+
+    renderBossTables();
+    buildCalculatorTable();
+    bossLoaded = true;
+  } catch (err) {
+    console.error('[Boss分頁載入失敗]', err);
+    showToast(`Boss資料載入失敗：${err.message}`, 'error');
+  }
+}
+
+// 把 bossData 填回原本就存在的三張表格（取代寫死的 <tr>）
+function renderBossTables() {
+  const TIER_TBODY = { 簡單: 'boss-tbody-easy', 普通: 'boss-tbody-normal', 困難: 'boss-tbody-hard' };
+
+  Object.entries(TIER_TBODY).forEach(([tier, tbodyId]) => {
+    const tbody = document.getElementById(tbodyId);
+    if (!tbody) return;
+
+    const list = bossData[tier] || [];
+    if (list.length === 0) { tbody.innerHTML = '<tr><td colspan="7" class="empty">無資料</td></tr>'; return; }
+
+    tbody.innerHTML = list.map(b => `
+      <tr>
+        <td>${b.name}</td>
+        <td><img src="${b.icon || ''}" width="80" class="table-icon" onerror="this.src='images/bosses/boss_default.png'"></td>
+        <td>${b.difficulty || '—'}</td>
+        <td>${b.hp || '—'}</td>
+        <td>${b.defense || '—'}</td>
+        <td>${b.crystal_price != null ? Number(b.crystal_price).toLocaleString() : '無'}</td>
+        <td>${b.recommended_power || '—'}</td>
+      </tr>
+    `).join('');
+  });
+}
+
+// 依 id 在三個 tier 中找出對應的 boss 物件（CSV／合計計算共用）
+function getBossById(id) {
+  if (id == null) return null;
+  for (const tier of CALC_TIERS) {
+    const found = (bossData[tier] || []).find(b => b.id === id);
+    if (found) return found;
+  }
+  return null;
+}
+
+// 確保 calcState 永遠是「9 欄、每欄 12 列」的完整結構，
+// 避免後端資料筆數不齊（例如第一次尚未寫入過）時前端渲染出錯
+function ensureCalcState() {
+  const byCol = {};
+  (calcState || []).forEach(c => { byCol[c.col_index] = c; });
+
+  const filled = [];
+  for (let i = 1; i <= CALC_COLS; i++) {
+    const existing = byCol[i] || { col_index: i, title: '', selections: [] };
+    const sel = Array.isArray(existing.selections) ? existing.selections.slice() : [];
+    while (sel.length < CALC_ROWS) sel.push({ tier: null, boss_id: null });
+    filled.push({ col_index: i, title: existing.title || '', selections: sel.slice(0, CALC_ROWS) });
+  }
+  calcState = filled;
+}
+
+// 依目前選擇的難度，組出對應的 <option> 清單
+function buildBossOptions(tier, selectedId) {
+  if (!tier) return '<option value="">— 先選難度 —</option>';
+  const list = bossData[tier] || [];
+  const opts = list.map(b => {
+    const priceText = b.crystal_price != null ? Number(b.crystal_price).toLocaleString() : '無';
+    return `<option value="${b.id}" ${b.id === selectedId ? 'selected' : ''}>${b.name}（${b.difficulty}）- ${priceText}</option>`;
+  }).join('');
+  return '<option value="">— 選擇 Boss —</option>' + opts;
+}
+
+// 建立整張計算機表格（表頭標題輸入框／12 列難度+下拉／合計列）
+function buildCalculatorTable() {
+  ensureCalcState();
+  const table = document.getElementById('crystal-calc-table');
+  if (!table) return;
+
+  let thead = '<thead><tr><th class="calc-row-label">第幾戰 ＼ 角色</th>';
+  calcState.forEach(col => {
+    const safeTitle = (col.title || '').replace(/"/g, '&quot;');
+    thead += `<th><input class="calc-col-title-input" data-col="${col.col_index}" value="${safeTitle}" placeholder="角色名稱"></th>`;
+  });
+  thead += '</tr></thead>';
+
+  let tbody = '<tbody>';
+  for (let r = 0; r < CALC_ROWS; r++) {
+    tbody += `<tr><td class="calc-row-label">第 ${r + 1} 戰</td>`;
+    calcState.forEach(col => {
+      const sel = col.selections[r];
+      tbody += `<td>
+        <div class="calc-tier-group" data-col="${col.col_index}" data-row="${r}">
+          ${CALC_TIERS.map(t => `<label><input type="radio" name="tier-${col.col_index}-${r}" value="${t}" ${sel.tier === t ? 'checked' : ''}>${t[0]}</label>`).join('')}
+        </div>
+        <select class="calc-boss-select" data-col="${col.col_index}" data-row="${r}" ${sel.tier ? '' : 'disabled'}>
+          ${buildBossOptions(sel.tier, sel.boss_id)}
+        </select>
+      </td>`;
+    });
+    tbody += '</tr>';
+  }
+  tbody += '</tbody>';
+
+  let tfoot = '<tfoot><tr class="calc-total-row"><th class="calc-row-label">結晶石金額合計</th>';
+  calcState.forEach(col => { tfoot += `<td id="calc-col-total-${col.col_index}">0</td>`; });
+  tfoot += '</tr></tfoot>';
+
+  table.innerHTML = thead + tbody + tfoot;
+
+  bindCalculatorEvents();
+  recalcTotals();
+}
+
+// 綁定表格內所有互動元件（標題輸入框／難度單選／Boss下拉）
+function bindCalculatorEvents() {
+  const table = document.getElementById('crystal-calc-table');
+  if (!table) return;
+
+  table.querySelectorAll('.calc-col-title-input').forEach(input => {
+    input.addEventListener('input', (e) => {
+      const col = calcState.find(c => c.col_index === Number(e.target.dataset.col));
+      if (!col) return;
+      col.title = e.target.value;
+      debouncedSaveColumn(col.col_index);
+    });
+  });
+
+  table.querySelectorAll('.calc-tier-group input[type="radio"]').forEach(radio => {
+    radio.addEventListener('change', (e) => {
+      const group = e.target.closest('.calc-tier-group');
+      const colIdx = Number(group.dataset.col);
+      const rowIdx = Number(group.dataset.row);
+      const col = calcState.find(c => c.col_index === colIdx);
+      if (!col) return;
+
+      col.selections[rowIdx].tier = e.target.value;
+      col.selections[rowIdx].boss_id = null; // 換難度後，原本選的 Boss 已不適用，重置
+
+      const select = table.querySelector(`.calc-boss-select[data-col="${colIdx}"][data-row="${rowIdx}"]`);
+      if (select) {
+        select.disabled = false;
+        select.innerHTML = buildBossOptions(e.target.value, null);
+      }
+
+      recalcTotals();
+      debouncedSaveColumn(colIdx);
+    });
+  });
+
+  table.querySelectorAll('.calc-boss-select').forEach(select => {
+    select.addEventListener('change', (e) => {
+      const colIdx = Number(e.target.dataset.col);
+      const rowIdx = Number(e.target.dataset.row);
+      const col = calcState.find(c => c.col_index === colIdx);
+      if (!col) return;
+
+      col.selections[rowIdx].boss_id = e.target.value ? Number(e.target.value) : null;
+      recalcTotals();
+      debouncedSaveColumn(colIdx);
+    });
+  });
+}
+
+// 重新計算每欄合計＋每週總合計（純前端運算，不用每次都打 API）
+function recalcTotals() {
+  let grand = 0;
+  calcState.forEach(col => {
+    let sum = 0;
+    col.selections.forEach(sel => {
+      const boss = getBossById(sel.boss_id);
+      if (boss?.crystal_price != null) sum += Number(boss.crystal_price);
+    });
+    grand += sum;
+    const cell = document.getElementById(`calc-col-total-${col.col_index}`);
+    if (cell) cell.textContent = sum.toLocaleString();
+  });
+
+  const grandEl = document.getElementById('calc-grand-total');
+  if (grandEl) grandEl.textContent = grand.toLocaleString();
+}
+
+// 簡單防抖：使用者連續輸入/連續切換選項時，等 600ms 沒有新動作才真正送出存檔請求
+function debounce(fn, delay = 600) {
+  let timer;
+  return (...args) => {
+    clearTimeout(timer);
+    timer = setTimeout(() => fn(...args), delay);
+  };
+}
+const debouncedSaveColumn = debounce((colIndex) => saveColumnToServer(colIndex));
+
+// 把單一欄位的標題＋12列勾選結果存回 Supabase（全域共用，任何人開啟此頁都會看到最新狀態）
+async function saveColumnToServer(colIndex) {
+  const col = calcState.find(c => c.col_index === colIndex);
+  if (!col) return;
+  try {
+    const res = await fetch(`${API_BASE}/api/crystal-calculator`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(col),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  } catch (err) {
+    console.error('[結晶石計算機] 儲存失敗', err);
+    showToast('儲存失敗，請檢查網路連線', 'error');
+  }
+}
+
+// 組出 CSV 內容（表頭／12列每格"Boss名稱(難度)"／合計列），供匯出與複製共用
+function buildCalculatorCSV() {
+  const escape = (v) => {
+    const s = String(v ?? '');
+    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+
+  const rows = [['第幾戰', ...calcState.map(c => c.title || `角色${c.col_index}`)]];
+
+  for (let r = 0; r < CALC_ROWS; r++) {
+    const row = [`第 ${r + 1} 戰`];
+    calcState.forEach(col => {
+      const sel = col.selections[r];
+      const boss = getBossById(sel.boss_id);
+      row.push(boss ? `${boss.name}(${sel.tier})` : '');
+    });
+    rows.push(row);
+  }
+
+  const totalRow = ['結晶石金額合計'];
+  calcState.forEach(col => {
+    const sum = col.selections.reduce((acc, sel) => acc + (getBossById(sel.boss_id)?.crystal_price ?? 0), 0);
+    totalRow.push(sum);
+  });
+  rows.push(totalRow);
+
+  return rows.map(r => r.map(escape).join(',')).join('\r\n');
+}
+
+function exportCalculatorCSV() {
+  const csv = buildCalculatorCSV();
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' }); // 加 BOM，避免 Excel 開啟時中文亂碼
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `結晶石計算機_${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+  showToast('CSV 已匯出', 'success');
+}
+
+async function copyCalculatorCSV() {
+  const csv = buildCalculatorCSV();
+  try {
+    await navigator.clipboard.writeText(csv);
+    showToast('CSV 已複製到剪貼簿', 'success');
+  } catch (err) {
+    console.error('[複製CSV失敗]', err);
+    showToast('複製失敗，請手動選取複製', 'error');
+  }
+}
