@@ -316,7 +316,10 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans TC
   top: 0; left: 0; right: 0; bottom: 0;
   z-index: 9999;
   background-color: var(--bg-0);
-  background-size: cover;
+   
+  /* 💡 修正這裡：改成 contain 與 no-repeat，保證圖片 100% 完整呈現不被裁切 */
+  background-size: contain;
+  background-repeat: no-repeat;
   background-position: center;
   
   /* 排版：將 Spinner 與文字變成橫向 (進度條形式)，並推到最下方 */
