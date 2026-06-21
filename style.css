@@ -442,13 +442,25 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans TC
 }
 .calc-col-title-input:focus { border-color: var(--accent); }
 
-.calc-tier-group { display: flex; justify-content: center; gap: 6px; margin-bottom: 4px; font-size: 10px; color: var(--text-3); }
-.calc-tier-group label { display: flex; align-items: center; gap: 2px; cursor: pointer; }
-.calc-tier-group input[type="radio"] { accent-color: var(--accent); cursor: pointer; margin: 0; }
+.calc-tier-group { display: flex; justify-content: center; gap: 4px; margin-bottom: 4px; }
+
+/* 隱藏原生 radio 外觀，視覺改由旁邊的 label 呈現 */
+.tier-radio-btn { position: absolute; width: 0; height: 0; opacity: 0; pointer-events: none; }
+
+.tier-radio-label {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 18px; padding: 2px 6px; font-size: 10px; line-height: 1.3;
+  border: 1px solid var(--accent); border-radius: var(--r-sm);
+  color: var(--accent-light); background: transparent; cursor: pointer;
+  user-select: none; transition: 0.12s;
+}
+.tier-radio-label:hover { background: var(--bg-hover); }
+.tier-radio-btn:checked + .tier-radio-label { background: var(--accent); color: #fff; border-color: var(--accent); }
+.tier-radio-btn:focus-visible + .tier-radio-label { outline: 2px solid var(--accent-light); outline-offset: 1px; }
 
 .calc-boss-select {
   width: 100%; background: var(--bg-3); border: 1px solid var(--border); color: var(--text-2);
-  font-size: 10px; padding: 3px; border-radius: var(--r-sm);
+  font-size: var(--fs-xs); padding: 3px; border-radius: var(--r-sm);
 }
 .calc-boss-select:disabled { opacity: 0.4; cursor: not-allowed; }
 
