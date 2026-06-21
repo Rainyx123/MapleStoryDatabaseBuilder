@@ -305,8 +305,40 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans TC
 .equip-add-line { color: var(--text-4); }
 
 /* ---- 7. UI 狀態與彈窗 ---- */
-#loading, #error { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px; color: var(--text-4); gap: 15px; }
-.spinner { width: 40px; height: 40px; border: 3px solid var(--bg-4); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.75s linear infinite; }
+/* 讓 error 保留原本的樣式 */
+#error { 
+  display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px; color: var(--text-4); gap: 15px; 
+}
+
+/* 全新獨立的載入畫面樣式 */
+#loading {
+  position: fixed; /* 覆蓋全螢幕 */
+  top: 0; left: 0; right: 0; bottom: 0;
+  z-index: 9999;
+  background-color: var(--bg-0);
+  background-size: cover;
+  background-position: center;
+  
+  /* 排版：將 Spinner 與文字變成橫向 (進度條形式)，並推到最下方 */
+  display: flex;
+  flex-direction: row;
+  align-items: flex-end; 
+  justify-content: center;
+  padding-bottom: 80px; /* 距離底部的距離 */
+  gap: 20px;
+  
+  /* 文字視覺優化：強制白字＋黑色陰影，避免亮色圖片吃掉文字 */
+  color: #ffffff;
+  text-shadow: 0px 2px 6px rgba(0, 0, 0, 0.9);
+}
+
+/* 確保載入文字與 40px 高的 spinner 垂直視覺對齊 */
+#loading p {
+  margin: 0;
+  line-height: 40px; 
+  font-size: var(--fs-md);
+  font-weight: bold;
+}.spinner { width: 40px; height: 40px; border: 3px solid var(--bg-4); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.75s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 .hidden { display: none !important; }
 
