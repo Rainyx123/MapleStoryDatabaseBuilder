@@ -481,7 +481,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans TC
 .calc-toolbar-actions button:hover { color: var(--accent); transform: scale(1.1); }
 
 .calc-table-wrap { overflow-x: auto; }
-.crystal-calc-table { width: 100%; border-collapse: collapse; table-layout: fixed; min-width: 980px; }
+.crystal-calc-table { width: 100%; border-collapse: collapse; table-layout: fixed; min-width: 1560px; }
 .crystal-calc-table th, .crystal-calc-table td {
   border: 1px solid var(--border); padding: 6px; text-align: center; vertical-align: middle;
 }
