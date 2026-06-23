@@ -63,7 +63,7 @@ let calcState = [];
 let bossLoaded = false;
 let currentBossTier = '困難'; // 目前選中的 Boss 難度分頁
 
-const CALC_COLS = 9;
+const CALC_COLS = 15;
 const CALC_ROWS = 12;
 const CALC_TIERS = ['簡單', '普通', '困難' , '無'];
 
