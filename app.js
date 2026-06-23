@@ -213,8 +213,10 @@ function buildTabs() {
   bar.innerHTML = '';
   characters.forEach((char, i) => {
     const btn = document.createElement('button');
-    btn.className = 'tab-btn' + (i === currentIdx ? ' active' : '');
+    // _placeholder：尚未抓到資料的新角色，分頁加上 .tab-pending 樣式（半透明＋斜體）以便區分
+    btn.className = 'tab-btn' + (i === currentIdx ? ' active' : '') + (char._placeholder ? ' tab-pending' : '');
     btn.textContent = char.name;
+    btn.title = char._placeholder ? '尚無資料，等待下次爬蟲更新' : '';
     btn.onclick = () => switchTab(i);
     bar.appendChild(btn);
   });
@@ -250,8 +252,9 @@ function renderCharacter(data) {
 
   // 頂部資訊列：角色名稱／職業／等級／戰鬥力／伺服器／戰地聯盟／聯盟等級
   document.getElementById('char-name').textContent = data?.name ?? '—';
-  document.getElementById('char-class').textContent = data?.class ?? '—';
-  document.getElementById('char-level').textContent = data?.level ? `Lv. ${data.level}` : '—';
+  document.getElementById('char-class').textContent = data?._placeholder
+    ? '尚無資料，等待下次更新'
+    : (data?.class ?? '—');  document.getElementById('char-level').textContent = data?.level ? `Lv. ${data.level}` : '—';
   document.getElementById('char-combat-power').textContent =
     data?.combat_power != null ? Number(data.combat_power).toLocaleString() : '—';
   document.getElementById('char-server').textContent = data?.world_name ? `🌍 ${data.world_name}` : '—';
@@ -264,8 +267,8 @@ function renderCharacter(data) {
   renderInnerAbility(data?.inner_ability ?? {});
   renderUnionRaider(data?.union_raider ?? []);
 
-  if (data.union_artifact) renderUnionArtifact(data.union_artifact);
-  if (data.union_champion) renderUnionChampion(data.union_champion);
+  renderUnionArtifact(data?.union_artifact ?? {});
+  renderUnionChampion(data?.union_champion ?? {});
 
   renderList('hyper-list', data?.hyper_stats, hs =>
     `<div style="display:flex; justify-content:space-between; padding:4px 0; border-bottom:1px solid var(--border)">
@@ -698,27 +701,30 @@ function renderUnionChampion(data) {
 
 // --- 調整後的傳授技能渲染邏輯 ---
 function renderLinkSkill(data) {
-    const container = document.getElementById('link-grid'); // 假設您的容器 ID 是 link-grid
-    if (!container || !data) return;
+    const container = document.getElementById('link-grid');
+    if (!container) return;
 
-    // 直接沿用已有的網格設定 (Grid)
+    // 原本 !data 時直接 return、不清空畫面，當角色缺少 link_skills 欄位（例如空殼佔位資料）
+    // 會殘留上一個角色的舊內容。改成統一視為陣列，缺資料時當作空陣列處理。
+    const list = Array.isArray(data) ? data : [];
+
     container.style.display = 'grid';
-    container.style.gridTemplateColumns = 'repeat(6, 1fr)'; // 2*6 網格
+    container.style.gridTemplateColumns = 'repeat(6, 1fr)';
     container.style.gap = '8px';
-    container.innerHTML = ''; // 清空原本內容
+    container.innerHTML = '';
 
-    data.forEach(sk => {
+    if (list.length === 0) {
+        container.innerHTML = '<div class="empty">無資料</div>';
+        return;
+    }
+
+    list.forEach(sk => {
         const slot = document.createElement('div');
-        // 【關鍵】直接複用裝備區的 doll-slot 樣式，它已經有正方形與 Hover 效果
-        slot.className = 'doll-slot'; 
-        
-        // 將名稱與等級塞入 data-tooltip，懸浮預覽會自動讀取此屬性
+        slot.className = 'doll-slot';
         slot.setAttribute('data-tooltip', `${sk.name || '技能'}<br>Lv.${sk.level || 0}`);
-
         const img = document.createElement('img');
         img.src = sk.icon || '';
-        img.onerror = function() { this.style.display = 'none'; }; // 圖片載入失敗隱藏
-        
+        img.onerror = function() { this.style.display = 'none'; };
         slot.appendChild(img);
         container.appendChild(slot);
     });
