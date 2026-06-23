@@ -7,6 +7,11 @@
 //       main.py 現在直接把 Nexon 原始 final_stat 陣列存進 data，這裡單純讀取、不再轉換。
 //   B10/B11：因為 main.py 採用「完整 data 只留最新一筆」的瘦身策略，
 //       這裡只需篩出 data 不為 null 的最新一筆即可，不用再比較 7 天內的戰力高低。
+//   2026-06（新活動擴編）：原本用 .filter(Boolean) 把「還沒抓過資料」的角色直接濾掉，
+//       導致剛新增到 characters 表、但爬蟲還沒跑過的新角色完全不會出現在分頁列表，
+//       使用者無法確認角色是否已正確掛上。改成回傳一個最小空殼物件
+//       { name, _placeholder: true }，前端 app.js 會把它顯示成「尚無資料」的分頁，
+//       等爬蟲抓到真實資料後自然會被取代，不需要任何手動切換。
 // =====================================================
 import { createClient } from '@supabase/supabase-js';
 
@@ -48,8 +53,8 @@ export default async function handler(req, res) {
       if (!latest[row.character_name]) latest[row.character_name] = row.data;
     }
 
-    // 4. 依 display_order 排列後回傳
-    const result = characters.map(c => latest[c.name]).filter(Boolean);
+    // 4. 依 display_order 排列；還沒有資料的角色給一個空殼物件，前端顯示「尚無資料」分頁
+    const result = characters.map(c => latest[c.name] || { name: c.name, _placeholder: true });
     return res.status(200).json(result);
 
   } catch (err) {
