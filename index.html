@@ -16,6 +16,7 @@
       <button id="btn-query" title="即時查詢">👁️‍🗨️</button>
       <button id="btn-settings" title="顯示設定">🕹️</button>
       <button id="btn-boss" title="Boss資訊">⚔️</button>
+      <button id="btn-export" title="匯出角色資料">📤</button>
     </div>
   </header>
 
@@ -252,6 +253,22 @@
         <input type="text" id="query-input" placeholder="角色名稱...">
         <button id="btn-query-submit">查詢</button>
         <div id="query-status"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 匯出角色資料彈窗：CSV／MD 內容完全一致，只是格式不同，供 AI 助理檢視用 -->
+  <div id="modal-export" class="modal hidden">
+    <div class="modal-box">
+      <div class="modal-header"><h2>📤 匯出角色資料</h2><button onclick="closeModal('modal-export')">❎</button></div>
+      <div class="modal-body">
+        <p style="color:var(--text-3); font-size:var(--fs-sm); margin:0;">
+          匯出目前已載入的全部角色完整詳細資料（核心屬性、裝備、聯盟、符文、HEXA、寵物等），
+          CSV 與 MD 內容一致，僅排版格式不同，方便貼給 AI 助理檢視分析。
+        </p>
+        <button id="btn-export-csv">📄 僅匯出 CSV</button>
+        <button id="btn-export-md">📝 僅匯出 MD</button>
+        <button id="btn-export-both">📦 兩者都匯出</button>
       </div>
     </div>
   </div>
