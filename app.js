@@ -181,7 +181,7 @@ async function init() {
     initSettings();
     initPeakToggle();
     initQuery();
-    initExportModal();
+    initExportButton();
     initTooltip();
     initBossPanel();      // Boss分頁切換按鈕＋結晶石計算機匯出/複製按鈕（資料延遲到第一次開啟分頁才載入）
 
@@ -973,7 +973,62 @@ function exportDateStamp() {
   return tzNow.toISOString().slice(0, 10).replace(/-/g, '');
 }
 
+// 中介資料整理函式：把戰地攻擊隊的三種來源（數值加成／佔領格加成／內部隊員效果）
+// 攤平成統一的 { type, content } 陣列，供 union_raider.csv 使用
+function exGetUnionRaiderRows(c) {
+  const ur = c.union_raider || {};
+  const rows = [];
+  (ur.raider_stats || []).forEach(s => rows.push({ type: '戰地數值加成', content: s }));
+  (ur.occupied_stats || []).forEach(s => rows.push({ type: '佔領格加成', content: s }));
+  (ur.inner_stats || []).forEach(s => rows.push({ type: '內部隊員效果', content: `${s.id}：${s.effect}` }));
+  return rows;
+}
+
+// ---- EXPORT_TABLES：每個元素對應匯出 ZIP 裡的一張 CSV 表 ----
+//   ⚠️ 2026-06 修復記錄：本陣列開頭（角色基本資料／核心屬性／裝備明細／
+//   極限屬性／符文系統 5 張表）原始定義遺失，造成陣列開頭語法不完整
+//   （直接接到 pets.csv 殘留片段），整支 app.js 因語法錯誤無法執行，
+//   網站因此卡在「讀取角色資料中」。以下 5 張表為依現有資料結構
+//   （main.py / maple-utils.js 的輸出格式）重建，內容對應註解開頭所述
+//   「屬性/裝備/聯盟/符文」四大類別中的前三類＋極限屬性；pets.csv 之後
+//   的表格為原本就存在、未受影響的部分。
+const EXPORT_TABLES = [
+  {
+    file: 'characters.csv',
+    headers: ['角色名稱', '職業', '等級', '伺服器', '公會', '戰鬥力', '人氣', '星力總和', '戒指紋章', '戰地聯盟等級', '戰地聯盟階級'],
+    rows: (list) => list.map(c => [
+      c.name, c.class, c.level, c.world_name, c.guild_name, c.combat_power, c.popularity,
+      c.starforce_total, (c.rings || []).join('；'), c.union?.level, c.union?.grade,
+    ]),
+  },
+  {
+    file: 'final_stat.csv',
+    headers: ['角色名稱', '屬性名稱', '數值'],
+    rows: (list) => list.flatMap(c => (c.final_stat || []).map(s => [c.name, s.stat_name, s.stat_value])),
+  },
+  {
+    file: 'equipment.csv',
+    headers: [
+      '角色名稱', '部位', '裝備名稱', '星力', '潛能等級', '潛能1', '潛能2', '潛能3',
+      '附加潛能等級', '附加潛能1', '附加潛能2', '附加潛能3', '星火', '卷軸強化', '靈魂名稱', '靈魂選項',
+    ],
+    rows: (list) => list.flatMap(c => (c.equipment?.preset_0 || []).map(eq => [
+      c.name, eq.slot, eq.name, eq.starforce,
+      eq.potential_grade, eq.potential?.[0] || '', eq.potential?.[1] || '', eq.potential?.[2] || '',
+      eq.additional_grade, eq.additional?.[0] || '', eq.additional?.[1] || '', eq.additional?.[2] || '',
+      (eq.add_option || []).join('；'), (eq.etc_option || []).join('；'),
+      eq.soul_name, eq.soul_option,
     ])),
+  },
+  {
+    file: 'hyper_stats.csv',
+    headers: ['角色名稱', '極限屬性名稱', '等級', '加成內容'],
+    rows: (list) => list.flatMap(c => (c.hyper_stats || []).map(hs => [c.name, hs.type, hs.level, hs.increase])),
+  },
+  {
+    file: 'symbols.csv',
+    headers: ['角色名稱', '符文名稱', '等級', '力量', '已成長次數', '所需成長次數'],
+    rows: (list) => list.flatMap(c => (c.symbols || []).map(s => [c.name, s.name, s.level, s.force, s.growth_count, s.require_growth])),
   },
   {
     file: 'pets.csv',
@@ -1295,18 +1350,6 @@ function initTooltip() {
 //   - renderBossTables()：把 /api/bosses 的資料填回原本三張 BOSS資訊 表格
 //   - buildCalculatorTable() 及以下：結晶石計算機本體（建表／勾選／合計／存檔／CSV）
 // ================================================================
-
-function initBossPanel() {
-  document.getElementById('btn-boss')?.addEventListener('click', async () => {
-    document.getElementById('content')?.classList.add('hidden');
-    document.getElementById('boss-content')?.classList.remove('hidden');
-    window.scrollTo(0, 0);
-    await loadBossTabIfNeeded();
-  });
-
-  document.getElementById('btn-calc-export')?.addEventListener('click', exportCalculatorCSV);
-  document.getElementById('btn-calc-copy')?.addEventListener('click', copyCalculatorCSV);
-}
 
 async function loadBossTabIfNeeded() {
   if (bossLoaded) return;
