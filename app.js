@@ -973,280 +973,216 @@ function exportDateStamp() {
   return tzNow.toISOString().slice(0, 10).replace(/-/g, '');
 }
 
-// ---- 中介資料整理函式（CSV／MD 共用，把巢狀結構攤平成扁平陣列）----
-function exGetEquipmentRows(c) {
-  const out = [];
-  Object.entries(EXPORT_EQUIP_PRESET_LABELS).forEach(([key, label]) => {
-    (c?.equipment?.[key] || []).forEach(item => out.push({ preset: label, ...item }));
-  });
-  return out;
-}
-function exGetCashRows(c) {
-  const out = [];
-  Object.entries(EXPORT_CASH_PRESET_LABELS).forEach(([key, label]) => {
-    (c?.cash_items?.[key] || []).forEach(item => out.push({ preset: label, ...item }));
-  });
-  return out;
-}
-function exGetUnionRaiderRows(c) {
-  const ur = c?.union_raider || {};
-  const out = [];
-  (ur.raider_stats || []).forEach(s => out.push({ type: '出戰', content: s }));
-  (ur.occupied_stats || []).forEach(s => out.push({ type: '駐紮', content: s }));
-  (ur.inner_stats || []).forEach(s => out.push({ type: '內在', content: `${s.id}：${s.effect}` }));
-  return out;
-}
-function exGetArtifactRows(c) {
-  const ua = c?.union_artifact || {};
-  const out = [];
-  (ua.crystals || []).forEach(cr => out.push({
-    type: '結晶', name: cr.name, level: cr.level,
-    opt1: cr.option1, opt2: cr.option2, opt3: cr.option3, valid: cr.valid ? '是' : '否',
-  }));
-  (ua.effects || []).forEach(ef => out.push({
-    type: '總效果', name: ef.name, level: ef.level, opt1: '', opt2: '', opt3: '', valid: '',
-  }));
-  return out;
-}
-function exGetChampionRows(c) {
-  const uc = c?.union_champion || {};
-  const champs = Array.isArray(uc) ? uc : (uc.champions || []);
-  const totalBadge = Array.isArray(uc) ? [] : (uc.total_badge || []);
-  const out = champs.map(ch => ({
-    type: '冠軍', name: ch.name, class: ch.class, grade: ch.grade, slot: ch.slot,
-    badges: (ch.badges || []).join('；'),
-  }));
-  totalBadge.forEach(tb => out.push({ type: '總徽章效果', name: tb, class: '', grade: '', slot: '', badges: '' }));
-  return out;
-}
+    ])),
+  },
+  {
+    file: 'pets.csv',
+    headers: ['角色名稱', '寵物名稱', '暱稱', '類型', '到期日', '裝備名稱', '裝備卷軸強化', '自動技能1', '自動技能2'],
+    rows: (list) => list.flatMap(c => (c.pets || []).map(p => [
+      c.name, p.name, p.nickname, p.type, p.date_expire,
+      p.equipment?.name, p.equipment?.scroll_upgrade, p.auto_skill?.skill_1, p.auto_skill?.skill_2,
+    ])),
+  },
+  {
+    file: 'link_skills.csv',
+    headers: ['角色名稱', '技能名稱', '等級', '效果'],
+    rows: (list) => list.flatMap(c => (c.link_skills || []).map(s => [c.name, s.name, s.level, s.effect])),
+  },
+  {
+    file: 'v_matrix.csv',
+    headers: ['角色名稱', '核心名稱', '類型', '等級', '連結技能'],
+    rows: (list) => list.flatMap(c => (c.v_cores || []).map(v => [c.name, v.name, v.type, v.level, (v.skills || []).map(s => s.name).join('；')])),
+  },
+  {
+    file: 'hexa_matrix.csv',
+    headers: ['角色名稱', '核心名稱', '等級', '類型', '連結技能'],
+    rows: (list) => list.flatMap(c => (c.hexa_cores || []).map(h => [c.name, h.name, h.level, h.type, (h.skills || []).map(s => s.name).join('；')])),
+  },
+  {
+    file: 'hexa_stats.csv',
+    headers: ['角色名稱', '主屬性', '主等級', '副屬性1', '副等級1', '副屬性2', '副等級2', '屬性評級'],
+    rows: (list) => list.flatMap(c => (c.hexa_stat || []).map(h => [c.name, h.main_stat, h.main_level, h.sub_stat_1, h.sub_level_1, h.sub_stat_2, h.sub_level_2, h.grade])),
+  },
+  {
+    file: 'inner_ability.csv',
+    headers: ['角色名稱', '評級', '能力1', '能力2', '能力3'],
+    rows: (list) => list.map(c => [c.name, c.inner_ability?.grade, c.inner_ability?.abilities?.[0] || '', c.inner_ability?.abilities?.[1] || '', c.inner_ability?.abilities?.[2] || '']),
+  },
+  {
+    file: 'union_raider.csv',
+    headers: ['角色名稱', '類型', '內容'],
+    rows: (list) => list.flatMap(c => exGetUnionRaiderRows(c).map(r => [c.name, r.type, r.content])),
+  },
+  {
+    // 聯盟神器：個別結晶（與彙總效果分開，schema 不同）
+    file: 'union_artifact_crystals.csv',
+    headers: ['角色名稱', '結晶名稱', '等級', '選項1', '選項2', '選項3', '有效'],
+    rows: (list) => list.flatMap(c => (c.union_artifact?.crystals || []).map(cr => [
+      c.name, cr.name, cr.level, cr.option1, cr.option2, cr.option3, cr.valid ? '是' : '否',
+    ])),
+  },
+  {
+    // 聯盟神器：彙總效果（API 原生提供，但屬於彙總性質，獨立關聯表）
+    file: 'union_artifact_effects.csv',
+    headers: ['角色名稱', '效果名稱', '效果等級'],
+    rows: (list) => list.flatMap(c => (c.union_artifact?.effects || []).map(ef => [c.name, ef.name, ef.level])),
+  },
+  {
+    // 聯盟冠軍：個別冠軍（與總徽章效果分開，schema 不同）
+    file: 'union_champions.csv',
+    headers: ['角色名稱', '冠軍名稱', '職業', '階級', '槽位', '個別徽章'],
+    rows: (list) => list.flatMap(c => {
+      const uc = c.union_champion || {};
+      const champs = Array.isArray(uc) ? uc : (uc.champions || []);
+      return champs.map(ch => [c.name, ch.name, ch.class, ch.grade, ch.slot, (ch.badges || []).join('；')]);
+    }),
+  },
+  {
+    // 聯盟冠軍：總徽章效果（champion_badge_total_info，彙總性質，獨立關聯表）
+    file: 'union_champion_badges.csv',
+    headers: ['角色名稱', '總徽章效果'],
+    rows: (list) => list.flatMap(c => {
+      const uc = c.union_champion || {};
+      const totalBadge = Array.isArray(uc) ? [] : (uc.total_badge || []);
+      return totalBadge.map(tb => [c.name, tb]);
+    }),
+  },
+  {
+    file: 'beauty_android.csv',
+    headers: ['角色名稱', '髮型', '髮色', '臉型', '臉色', '膚色', '機器人名稱', '機器人暱稱', '機器人髮型', '機器人臉型'],
+    rows: (list) => list.map(c => [
+      c.name, c.beauty?.hair, c.beauty?.hair_color, c.beauty?.face, c.beauty?.face_color, c.beauty?.skin,
+      c.android?.name, c.android?.nickname, c.android?.hair, c.android?.face,
+    ]),
+  },
+];
 
-// ---- CSV 輸出 ----
+// ---- CSV 字串組裝 ----
 function csvEscape(v) {
   const s = String(v ?? '');
   return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
-function csvSection(title, headers, rows) {
-  const lines = [`【${title}】`, headers.map(csvEscape).join(',')];
+function csvTable(headers, rows) {
+  const lines = [headers.map(csvEscape).join(',')];
   rows.forEach(r => lines.push(r.map(csvEscape).join(',')));
   return lines.join('\r\n');
 }
 
-function buildExportCSV(list) {
-  const sections = [];
-
-  sections.push(csvSection('基本資訊',
-    ['角色名稱', '職業', '等級', '伺服器', '公會', '戰鬥力', '人氣', '總星力', '戒指', '剩餘AP', '聯盟等級', '聯盟階級', '神器等級', '神器經驗', '神器點數'],
-    list.map(c => [c.name, c.class, c.level, c.world_name, c.guild_name, c.combat_power, c.popularity,
-      c.starforce_total, (c.rings || []).join('；'), c.remain_ap,
-      c.union?.level, c.union?.grade, c.union?.artifact_level, c.union?.artifact_exp, c.union?.artifact_point])
-  ));
-
-  sections.push(csvSection('核心屬性',
-    ['角色名稱', '屬性名稱', '數值'],
-    list.flatMap(c => (c.final_stat || []).map(s => [c.name, s.stat_name, s.stat_value]))
-  ));
-
-  sections.push(csvSection('極限屬性',
-    ['角色名稱', '屬性類型', '等級', '增加量'],
-    list.flatMap(c => (c.hyper_stats || []).map(hs => [c.name, hs.type, hs.level, hs.increase]))
-  ));
-
-  sections.push(csvSection('裝備清單',
-    ['角色名稱', '預設', '部位', '名稱', '星力', '卷軸強化', '潛能等級', '潛能1', '潛能2', '潛能3',
-      '附加潛能等級', '附加1', '附加2', '附加3', '星火選項', '卷軸選項', '守護石名稱', '守護石效果'],
-    list.flatMap(c => exGetEquipmentRows(c).map(eq => [
-      c.name, eq.preset, eq.slot, eq.name, eq.starforce, eq.scroll_upgrade, eq.potential_grade,
-      eq.potential?.[0] || '', eq.potential?.[1] || '', eq.potential?.[2] || '',
-      eq.additional_grade, eq.additional?.[0] || '', eq.additional?.[1] || '', eq.additional?.[2] || '',
-      (eq.add_option || []).join('；'), (eq.etc_option || []).join('；'), eq.soul_name, eq.soul_option,
-    ]))
-  ));
-
-  sections.push(csvSection('外觀(現金道具)',
-    ['角色名稱', '預設', '部位', '名稱', '標籤', '屬性選項'],
-    list.flatMap(c => exGetCashRows(c).map(it => [
-      c.name, it.preset, it.slot, it.name, it.label || '',
-      (it.options || []).map(o => `${o.option_type}+${o.option_value}`).join('；'),
-    ]))
-  ));
-
-  sections.push(csvSection('符文系統',
-    ['角色名稱', '符文名稱', '等級', '力量', '成長值', '所需成長值', 'STR', 'DEX', 'INT', 'LUK', 'HP'],
-    list.flatMap(c => (c.symbols || []).map(s => [
-      c.name, stripSymbolPrefix(s.name), s.level, s.force, s.growth_count, s.require_growth,
-      s.str, s.dex, s.int, s.luk, s.hp,
-    ]))
-  ));
-
-  sections.push(csvSection('寵物',
-    ['角色名稱', '寵物名稱', '暱稱', '類型', '到期日', '裝備名稱', '裝備卷軸強化', '自動技能1', '自動技能2'],
-    list.flatMap(c => (c.pets || []).map(p => [
-      c.name, p.name, p.nickname, p.type, p.date_expire,
-      p.equipment?.name, p.equipment?.scroll_upgrade, p.auto_skill?.skill_1, p.auto_skill?.skill_2,
-    ]))
-  ));
-
-  sections.push(csvSection('傳授技能',
-    ['角色名稱', '技能名稱', '等級', '效果'],
-    list.flatMap(c => (c.link_skills || []).map(s => [c.name, s.name, s.level, s.effect]))
-  ));
-
-  sections.push(csvSection('五轉V矩陣',
-    ['角色名稱', '核心名稱', '類型', '等級', '連結技能'],
-    list.flatMap(c => (c.v_cores || []).map(v => [c.name, v.name, v.type, v.level, (v.skills || []).map(s => s.name).join('；')]))
-  ));
-
-  sections.push(csvSection('六轉HEXA矩陣',
-    ['角色名稱', '核心名稱', '等級', '類型', '連結技能'],
-    list.flatMap(c => (c.hexa_cores || []).map(h => [c.name, h.name, h.level, h.type, (h.skills || []).map(s => s.name).join('；')]))
-  ));
-
-  sections.push(csvSection('HEXA屬性',
-    ['角色名稱', '主屬性', '主等級', '副屬性1', '副等級1', '副屬性2', '副等級2', '屬性評級'],
-    list.flatMap(c => (c.hexa_stat || []).map(h => [c.name, h.main_stat, h.main_level, h.sub_stat_1, h.sub_level_1, h.sub_stat_2, h.sub_level_2, h.grade]))
-  ));
-
-  sections.push(csvSection('內在潛能',
-    ['角色名稱', '評級', '能力1', '能力2', '能力3'],
-    list.map(c => [c.name, c.inner_ability?.grade, c.inner_ability?.abilities?.[0] || '', c.inner_ability?.abilities?.[1] || '', c.inner_ability?.abilities?.[2] || ''])
-  ));
-
-  sections.push(csvSection('戰地攻擊隊',
-    ['角色名稱', '類型', '內容'],
-    list.flatMap(c => exGetUnionRaiderRows(c).map(r => [c.name, r.type, r.content]))
-  ));
-
-  sections.push(csvSection('聯盟神器',
-    ['角色名稱', '類型', '名稱', '等級', '選項1', '選項2', '選項3', '有效'],
-    list.flatMap(c => exGetArtifactRows(c).map(r => [c.name, r.type, r.name, r.level, r.opt1, r.opt2, r.opt3, r.valid]))
-  ));
-
-  sections.push(csvSection('聯盟冠軍',
-    ['角色名稱', '類型', '名稱', '職業', '階級', '槽位', '徽章'],
-    list.flatMap(c => exGetChampionRows(c).map(r => [c.name, r.type, r.name, r.class, r.grade, r.slot, r.badges]))
-  ));
-
-  sections.push(csvSection('美容與機器人',
-    ['角色名稱', '髮型', '髮色', '臉型', '臉色', '膚色', '機器人名稱', '機器人暱稱', '機器人髮型', '機器人臉型'],
-    list.map(c => [c.name, c.beauty?.hair, c.beauty?.hair_color, c.beauty?.face, c.beauty?.face_color, c.beauty?.skin,
-      c.android?.name, c.android?.nickname, c.android?.hair, c.android?.face])
-  ));
-
-  return sections.join('\r\n\r\n');
+// 依 EXPORT_TABLES 定義，把 characters 陣列轉成 [{name, content}, ...]，供 ZIP 打包使用
+function buildExportCSVFiles(list) {
+  return EXPORT_TABLES.map(t => ({ name: t.file, content: csvTable(t.headers, t.rows(list)) }));
 }
 
-// ---- MD 輸出（內容與 CSV 一致，只是改成標題＋表格的敘述格式，方便 AI 閱讀）----
-function mdTable(headers, rows) {
-  if (!rows.length) return '_無資料_\n';
-  const esc = v => String(v ?? '—').replace(/\|/g, '\\|').replace(/\n/g, ' ');
-  let out = `| ${headers.join(' | ')} |\n`;
-  out += `| ${headers.map(() => '---').join(' | ')} |\n`;
-  rows.forEach(r => { out += `| ${r.map(esc).join(' | ')} |\n`; });
-  return out;
+// ---- 最小化 ZIP 編碼器（無壓縮 STORED 模式，純前端、無第三方依賴）----
+//   只實作匯出所需的最小子集：Local File Header + Central Directory + EOCD，
+//   不做 DEFLATE 壓縮（CSV 文字檔案小，STORED 模式換取程式碼簡單、零相依）。
+function crc32(bytes) {
+  let crc = 0xFFFFFFFF;
+  for (let i = 0; i < bytes.length; i++) {
+    crc ^= bytes[i];
+    for (let j = 0; j < 8; j++) {
+      crc = (crc >>> 1) ^ (0xEDB88320 & -(crc & 1));
+    }
+  }
+  return (crc ^ 0xFFFFFFFF) >>> 0;
 }
 
-function buildExportMD(list) {
-  let md = `# 楓之谷角色資料匯出 — ${exportDateStamp()}\n\n`;
+function createZipBlob(files) {
+  const encoder = new TextEncoder();
+  const localParts = [];
+  const records = [];
+  let offset = 0;
 
-  list.forEach(c => {
-    md += `## ${c.name}（${c.class || '未知'} / Lv.${c.level || 0}）\n\n`;
-    md += `- 戰鬥力：${Number(c.combat_power || 0).toLocaleString()}　人氣：${c.popularity ?? '—'}\n`;
-    md += `- 伺服器：${c.world_name || '—'}　公會：${c.guild_name || '—'}\n`;
-    md += `- 總星力：${c.starforce_total ?? '—'}　戒指：${(c.rings || []).join('、') || '—'}　剩餘AP：${c.remain_ap ?? '—'}\n`;
-    md += `- 戰地聯盟：Lv.${c.union?.level ?? '—'}（${c.union?.grade || '—'}）　神器Lv.${c.union?.artifact_level ?? '—'} / EXP ${c.union?.artifact_exp ?? '—'} / 點數 ${c.union?.artifact_point ?? '—'}\n\n`;
+  files.forEach(f => {
+    const nameBytes = encoder.encode(f.name);
+    const contentBytes = encoder.encode('\uFEFF' + f.content); // BOM，避免 Excel 開啟時中文亂碼
+    const crc = crc32(contentBytes);
+    const size = contentBytes.length;
 
-    md += `### 核心屬性\n` + mdTable(['屬性', '數值'], (c.final_stat || []).map(s => [s.stat_name, s.stat_value])) + '\n';
-    md += `### 極限屬性\n` + mdTable(['類型', '等級', '增加量'], (c.hyper_stats || []).map(hs => [hs.type, hs.level, hs.increase])) + '\n';
+    const localHeader = new Uint8Array(30 + nameBytes.length);
+    const dv = new DataView(localHeader.buffer);
+    dv.setUint32(0, 0x04034b50, true); // local file header signature
+    dv.setUint16(4, 20, true);          // version needed to extract
+    dv.setUint16(6, 0x0800, true);      // flags：UTF-8 檔名
+    dv.setUint16(8, 0, true);           // method：0 = stored（不壓縮）
+    dv.setUint16(10, 0, true);          // mod time
+    dv.setUint16(12, 0, true);          // mod date
+    dv.setUint32(14, crc, true);
+    dv.setUint32(18, size, true);       // compressed size
+    dv.setUint32(22, size, true);       // uncompressed size
+    dv.setUint16(26, nameBytes.length, true);
+    dv.setUint16(28, 0, true);          // extra field length
+    localHeader.set(nameBytes, 30);
 
-    md += `### 裝備清單\n` + mdTable(
-      ['預設', '部位', '名稱', '星力', '卷軸', '潛能(等級)', '附加潛能(等級)', '星火', '卷軸強化', '守護石'],
-      exGetEquipmentRows(c).map(eq => [
-        eq.preset, eq.slot, eq.name, eq.starforce, eq.scroll_upgrade,
-        `${(eq.potential || []).join('；') || '—'}（${eq.potential_grade}）`,
-        `${(eq.additional || []).join('；') || '—'}（${eq.additional_grade}）`,
-        (eq.add_option || []).join('；') || '—',
-        (eq.etc_option || []).join('；') || '—',
-        eq.soul_name ? `${eq.soul_name}：${eq.soul_option}` : '—',
-      ])
-    ) + '\n';
-
-    md += `### 外觀（現金道具）\n` + mdTable(
-      ['預設', '部位', '名稱', '標籤', '屬性選項'],
-      exGetCashRows(c).map(it => [it.preset, it.slot, it.name, it.label || '—',
-        (it.options || []).map(o => `${o.option_type}+${o.option_value}`).join('；') || '—'])
-    ) + '\n';
-
-    md += `### 符文系統 (ARC/AUT)\n` + mdTable(
-      ['符文名稱', '等級', '力量', '成長值/需求', 'STR', 'DEX', 'INT', 'LUK', 'HP'],
-      (c.symbols || []).map(s => [stripSymbolPrefix(s.name), s.level, s.force, `${s.growth_count}/${s.require_growth}`, s.str, s.dex, s.int, s.luk, s.hp])
-    ) + '\n';
-
-    md += `### 寵物\n` + mdTable(
-      ['名稱', '暱稱', '類型', '到期日', '裝備', '自動技能1', '自動技能2'],
-      (c.pets || []).map(p => [p.name, p.nickname, p.type, p.date_expire, p.equipment?.name || '—', p.auto_skill?.skill_1 || '—', p.auto_skill?.skill_2 || '—'])
-    ) + '\n';
-
-    md += `### 傳授技能\n` + mdTable(['技能名稱', '等級', '效果'], (c.link_skills || []).map(s => [s.name, s.level, s.effect])) + '\n';
-    md += `### 五轉 V-Matrix\n` + mdTable(['核心名稱', '類型', '等級', '連結技能'], (c.v_cores || []).map(v => [v.name, v.type, v.level, (v.skills || []).map(s => s.name).join('；')])) + '\n';
-    md += `### 六轉 HEXA矩陣\n` + mdTable(['核心名稱', '等級', '類型', '連結技能'], (c.hexa_cores || []).map(h => [h.name, h.level, h.type, (h.skills || []).map(s => s.name).join('；')])) + '\n';
-    md += `### HEXA屬性\n` + mdTable(['主屬性', '主等級', '副屬性1', '副等級1', '副屬性2', '副等級2', '評級'],
-      (c.hexa_stat || []).map(h => [h.main_stat, h.main_level, h.sub_stat_1, h.sub_level_1, h.sub_stat_2, h.sub_level_2, h.grade])) + '\n';
-
-    md += `### 內在潛能（${c.inner_ability?.grade || '無'}）\n`;
-    md += (c.inner_ability?.abilities?.length ? c.inner_ability.abilities.map(a => `- ${a}`).join('\n') : '_無資料_') + '\n\n';
-
-    md += `### 戰地攻擊隊\n` + mdTable(['類型', '內容'], exGetUnionRaiderRows(c).map(r => [r.type, r.content])) + '\n';
-    md += `### 聯盟神器\n` + mdTable(['類型', '名稱', '等級', '選項1', '選項2', '選項3', '有效'], exGetArtifactRows(c).map(r => [r.type, r.name, r.level, r.opt1, r.opt2, r.opt3, r.valid])) + '\n';
-    md += `### 聯盟冠軍\n` + mdTable(['類型', '名稱', '職業', '階級', '槽位', '徽章'], exGetChampionRows(c).map(r => [r.type, r.name, r.class, r.grade, r.slot, r.badges])) + '\n';
-
-    md += `### 美容與機器人\n`;
-    md += `- 髮型：${c.beauty?.hair || '—'}（${c.beauty?.hair_color || '—'}）　臉型：${c.beauty?.face || '—'}（${c.beauty?.face_color || '—'}）　膚色：${c.beauty?.skin || '—'}\n`;
-    md += `- 機器人：${c.android?.name || '—'}「${c.android?.nickname || ''}」　髮型：${c.android?.hair || '—'}　臉型：${c.android?.face || '—'}\n\n`;
-
-    md += `---\n\n`;
+    localParts.push(localHeader, contentBytes);
+    records.push({ nameBytes, crc, size, localOffset: offset });
+    offset += localHeader.length + contentBytes.length;
   });
 
-  return md;
+  const centralStart = offset;
+  const centralParts = [];
+  records.forEach(rec => {
+    const central = new Uint8Array(46 + rec.nameBytes.length);
+    const dv = new DataView(central.buffer);
+    dv.setUint32(0, 0x02014b50, true); // central directory header signature
+    dv.setUint16(4, 20, true);          // version made by
+    dv.setUint16(6, 20, true);          // version needed
+    dv.setUint16(8, 0x0800, true);      // flags：UTF-8 檔名
+    dv.setUint16(10, 0, true);          // method：stored
+    dv.setUint16(12, 0, true);
+    dv.setUint16(14, 0, true);
+    dv.setUint32(16, rec.crc, true);
+    dv.setUint32(20, rec.size, true);
+    dv.setUint32(24, rec.size, true);
+    dv.setUint16(28, rec.nameBytes.length, true);
+    dv.setUint16(30, 0, true); // extra field length
+    dv.setUint16(32, 0, true); // comment length
+    dv.setUint16(34, 0, true); // disk number start
+    dv.setUint16(36, 0, true); // internal attrs
+    dv.setUint32(38, 0, true); // external attrs
+    dv.setUint32(42, rec.localOffset, true);
+    central.set(rec.nameBytes, 46);
+    centralParts.push(central);
+    offset += central.length;
+  });
+
+  const eocd = new Uint8Array(22);
+  const dv = new DataView(eocd.buffer);
+  dv.setUint32(0, 0x06054b50, true); // end of central directory signature
+  dv.setUint16(4, 0, true);
+  dv.setUint16(6, 0, true);
+  dv.setUint16(8, records.length, true);
+  dv.setUint16(10, records.length, true);
+  dv.setUint32(12, offset - centralStart, true); // central directory size
+  dv.setUint32(16, centralStart, true);          // central directory offset
+  dv.setUint16(20, 0, true);
+
+  return new Blob([...localParts, ...centralParts, eocd], { type: 'application/zip' });
 }
 
-// ---- 下載與彈窗互動 ----
-function downloadTextFile(filename, content, mime) {
-  const withBom = mime.includes('csv') ? '\uFEFF' + content : content; // CSV 加 BOM，避免 Excel 開啟時中文亂碼
-  const blob = new Blob([withBom], { type: `${mime};charset=utf-8;` });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
-}
-
-function doExport(kind) {
+// ---- 點擊匯出按鈕：直接組好 19 張表並打包成 ZIP 下載 ----
+function doExport() {
   if (!Array.isArray(characters) || characters.length === 0) {
     showToast('目前沒有可匯出的角色資料', 'error');
     return;
   }
-  const dateStr = exportDateStamp();
-  if (kind === 'csv' || kind === 'both') {
-    downloadTextFile(`MSDB_${dateStr}.csv`, buildExportCSV(characters), 'text/csv');
-  }
-  if (kind === 'md' || kind === 'both') {
-    downloadTextFile(`MSDB_${dateStr}.md`, buildExportMD(characters), 'text/markdown');
-  }
-  closeModal('modal-export');
-  showToast('匯出完成！', 'success');
+  const files = buildExportCSVFiles(characters);
+  const blob = createZipBlob(files);
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `MSDB_${exportDateStamp()}.zip`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+  showToast(`匯出完成！已下載 ${files.length} 張表格的 ZIP 壓縮檔`, 'success');
 }
 
-function initExportModal() {
-  document.getElementById('btn-export')?.addEventListener('click', () => openModal('modal-export'));
-  document.getElementById('btn-export-csv')?.addEventListener('click', () => doExport('csv'));
-  document.getElementById('btn-export-md')?.addEventListener('click', () => doExport('md'));
-  document.getElementById('btn-export-both')?.addEventListener('click', () => doExport('both'));
+function initExportButton() {
+  document.getElementById('btn-export')?.addEventListener('click', doExport);
 }
 
-// ================================================================
 // ================================================================
 // 懸浮預覽 (Tooltip)
 //   item._kind === 'cash'：現金道具（外觀棋盤格），顯示名稱／標籤／屬性
