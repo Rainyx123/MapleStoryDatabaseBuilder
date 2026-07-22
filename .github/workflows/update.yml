@@ -33,5 +33,10 @@ jobs:
           SUPABASE_KEY:   ${{ secrets.SUPABASE_KEY }}
         run: python crawler/main.py
         
-      - name: Claude Code Action Official
-        uses: anthropics/claude-code-action@v1
+      - uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_args: |
+            --max-turns 10
+            --append-system-prompt "Follow our coding standards"
+            --allowedTools Edit,Read,Write
